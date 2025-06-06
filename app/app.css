@@ -1,3 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-un-blue: #009edb;
+  --color-un-dark-blue: #1f4e79;
+  --color-un-light-blue: #4fc3f7;
+}
