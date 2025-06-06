@@ -1,4 +1,4 @@
-import { getAllSpeeches } from "~/lib/database";
+import { getAllSpeeches, Speech, PaginationInfo } from "~/lib/database";
 import { useLoaderData } from "react-router";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
@@ -6,8 +6,8 @@ import SpeechCard from "~/components/speech-card";
 import Pagination from "~/components/pagination";
 
 type LoaderData = {
-  speeches: any[];
-  pagination: any;
+  speeches: Speech[];
+  pagination: PaginationInfo;
 };
 
 export function meta() {
@@ -60,7 +60,7 @@ export default function Home() {
         ) : (
           <>
             <div className="grid gap-6 mb-8">
-              {speeches.map((speech: any) => (
+              {speeches.map((speech: Speech) => (
                 <SpeechCard key={speech.id} speech={speech} />
               ))}
             </div>

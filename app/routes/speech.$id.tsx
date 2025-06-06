@@ -1,4 +1,4 @@
-import { getSpeechById } from "~/lib/database";
+import { getSpeechById, Speech } from "~/lib/database";
 import { useLoaderData } from "react-router";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
@@ -8,7 +8,7 @@ import { Calendar, User, MapPin, FileText, ArrowLeft } from "lucide-react";
 import { Link } from "react-router";
 
 type LoaderData = {
-  speech: any;
+  speech: Speech;
 };
 
 export function meta() {
