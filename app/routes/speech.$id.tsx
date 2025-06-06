@@ -1,5 +1,5 @@
 import { getSpeechById } from "~/lib/database";
-import { data } from "react-router";
+import { useLoaderData } from "react-router";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
 import { Button } from "~/components/ui/button";
@@ -7,19 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Calendar, User, MapPin, FileText, ArrowLeft } from "lucide-react";
 import { Link } from "react-router";
 
-export function meta({ loaderData }: { loaderData: any }) {
-  if (!loaderData.speech) {
-    return [{ title: "Speech Not Found" }];
-  }
+type LoaderData = {
+  speech: any;
+};
 
+export function meta() {
   return [
-    { title: `${loaderData.speech.country_name} - ${loaderData.speech.year} UN Speech` },
-    {
-      name: "description",
-      content: `Speech by ${loaderData.speech.speaker || loaderData.speech.country_name} at the ${
-        loaderData.speech.year
-      } UN General Assembly, Session ${loaderData.speech.session}`,
-    },
+    { title: "UN General Assembly Speech" },
+    { name: "description", content: "Speech from the UN General Assembly" },
   ];
 }
 
@@ -28,14 +23,14 @@ export async function loader({ params }: { params: any }) {
   const speech = getSpeechById(speechId);
 
   if (!speech) {
-    throw data("Speech not found", { status: 404 });
+    throw new Response("Speech not found", { status: 404 });
   }
 
   return { speech };
 }
 
-export default function SpeechDetail({ loaderData }: { loaderData: any }) {
-  const { speech } = loaderData;
+export default function SpeechDetail() {
+  const { speech } = useLoaderData<LoaderData>();
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

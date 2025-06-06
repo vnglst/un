@@ -33,50 +33,20 @@ export interface SpeechesResult {
   pagination: PaginationInfo;
 }
 
-export function getAllSpeeches(page: number = 1, limit: number = 20, filters: SearchFilters = {}): SpeechesResult {
+export function getAllSpeeches(page: number = 1, limit: number = 20): SpeechesResult {
   let query = "SELECT * FROM speeches";
   let countQuery = "SELECT COUNT(*) as total FROM speeches";
-  const params: any[] = [];
-  const conditions: string[] = [];
-
-  // Add filters
-  if (filters.country) {
-    conditions.push("(country_name LIKE ? OR country_code LIKE ?)");
-    params.push(`%${filters.country}%`, `%${filters.country}%`);
-  }
-
-  if (filters.year) {
-    conditions.push("year = ?");
-    params.push(filters.year);
-  }
-
-  if (filters.session) {
-    conditions.push("session = ?");
-    params.push(filters.session);
-  }
-
-  if (filters.search) {
-    conditions.push("(text LIKE ? OR speaker LIKE ? OR post LIKE ?)");
-    params.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`);
-  }
-
-  if (conditions.length > 0) {
-    const whereClause = " WHERE " + conditions.join(" AND ");
-    query += whereClause;
-    countQuery += whereClause;
-  }
 
   // Get total count
-  const totalResult = db.prepare(countQuery).get(...params) as { total: number };
+  const totalResult = db.prepare(countQuery).get() as { total: number };
   const total = totalResult.total;
   const totalPages = Math.ceil(total / limit);
 
   // Add ordering and pagination
   query += " ORDER BY year DESC, session DESC, country_name ASC";
   query += " LIMIT ? OFFSET ?";
-  params.push(limit, (page - 1) * limit);
 
-  const speeches = db.prepare(query).all(...params) as Speech[];
+  const speeches = db.prepare(query).all(limit, (page - 1) * limit) as Speech[];
 
   return {
     speeches,
