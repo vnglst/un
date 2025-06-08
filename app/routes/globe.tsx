@@ -24,7 +24,6 @@ export function meta() {
 
 export async function loader(): Promise<LoaderData> {
   const countryCounts = getCountrySpeechCounts();
-  console.log("Loader - Top 3 countries:", countryCounts.slice(0, 3));
   return { countryCounts };
 }
 
@@ -38,9 +37,6 @@ declare global {
 export default function Globe() {
   const { countryCounts } = useLoaderData<LoaderData>();
   const globeRef = useRef<HTMLDivElement>(null);
-
-  // Debug: Check what we received
-  console.log("Component - countryCounts received:", countryCounts.slice(0, 3));
 
   useEffect(() => {
     // Load D3 and TopoJSON from CDN
@@ -94,6 +90,66 @@ export default function Globe() {
 
       const path = window.d3.geoPath().projection(projection);
 
+      // Constants for interaction
+      const SENSITIVITY = 75;
+      const ROTATION_SPEED = 0.2;
+      const ZOOM_EXTENT = [0.5, 4];
+      const INITIAL_SCALE = window.innerWidth > 768 ? 0.6 : 0.9;
+
+      // State variables
+      let rotationStopped = false;
+      let isDragging = false;
+      let rotationInterval: NodeJS.Timeout | null = null;
+
+      // Setup zoom behavior
+      const zoom = window.d3
+        .zoom()
+        .scaleExtent(ZOOM_EXTENT)
+        .filter(
+          (event: any) =>
+            (!event.button && event.type === "wheel") || (event.type === "touchstart" && event.touches.length > 1)
+        )
+        .on("zoom", (event: any) => {
+          projection.scale((event.transform.k * Math.min(width, height)) / 2.5);
+          globe.selectAll("path").attr("d", path);
+          globe.selectAll("circle").attr("r", projection.scale());
+
+          if (event.transform.k === ZOOM_EXTENT[0]) {
+            rotationStopped = false;
+            startRotation();
+          }
+        });
+
+      // Setup drag behavior
+      const drag = window.d3
+        .drag()
+        .filter(
+          (event: any) =>
+            (event.type === "mousedown" && event.button === 0) ||
+            (event.type === "touchstart" && event.touches.length === 1)
+        )
+        .on("start", () => {
+          isDragging = true;
+          rotationStopped = true;
+          if (rotationInterval) {
+            clearInterval(rotationInterval);
+            rotationInterval = null;
+          }
+        })
+        .on("drag", (event: any) => {
+          const rotate = projection.rotate();
+          const k = SENSITIVITY / projection.scale();
+          projection.rotate([rotate[0] + event.dx * k, rotate[1] - event.dy * k]);
+          path.projection(projection);
+          requestAnimationFrame(() => {
+            globe.selectAll("path").attr("d", path);
+          });
+        })
+        .on("end", () => {
+          isDragging = false;
+          startRotation();
+        });
+
       // Add water background
       globe
         .append("circle")
@@ -104,6 +160,12 @@ export default function Globe() {
         .attr("cy", height / 2)
         .attr("r", projection.scale());
 
+      // Apply zoom and drag behaviors to SVG
+      const initialTransform = window.d3.zoomIdentity.scale(INITIAL_SCALE);
+      svg.call(zoom.transform, initialTransform);
+      svg.call(zoom);
+      svg.call(drag);
+
       // Create country lookup map
       const countryLookup = new Map();
       countryCounts.forEach((country) => {
@@ -113,6 +175,19 @@ export default function Globe() {
       // Find max count for color scaling
       const maxCount = Math.max(...countryCounts.map((c) => c.speech_count));
       const colorScale = window.d3.scaleSequential(window.d3.interpolateBlues).domain([0, maxCount]);
+
+      // Auto-rotation function
+      const startRotation = () => {
+        if (!rotationInterval && !rotationStopped) {
+          rotationInterval = setInterval(() => {
+            if (!isDragging) {
+              const rotate = projection.rotate();
+              projection.rotate([rotate[0] + ROTATION_SPEED, rotate[1], rotate[2]]);
+              globe.selectAll("path").attr("d", path);
+            }
+          }, 50);
+        }
+      };
 
       // Load and render world data
       try {
@@ -168,40 +243,32 @@ export default function Globe() {
             window.d3.selectAll(".tooltip").remove();
           })
           .on("click", function (_event: any, d: any) {
-            // Convert 2-letter code to 3-letter code for lookup
-            const iso3Code = iso2ToIso3[d.properties.code];
-            const count = countryLookup.get(iso3Code) || 0;
-            if (count > 0) {
-              // Navigate to country speeches page using the 3-letter code
-              window.location.href = `/country/${iso3Code}`;
+            if (!isDragging) {
+              // Convert 2-letter code to 3-letter code for lookup
+              const iso3Code = iso2ToIso3[d.properties.code];
+              const count = countryLookup.get(iso3Code) || 0;
+              if (count > 0) {
+                // Stop rotation when navigating
+                rotationStopped = true;
+                if (rotationInterval) {
+                  clearInterval(rotationInterval);
+                  rotationInterval = null;
+                }
+                // Navigate to country speeches page using the 3-letter code
+                window.location.href = `/country/${iso3Code}`;
+              }
             }
           });
 
-        // Add rotation
-        let rotationSpeed = 0.5;
-        let isRotating = true;
-
-        const rotate = () => {
-          if (isRotating) {
-            const currentRotation = projection.rotate();
-            projection.rotate([currentRotation[0] + rotationSpeed, currentRotation[1], currentRotation[2]]);
-            countryPaths.attr("d", path);
-          }
-        };
-
-        const rotationInterval = setInterval(rotate, 100);
-
-        // Stop rotation on interaction
-        svg
-          .on("mouseenter", () => {
-            isRotating = false;
-          })
-          .on("mouseleave", () => {
-            isRotating = true;
-          });
+        // Start auto-rotation
+        startRotation();
 
         // Cleanup function
-        return () => clearInterval(rotationInterval);
+        return () => {
+          if (rotationInterval) {
+            clearInterval(rotationInterval);
+          }
+        };
       } catch (error) {
         console.error("Error loading world data:", error);
       }
@@ -218,8 +285,8 @@ export default function Globe() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">UN General Assembly Globe</h1>
           <p className="text-gray-600">
-            Explore how often countries have spoken at the UN General Assembly. Click on a country to see their
-            speeches.
+            Explore an interactive globe showing how often countries have spoken at the UN General Assembly. Drag to
+            rotate, scroll to zoom, and click on countries to see their speeches.
           </p>
         </div>
 
@@ -233,8 +300,9 @@ export default function Globe() {
               <CardContent>
                 <div ref={globeRef} className="w-full h-96 lg:h-[500px] bg-gray-50 rounded-lg border" />
                 <p className="text-sm text-gray-500 mt-4">
-                  Hover over countries to see speech counts. Click to view their speeches. Countries are colored by
-                  frequency of speeches - darker blue means more speeches.
+                  <strong>Interact with the globe:</strong> Drag to rotate, scroll or pinch to zoom. Hover over
+                  countries to see speech counts. Click to view their speeches. Countries are colored by frequency of
+                  speeches - darker blue means more speeches.
                 </p>
               </CardContent>
             </Card>
