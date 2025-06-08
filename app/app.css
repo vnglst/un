@@ -30,3 +30,12 @@ body {
   animation: twinkle var(--duration) ease-in-out infinite;
   animation-delay: var(--delay);
 }
+
+/* Search highlight styling */
+mark {
+  background-color: #fbbf24;
+  color: #000000;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.125rem;
+  font-weight: 600;
+}
