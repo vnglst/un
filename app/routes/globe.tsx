@@ -61,7 +61,7 @@ export default function Globe() {
       const SENSITIVITY = 75;
       const ROTATION_SPEED = 0.2;
       const ZOOM_EXTENT: [number, number] = [0.5, 4];
-      const INITIAL_SCALE = window.innerWidth > 768 ? 0.6 : 0.9;
+      const INITIAL_SCALE = window.innerWidth > 768 ? 1.2 : 1.0; // Increased from 0.6 and 0.9
 
       // State variables
       let rotationStopped = false;
