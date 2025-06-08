@@ -5,6 +5,8 @@ import Footer from "~/components/footer";
 import StarField from "~/components/star-field";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useEffect, useRef } from "react";
+import * as d3 from "d3";
+import * as topojson from "topojson-client";
 import topologyData from "~/lib/topology.json";
 import { iso2ToIso3 } from "~/lib/country-codes";
 
@@ -28,49 +30,13 @@ export async function loader(): Promise<LoaderData> {
   return { countryCounts };
 }
 
-declare global {
-  interface Window {
-    d3: any;
-    topojson: any;
-  }
-}
-
 export default function Globe() {
   const { countryCounts } = useLoaderData<LoaderData>();
   const globeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load D3 and TopoJSON from CDN
-    const loadScripts = async () => {
-      if (typeof window === "undefined") return;
-
-      // Load D3
-      if (!window.d3) {
-        const d3Script = document.createElement("script");
-        d3Script.src = "https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js";
-        d3Script.integrity =
-          "sha512-vc58qvvBdrDR4etbxMdlTt4GBQk1qjvyORR2nrsPsFPyrs+/u5c3+1Ct6upOgdZoIl7eq6k3a1UPDSNAQi/32A==";
-        d3Script.crossOrigin = "anonymous";
-        document.head.appendChild(d3Script);
-        await new Promise((resolve) => (d3Script.onload = resolve));
-      }
-
-      // Load TopoJSON
-      if (!window.topojson) {
-        const topoScript = document.createElement("script");
-        topoScript.src = "https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js";
-        topoScript.integrity =
-          "sha512-4UKI/XKm3xrvJ6pZS5oTRvIQGIzZFoXR71rRBb1y2N+PbwAsKa5tPl2J6WvbEvwN3TxQCm8hMzsl/pO+82iRlg==";
-        topoScript.crossOrigin = "anonymous";
-        document.head.appendChild(topoScript);
-        await new Promise((resolve) => (topoScript.onload = resolve));
-      }
-
-      initializeGlobe();
-    };
-
     const initializeGlobe = () => {
-      if (!globeRef.current || !window.d3 || !window.topojson) return;
+      if (!globeRef.current) return;
 
       const container = globeRef.current;
       const { width, height } = container.getBoundingClientRect();
@@ -78,23 +44,23 @@ export default function Globe() {
       // Clear any existing content
       container.innerHTML = "";
 
-      const svg = window.d3.select(container).append("svg").attr("width", width).attr("height", height);
+      const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
 
       const globe = svg.append("g");
 
       // Create projection
-      const projection = window.d3
+      const projection = d3
         .geoOrthographic()
         .scale(Math.min(width, height) / 2.5)
         .translate([width / 2, height / 2])
         .rotate([-10, -20, 0]);
 
-      const path = window.d3.geoPath().projection(projection);
+      const path = d3.geoPath().projection(projection);
 
       // Constants for interaction
       const SENSITIVITY = 75;
       const ROTATION_SPEED = 0.2;
-      const ZOOM_EXTENT = [0.5, 4];
+      const ZOOM_EXTENT: [number, number] = [0.5, 4];
       const INITIAL_SCALE = window.innerWidth > 768 ? 0.6 : 0.9;
 
       // State variables
@@ -103,8 +69,8 @@ export default function Globe() {
       let rotationInterval: NodeJS.Timeout | null = null;
 
       // Setup zoom behavior
-      const zoom = window.d3
-        .zoom()
+      const zoom = d3
+        .zoom<SVGSVGElement, unknown>()
         .scaleExtent(ZOOM_EXTENT)
         .filter(
           (event: any) =>
@@ -112,7 +78,7 @@ export default function Globe() {
         )
         .on("zoom", (event: any) => {
           projection.scale((event.transform.k * Math.min(width, height)) / 2.5);
-          globe.selectAll("path").attr("d", path);
+          globe.selectAll("path").attr("d", (d: any) => path(d) || "");
           globe.selectAll("circle").attr("r", projection.scale());
 
           if (event.transform.k === ZOOM_EXTENT[0]) {
@@ -122,8 +88,8 @@ export default function Globe() {
         });
 
       // Setup drag behavior
-      const drag = window.d3
-        .drag()
+      const drag = d3
+        .drag<SVGSVGElement, unknown>()
         .filter(
           (event: any) =>
             (event.type === "mousedown" && event.button === 0) ||
@@ -143,7 +109,7 @@ export default function Globe() {
           projection.rotate([rotate[0] + event.dx * k, rotate[1] - event.dy * k]);
           path.projection(projection);
           requestAnimationFrame(() => {
-            globe.selectAll("path").attr("d", path);
+            globe.selectAll("path").attr("d", (d: any) => path(d) || "");
           });
         })
         .on("end", () => {
@@ -162,7 +128,7 @@ export default function Globe() {
         .attr("r", projection.scale());
 
       // Apply zoom and drag behaviors to SVG
-      const initialTransform = window.d3.zoomIdentity.scale(INITIAL_SCALE);
+      const initialTransform = d3.zoomIdentity.scale(INITIAL_SCALE);
       svg.call(zoom.transform, initialTransform);
       svg.call(zoom);
       svg.call(drag);
@@ -175,7 +141,7 @@ export default function Globe() {
 
       // Find max count for color scaling
       const maxCount = Math.max(...countryCounts.map((c) => c.speech_count));
-      const colorScale = window.d3.scaleSequential(window.d3.interpolateBlues).domain([0, maxCount]);
+      const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxCount]);
 
       // Auto-rotation function
       const startRotation = () => {
@@ -184,7 +150,7 @@ export default function Globe() {
             if (!isDragging) {
               const rotate = projection.rotate();
               projection.rotate([rotate[0] + ROTATION_SPEED, rotate[1], rotate[2]]);
-              globe.selectAll("path").attr("d", path);
+              globe.selectAll("path").attr("d", (d: any) => path(d) || "");
             }
           }, 50);
         }
@@ -192,8 +158,8 @@ export default function Globe() {
 
       // Load and render world data
       try {
-        const worldData = topologyData;
-        const countries = window.topojson.feature(worldData, worldData.objects.countries);
+        const worldData = topologyData as any;
+        const countries = topojson.feature(worldData, worldData.objects.countries) as any;
 
         // Render countries
         const countryPaths = globe
@@ -201,10 +167,10 @@ export default function Globe() {
           .data(countries.features)
           .enter()
           .append("path")
-          .attr("d", path)
+          .attr("d", (d: any) => path(d) || "")
           .attr("fill", (d: any) => {
             // Convert 2-letter code to 3-letter code for lookup
-            const iso3Code = iso2ToIso3[d.properties.code];
+            const iso3Code = iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3];
             const count = countryLookup.get(iso3Code) || 0;
 
             return count > 0 ? colorScale(count) : "#f3f4f6";
@@ -215,15 +181,14 @@ export default function Globe() {
 
         // Add interactivity
         countryPaths
-          .on("mouseover", function (this: any, event: any, d: any) {
+          .on("mouseover", function (this: SVGPathElement, event: any, d: any) {
             // Convert 2-letter code to 3-letter code for lookup
-            const iso3Code = iso2ToIso3[d.properties.code];
+            const iso3Code = iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3];
             const count = countryLookup.get(iso3Code) || 0;
-            window.d3.select(this).attr("stroke-width", 2).attr("stroke", "#009edb");
+            d3.select(this).attr("stroke-width", 2).attr("stroke", "#009edb");
 
             // Tooltip
-            window.d3
-              .select("body")
+            d3.select("body")
               .append("div")
               .attr("class", "tooltip")
               .style("position", "absolute")
@@ -238,15 +203,15 @@ export default function Globe() {
               .style("left", event.pageX + 10 + "px")
               .style("top", event.pageY - 10 + "px");
           })
-          .on("mouseout", function (this: any) {
-            window.d3.select(this).attr("stroke-width", 0.5).attr("stroke", "#ffffff");
+          .on("mouseout", function (this: SVGPathElement) {
+            d3.select(this).attr("stroke-width", 0.5).attr("stroke", "#ffffff");
 
-            window.d3.selectAll(".tooltip").remove();
+            d3.selectAll(".tooltip").remove();
           })
           .on("click", function (_event: any, d: any) {
             if (!isDragging) {
               // Convert 2-letter code to 3-letter code for lookup
-              const iso3Code = iso2ToIso3[d.properties.code];
+              const iso3Code = iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3];
               const count = countryLookup.get(iso3Code) || 0;
               if (count > 0) {
                 // Stop rotation when navigating
@@ -275,7 +240,7 @@ export default function Globe() {
       }
     };
 
-    loadScripts();
+    initializeGlobe();
   }, [countryCounts]);
 
   return (
