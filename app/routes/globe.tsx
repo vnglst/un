@@ -2,6 +2,7 @@ import { useLoaderData, Link } from "react-router";
 import { getCountrySpeechCounts, type CountrySpeechCount } from "~/lib/database";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
+import StarField from "~/components/star-field";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useEffect, useRef } from "react";
 import topologyData from "~/lib/topology.json";
@@ -278,66 +279,73 @@ export default function Globe() {
   }, [countryCounts]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
+    <>
+      <StarField />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">UN General Assembly Globe</h1>
-          <p className="text-gray-600">
-            Explore an interactive globe showing how often countries have spoken at the UN General Assembly. Drag to
-            rotate, scroll to zoom, and click on countries to see their speeches.
-          </p>
-        </div>
+      <div className="min-h-screen flex flex-col bg-transparent relative z-10">
+        <Header />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Globe */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Interactive Globe</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div ref={globeRef} className="w-full h-96 lg:h-[500px] bg-gray-50 rounded-lg border" />
-                <p className="text-sm text-gray-500 mt-4">
-                  <strong>Interact with the globe:</strong> Drag to rotate, scroll or pinch to zoom. Hover over
-                  countries to see speech counts. Click to view their speeches. Countries are colored by frequency of
-                  speeches - darker blue means more speeches.
-                </p>
-              </CardContent>
-            </Card>
+        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">UN General Assembly Globe</h1>
+            <p className="text-gray-300">
+              Explore an interactive globe showing how often countries have spoken at the UN General Assembly. Drag to
+              rotate, scroll to zoom, and click on countries to see their speeches.
+            </p>
           </div>
 
-          {/* Top Speaking Countries */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Speaking Countries</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {countryCounts.slice(0, 10).map((country, index) => (
-                    <Link
-                      key={country.country_code}
-                      to={`/country/${country.country_code}`}
-                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                    >
-                      <div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {index + 1}. {country.country_name || country.country_code}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-600">{country.speech_count} speeches</span>
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </main>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Globe */}
+            <div className="lg:col-span-2">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Interactive Globe</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    ref={globeRef}
+                    className="w-full h-96 lg:h-[500px] bg-gray-900 rounded-lg border border-gray-700"
+                  />
+                  <p className="text-sm text-gray-400 mt-4">
+                    <strong>Interact with the globe:</strong> Drag to rotate, scroll or pinch to zoom. Hover over
+                    countries to see speech counts. Click to view their speeches. Countries are colored by frequency of
+                    speeches - darker blue means more speeches.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
-      <Footer />
-    </div>
+            {/* Top Speaking Countries */}
+            <div>
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Top Speaking Countries</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {countryCounts.slice(0, 10).map((country, index) => (
+                      <Link
+                        key={country.country_code}
+                        to={`/country/${country.country_code}`}
+                        className="flex items-center justify-between p-3 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+                      >
+                        <div>
+                          <span className="text-sm font-medium text-white">
+                            {index + 1}. {country.country_name || country.country_code}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-300">{country.speech_count} speeches</span>
+                      </Link>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    </>
   );
 }

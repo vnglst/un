@@ -2,6 +2,7 @@ import { useLoaderData, useNavigate } from "react-router";
 import { getAllSpeeches, type Speech, type PaginationInfo } from "~/lib/database";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
+import StarField from "~/components/star-field";
 import SpeechCard from "~/components/speech-card";
 import Pagination from "~/components/pagination";
 
@@ -37,45 +38,51 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
+    <>
+      <StarField />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">UN General Assembly Speeches</h1>
-          <p className="text-gray-600">Explore {pagination.total} speeches from the United Nations General Assembly</p>
-        </div>
+      <div className="min-h-screen flex flex-col bg-transparent relative z-10">
+        <Header />
 
-        {/* Results */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">{pagination.total} speeches found</h2>
-          <p className="text-gray-600">
-            Showing page {pagination.page} of {pagination.totalPages}
-          </p>
-        </div>
-
-        {speeches.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No speeches found.</p>
+        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">UN General Assembly Speeches</h1>
+            <p className="text-gray-300">
+              Explore {pagination.total} speeches from the United Nations General Assembly
+            </p>
           </div>
-        ) : (
-          <>
-            <div className="grid gap-6 mb-8">
-              {speeches.map((speech: Speech) => (
-                <SpeechCard key={speech.id} speech={speech} />
-              ))}
+
+          {/* Results */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-white mb-2">{pagination.total} speeches found</h2>
+            <p className="text-gray-300">
+              Showing page {pagination.page} of {pagination.totalPages}
+            </p>
+          </div>
+
+          {speeches.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400 text-lg">No speeches found.</p>
             </div>
+          ) : (
+            <>
+              <div className="grid gap-6 mb-8">
+                {speeches.map((speech: Speech) => (
+                  <SpeechCard key={speech.id} speech={speech} />
+                ))}
+              </div>
 
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
-            />
-          </>
-        )}
-      </main>
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 }
