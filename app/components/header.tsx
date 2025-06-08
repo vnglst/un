@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { Globe, Search, BookOpen, Menu, X } from "lucide-react";
+import { Globe, Search, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {
@@ -51,16 +51,12 @@ export default function Header() {
           {/* Desktop navigation */}
           <nav className="hidden md:flex space-x-6">
             <Link to="/" className={getNavLinkClass("/")}>
-              <BookOpen className="h-4 w-4" />
+              <Search className="h-4 w-4" />
               <span>Browse</span>
             </Link>
             <Link to="/globe" className={getNavLinkClass("/globe")}>
               <Globe className="h-4 w-4" />
               <span>Globe</span>
-            </Link>
-            <Link to="/search" className={getNavLinkClass("/search")}>
-              <Search className="h-4 w-4" />
-              <span>Search</span>
             </Link>
           </nav>
 
@@ -79,16 +75,12 @@ export default function Header() {
           <div className="md:hidden border-t border-un-dark-blue">
             <nav className="py-4 space-y-2">
               <Link to="/" className={getMobileNavLinkClass("/")} onClick={() => setIsMenuOpen(false)}>
-                <BookOpen className="h-4 w-4" />
+                <Search className="h-4 w-4" />
                 <span>Browse</span>
               </Link>
               <Link to="/globe" className={getMobileNavLinkClass("/globe")} onClick={() => setIsMenuOpen(false)}>
                 <Globe className="h-4 w-4" />
                 <span>Globe</span>
-              </Link>
-              <Link to="/search" className={getMobileNavLinkClass("/search")} onClick={() => setIsMenuOpen(false)}>
-                <Search className="h-4 w-4" />
-                <span>Search</span>
               </Link>
             </nav>
           </div>
