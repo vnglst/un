@@ -45,7 +45,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-500"
+        className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
       >
         <ChevronLeft className="h-4 w-4" />
         Previous
@@ -54,7 +54,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
       {getPageNumbers().map((page, index) => (
         <div key={index}>
           {page === "..." ? (
-            <span className="px-2 text-gray-400">...</span>
+            <span className="px-2 text-gray-500">...</span>
           ) : (
             <Button
               variant={currentPage === page ? "default" : "outline"}
@@ -63,7 +63,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
               className={
                 currentPage === page
                   ? "bg-un-blue hover:bg-un-dark-blue text-white"
-                  : "bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
               }
             >
               {page}
@@ -77,7 +77,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-500"
+        className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
       >
         Next
         <ChevronRight className="h-4 w-4" />

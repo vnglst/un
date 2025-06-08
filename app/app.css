@@ -6,11 +6,11 @@
   --color-un-light-blue: #4fc3f7;
 }
 
-/* Prevent white flash on page load */
+/* Clean white background like UN website */
 html,
 body {
-  background-color: #000000;
-  color: white;
+  background-color: #ffffff;
+  color: #333333;
 }
 
 /* Star twinkling animation */

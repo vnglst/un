@@ -42,11 +42,11 @@ export default function SpeechCard({ speech, highlighted = false }: SpeechCardPr
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 bg-gray-800 border-gray-700 h-full flex flex-col">
+    <Card className="hover:shadow-lg transition-shadow duration-200 bg-white border-gray-200 h-full flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg text-white leading-tight">
+            <CardTitle className="text-lg text-gray-900 leading-tight">
               <Link to={`/speech/${speech.id}`} className="hover:underline hover:text-un-light-blue">
                 {hasHighlights && highlightedSpeech.highlighted_country_name ? (
                   <span dangerouslySetInnerHTML={{ __html: highlightedSpeech.highlighted_country_name }} />
@@ -55,7 +55,7 @@ export default function SpeechCard({ speech, highlighted = false }: SpeechCardPr
                 )}
               </Link>
             </CardTitle>
-            <CardDescription className="flex items-center space-x-4 mt-2 text-gray-400">
+            <CardDescription className="flex items-center space-x-4 mt-2 text-gray-600">
               <span className="flex items-center space-x-1">
                 <Calendar className="h-4 w-4" />
                 <span>{speech.year}</span>
@@ -72,7 +72,7 @@ export default function SpeechCard({ speech, highlighted = false }: SpeechCardPr
       <CardContent className="flex-1 flex flex-col justify-between pt-0">
         <div>
           {speech.speaker && (
-            <div className="flex items-center space-x-1 text-sm text-gray-400 mb-3">
+            <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
               <User className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">
                 {hasHighlights && highlightedSpeech.highlighted_speaker ? (
@@ -87,11 +87,11 @@ export default function SpeechCard({ speech, highlighted = false }: SpeechCardPr
 
           {hasHighlights && highlightedSpeech.highlighted_text ? (
             <div
-              className="text-gray-300 leading-relaxed text-sm mb-4"
+              className="text-gray-700 leading-relaxed text-sm mb-4"
               dangerouslySetInnerHTML={renderHighlightedText(highlightedSpeech.highlighted_text, speech.text, 150)}
             />
           ) : (
-            <p className="text-gray-300 leading-relaxed text-sm mb-4">{truncateText(speech.text, 150)}</p>
+            <p className="text-gray-700 leading-relaxed text-sm mb-4">{truncateText(speech.text, 150)}</p>
           )}
         </div>
         <Link

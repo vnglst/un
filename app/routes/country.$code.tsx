@@ -75,7 +75,7 @@ export default function CountrySpeeches() {
           {/* Back Navigation */}
           <div className="mb-6">
             <Link to="/globe">
-              <Button variant="outline" className="mb-4 bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+              <Button variant="outline" className="mb-4 bg-white border-gray-200 text-gray-900 hover:bg-gray-50">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Globe
               </Button>
@@ -86,17 +86,17 @@ export default function CountrySpeeches() {
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">
               <Globe className="h-8 w-8 text-un-blue" />
-              <h1 className="text-3xl font-bold text-white">{countryName}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{countryName}</h1>
             </div>
-            <p className="text-gray-300">
+            <p className="text-gray-600">
               {pagination.total} speeches from {countryName} at the UN General Assembly
             </p>
           </div>
 
           {/* Results Summary */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-white mb-2">{pagination.total} speeches found</h2>
-            <p className="text-gray-300">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">{pagination.total} speeches found</h2>
+            <p className="text-gray-600">
               Showing page {pagination.page} of {pagination.totalPages}
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function CountrySpeeches() {
           {speeches.length === 0 ? (
             <div className="text-center py-12">
               <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg">No speeches found for {countryName}.</p>
+              <p className="text-gray-500 text-lg">No speeches found for {countryName}.</p>
               <Link to="/globe" className="mt-4 inline-block">
                 <Button className="bg-un-blue hover:bg-un-dark-blue">
                   <ArrowLeft className="h-4 w-4 mr-2" />

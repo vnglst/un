@@ -166,8 +166,8 @@ export default function Home() {
 
         <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">UN General Assembly Speeches</h1>
-            <p className="text-gray-300">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">UN General Assembly Speeches</h1>
+            <p className="text-gray-600">
               {hasActiveFilters
                 ? `Search through ${pagination.total} speeches from the United Nations General Assembly`
                 : `Explore ${pagination.total} speeches from the United Nations General Assembly`}
@@ -175,9 +175,9 @@ export default function Home() {
           </div>
 
           {/* Search Form */}
-          <Card className="bg-gray-800 border-gray-700 mb-8">
+          <Card className="bg-white border-gray-200 mb-8">
             <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
+              <CardTitle className="text-gray-900 flex items-center justify-between">
                 <span className="flex items-center space-x-2">
                   <SearchIcon className="h-5 w-5" />
                   <span>Search & Filter</span>
@@ -186,7 +186,7 @@ export default function Home() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
-                  className="text-white hover:text-un-light-blue"
+                  className="text-gray-900 hover:text-un-light-blue"
                 >
                   <Filter className="h-4 w-4 mr-1" />
                   {showFilters ? "Hide" : "Show"} Filters
@@ -207,18 +207,18 @@ export default function Home() {
                     }}
                     onFocus={() => setShowSuggestions(searchQuery.length >= 2)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   />
 
                   {/* Search suggestions dropdown */}
                   {showSuggestions && suggestions && suggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-md shadow-lg">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
                       {suggestions.map((suggestion, index) => (
                         <button
                           key={index}
                           type="button"
                           onClick={() => handleSuggestionClick(suggestion)}
-                          className="w-full text-left px-4 py-2 text-white hover:bg-gray-600 first:rounded-t-md last:rounded-b-md"
+                          className="w-full text-left px-4 py-2 text-gray-900 hover:bg-gray-100 first:rounded-t-md last:rounded-b-md"
                         >
                           {suggestion}
                         </button>
@@ -230,7 +230,7 @@ export default function Home() {
                 {/* Search mode selector */}
                 {searchQuery.trim() && (
                   <div className="flex items-center space-x-4 text-sm">
-                    <span className="text-gray-300">Search mode:</span>
+                    <span className="text-gray-600">Search mode:</span>
                     <div className="flex space-x-2">
                       {[
                         { value: "phrase", label: "Phrase", description: "Find phrases" },
@@ -246,7 +246,7 @@ export default function Home() {
                             onChange={(e) => setSearchMode(e.target.value as "exact" | "phrase" | "fuzzy")}
                             className="text-un-blue focus:ring-un-blue"
                           />
-                          <span className="text-gray-300" title={mode.description}>
+                          <span className="text-gray-600" title={mode.description}>
                             {mode.label}
                           </span>
                         </label>
@@ -257,13 +257,13 @@ export default function Home() {
 
                 {/* Advanced filters */}
                 {showFilters && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-600">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-300">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Country</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                       <select
                         value={selectedCountry}
                         onChange={(e) => setSelectedCountry(e.target.value)}
-                        className="w-full h-9 rounded-md border border-gray-600 bg-gray-700 text-white px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-un-blue"
+                        className="w-full h-9 rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-un-blue"
                       >
                         <option value="">All countries</option>
                         {countries.map((country) => (
@@ -275,11 +275,11 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Year</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
                       <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(e.target.value)}
-                        className="w-full h-9 rounded-md border border-gray-600 bg-gray-700 text-white px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-un-blue"
+                        className="w-full h-9 rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-un-blue"
                       >
                         <option value="">All years</option>
                         {years.map((year) => (
@@ -291,11 +291,11 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Session</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Session</label>
                       <select
                         value={selectedSession}
                         onChange={(e) => setSelectedSession(e.target.value)}
-                        className="w-full h-9 rounded-md border border-gray-600 bg-gray-700 text-white px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-un-blue"
+                        className="w-full h-9 rounded-md border border-gray-300 bg-white text-gray-900 px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-un-blue"
                       >
                         <option value="">All sessions</option>
                         {sessions.map((session) => (
@@ -320,7 +320,7 @@ export default function Home() {
                         type="button"
                         variant="outline"
                         onClick={clearFilters}
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white bg-transparent"
+                        className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 bg-white"
                       >
                         <X className="h-4 w-4 mr-2" />
                         Clear
@@ -334,11 +334,11 @@ export default function Home() {
 
           {/* Results */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-white mb-2">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
               {pagination.total} {pagination.total === 1 ? "speech" : "speeches"}
               {hasActiveFilters ? " found" : ""}
             </h2>
-            <p className="text-gray-300">
+            <p className="text-gray-600">
               Showing page {pagination.page} of {pagination.totalPages}
             </p>
 
@@ -375,8 +375,8 @@ export default function Home() {
 
           {speeches.length === 0 ? (
             <div className="text-center py-12">
-              <SearchIcon className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg mb-2">
+              <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg mb-2">
                 {hasActiveFilters ? "No speeches match your search criteria" : "No speeches found"}
               </p>
               <p className="text-gray-500">

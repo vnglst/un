@@ -13,8 +13,8 @@ export default function StarField() {
     // Clear existing stars
     starsContainer.innerHTML = "";
 
-    // Set black background on the stars container
-    starsContainer.style.background = "#000000";
+    // Remove dark background - let page background show through
+    starsContainer.style.background = "transparent";
 
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
@@ -28,9 +28,9 @@ export default function StarField() {
       star.style.top = `${Math.random() * windowHeight}px`;
       star.style.left = `${Math.random() * windowWidth}px`;
       star.style.position = "absolute";
-      star.style.background = "#ffffff";
+      star.style.background = "#009edb"; // UN light blue for subtle accent
       star.style.borderRadius = "50%";
-      star.style.opacity = `${Math.random() * 0.8 + 0.2}`; // Random opacity between 0.2 and 1
+      star.style.opacity = `${Math.random() * 0.3 + 0.1}`; // Very subtle opacity for white background
 
       // Add twinkling animation with random duration and delay
       star.style.setProperty("--duration", `${2 + Math.random() * 3}s`); // 2-5 seconds

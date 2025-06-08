@@ -52,15 +52,15 @@ export default function SpeechDetail() {
         <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
             <Link to="/">
-              <Button variant="outline" size="sm" className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+              <Button variant="outline" size="sm" className="bg-white border-gray-200 text-gray-900 hover:bg-gray-50">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Speeches
               </Button>
             </Link>
           </div>
 
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="border-b border-gray-600 bg-gradient-to-r from-un-blue to-un-light-blue text-white">
+          <Card className="bg-white border-gray-200">
+            <CardHeader className="border-b border-gray-200 bg-gradient-to-r from-un-blue to-un-light-blue text-white">
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-2xl mb-2">{speech.country_name || speech.country_code}</CardTitle>
@@ -97,9 +97,9 @@ export default function SpeechDetail() {
               )}
             </CardHeader>
 
-            <CardContent className="p-8 bg-gray-800">
+            <CardContent className="p-8 bg-white">
               <div className="prose prose-lg max-w-none">
-                <div className="whitespace-pre-wrap text-gray-100 leading-relaxed">{speech.text}</div>
+                <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">{speech.text}</div>
               </div>
             </CardContent>
           </Card>
