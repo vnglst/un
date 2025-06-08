@@ -60,7 +60,7 @@ export default function SpeechDetail() {
           </div>
 
           <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="border-b border-gray-600 bg-gradient-to-r from-un-blue to-un-dark-blue text-white">
+            <CardHeader className="border-b border-gray-600 bg-gradient-to-r from-un-blue to-un-light-blue text-white">
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-2xl mb-2">{speech.country_name || speech.country_code}</CardTitle>
