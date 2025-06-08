@@ -1,25 +1,34 @@
-import { getSpeechById, Speech } from "~/lib/database";
-import { useLoaderData } from "react-router";
+import { useLoaderData, Link } from "react-router";
+import { getSpeechById, type Speech } from "~/lib/database";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Calendar, User, MapPin, FileText, ArrowLeft } from "lucide-react";
-import { Link } from "react-router";
 
 type LoaderData = {
   speech: Speech;
 };
 
-export function meta() {
+export function meta({ data }: { data?: LoaderData }) {
   return [
-    { title: "UN General Assembly Speech" },
-    { name: "description", content: "Speech from the UN General Assembly" },
+    { title: data?.speech ? `Speech by ${data.speech.speaker} - UN General Assembly` : "Speech - UN General Assembly" },
+    {
+      name: "description",
+      content: data?.speech
+        ? `Speech by ${data.speech.speaker} from ${data.speech.country} at the UN General Assembly`
+        : "Speech from the UN General Assembly",
+    },
   ];
 }
 
-export async function loader({ params }: { params: any }) {
-  const speechId = parseInt(params.id);
+export async function loader({ params }: { params: { id: string } }): Promise<LoaderData> {
+  const speechId = parseInt(params.id, 10);
+
+  if (isNaN(speechId)) {
+    throw new Response("Invalid speech ID", { status: 400 });
+  }
+
   const speech = getSpeechById(speechId);
 
   if (!speech) {

@@ -24,6 +24,7 @@
     "better-sqlite3": "^11.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "isbot": "^5",
     "lucide-react": "^0.513.0",
     "postcss": "^8.5.4",
     "react": "^19.1.0",
@@ -35,6 +36,7 @@
     "vite": "^6.3.5"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13"
+    "@types/better-sqlite3": "^7.6.13",
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }

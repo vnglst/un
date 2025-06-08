@@ -1,5 +1,5 @@
-import { getAllSpeeches, Speech, PaginationInfo } from "~/lib/database";
-import { useLoaderData } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
+import { getAllSpeeches, type Speech, type PaginationInfo } from "~/lib/database";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
 import SpeechCard from "~/components/speech-card";
@@ -13,26 +13,27 @@ type LoaderData = {
 export function meta() {
   return [
     { title: "UN General Assembly Speeches" },
-    { name: "description", content: "Browse and search speeches from the UN General Assembly" },
+    {
+      name: "description",
+      content:
+        "Browse and search speeches from the UN General Assembly. Explore thousands of historical speeches and statements.",
+    },
   ];
 }
 
-export async function loader({ request }: { request: Request }) {
+export async function loader({ request }: { request: Request }): Promise<LoaderData> {
   const url = new URL(request.url);
-  const page = parseInt(url.searchParams.get("page") || "1");
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
 
-  const result = getAllSpeeches(page, 20);
-
-  return {
-    ...result,
-  };
+  return getAllSpeeches(page, 20);
 }
 
 export default function Home() {
   const { speeches, pagination } = useLoaderData<LoaderData>();
+  const navigate = useNavigate();
 
   const handlePageChange = (page: number) => {
-    window.location.href = `/?page=${page}`;
+    navigate(`/?page=${page}`);
   };
 
   return (

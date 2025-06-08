@@ -1,27 +1,56 @@
 import { jsx, jsxs, Fragment } from "react/jsx-runtime";
-import { ServerRouter, UNSAFE_withComponentProps, Outlet, Meta, Links, ScrollRestoration, Scripts, Link, useSearchParams, data } from "react-router";
-import { renderToString } from "react-dom/server";
+import { PassThrough } from "node:stream";
+import { createReadableStreamFromReadable } from "@react-router/node";
+import { ServerRouter, UNSAFE_withComponentProps, Outlet, UNSAFE_withErrorBoundaryProps, isRouteErrorResponse, Meta, Links, ScrollRestoration, Scripts, Link, useLoaderData, useNavigate } from "react-router";
+import { isbot } from "isbot";
+import { renderToPipeableStream } from "react-dom/server";
 import Database from "better-sqlite3";
 import { join } from "path";
+import { Globe, BookOpen, Search, Calendar, FileText, User, ChevronLeft, ChevronRight, ArrowLeft, MapPin } from "lucide-react";
 import * as React from "react";
-import { useState } from "react";
-import { Globe, BookOpen, Search, Calendar, FileText, User, ChevronLeft, ChevronRight, Filter, ArrowLeft, MapPin } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { cva } from "class-variance-authority";
-function handleRequest(request, responseStatusCode, responseHeaders, routerContext) {
-  const html = renderToString(/* @__PURE__ */ jsx(ServerRouter, { context: routerContext, url: request.url }));
-  return new Response(`<!DOCTYPE html>${html}`, {
-    status: responseStatusCode,
-    headers: {
-      ...Object.fromEntries(responseHeaders),
-      "Content-Type": "text/html"
-    }
+const streamTimeout = 5e3;
+function handleRequest(request, responseStatusCode, responseHeaders, routerContext, loadContext) {
+  return new Promise((resolve, reject) => {
+    let shellRendered = false;
+    let userAgent = request.headers.get("user-agent");
+    let readyOption = userAgent && isbot(userAgent) || routerContext.isSpaMode ? "onAllReady" : "onShellReady";
+    const { pipe, abort } = renderToPipeableStream(
+      /* @__PURE__ */ jsx(ServerRouter, { context: routerContext, url: request.url }),
+      {
+        [readyOption]() {
+          shellRendered = true;
+          const body = new PassThrough();
+          const stream = createReadableStreamFromReadable(body);
+          responseHeaders.set("Content-Type", "text/html");
+          resolve(
+            new Response(stream, {
+              headers: responseHeaders,
+              status: responseStatusCode
+            })
+          );
+          pipe(body);
+        },
+        onShellError(error) {
+          reject(error);
+        },
+        onError(error) {
+          responseStatusCode = 500;
+          if (shellRendered) {
+            console.error(error);
+          }
+        }
+      }
+    );
+    setTimeout(abort, streamTimeout + 1e3);
   });
 }
 const entryServer = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  default: handleRequest
+  default: handleRequest,
+  streamTimeout
 }, Symbol.toStringTag, { value: "Module" }));
 const links = () => [{
   rel: "preconnect",
@@ -54,46 +83,42 @@ function Layout({
 const root = UNSAFE_withComponentProps(function App() {
   return /* @__PURE__ */ jsx(Outlet, {});
 });
+const ErrorBoundary = UNSAFE_withErrorBoundaryProps(function ErrorBoundary2({
+  error
+}) {
+  let message = "Oops!";
+  let details = "An unexpected error occurred.";
+  let stack;
+  if (isRouteErrorResponse(error)) {
+    message = error.status === 404 ? "404" : "Error";
+    details = error.status === 404 ? "The requested page could not be found." : error.statusText || details;
+  }
+  return /* @__PURE__ */ jsxs("main", {
+    className: "pt-16 p-4 container mx-auto",
+    children: [/* @__PURE__ */ jsx("h1", {
+      children: message
+    }), /* @__PURE__ */ jsx("p", {
+      children: details
+    }), stack]
+  });
+});
 const route0 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
+  ErrorBoundary,
   Layout,
   default: root,
   links
 }, Symbol.toStringTag, { value: "Module" }));
 const db = new Database(join(process.cwd(), "un_speeches.db"));
-function getAllSpeeches(page = 1, limit = 20, filters = {}) {
+function getAllSpeeches(page = 1, limit = 20) {
   let query = "SELECT * FROM speeches";
   let countQuery = "SELECT COUNT(*) as total FROM speeches";
-  const params = [];
-  const conditions = [];
-  if (filters.country) {
-    conditions.push("(country_name LIKE ? OR country_code LIKE ?)");
-    params.push(`%${filters.country}%`, `%${filters.country}%`);
-  }
-  if (filters.year) {
-    conditions.push("year = ?");
-    params.push(filters.year);
-  }
-  if (filters.session) {
-    conditions.push("session = ?");
-    params.push(filters.session);
-  }
-  if (filters.search) {
-    conditions.push("(text LIKE ? OR speaker LIKE ? OR post LIKE ?)");
-    params.push(`%${filters.search}%`, `%${filters.search}%`, `%${filters.search}%`);
-  }
-  if (conditions.length > 0) {
-    const whereClause = " WHERE " + conditions.join(" AND ");
-    query += whereClause;
-    countQuery += whereClause;
-  }
-  const totalResult = db.prepare(countQuery).get(...params);
+  const totalResult = db.prepare(countQuery).get();
   const total = totalResult.total;
   const totalPages = Math.ceil(total / limit);
   query += " ORDER BY year DESC, session DESC, country_name ASC";
   query += " LIMIT ? OFFSET ?";
-  params.push(limit, (page - 1) * limit);
-  const speeches = db.prepare(query).all(...params);
+  const speeches = db.prepare(query).all(limit, (page - 1) * limit);
   return {
     speeches,
     pagination: {
@@ -107,20 +132,6 @@ function getAllSpeeches(page = 1, limit = 20, filters = {}) {
 function getSpeechById(id) {
   const query = "SELECT * FROM speeches WHERE id = ?";
   return db.prepare(query).get(id);
-}
-function getCountries() {
-  const query = "SELECT DISTINCT country_name, country_code FROM speeches WHERE country_name IS NOT NULL ORDER BY country_name ASC";
-  return db.prepare(query).all();
-}
-function getYears() {
-  const query = "SELECT DISTINCT year FROM speeches WHERE year IS NOT NULL ORDER BY year DESC";
-  const results = db.prepare(query).all();
-  return results.map((r) => r.year);
-}
-function getSessions() {
-  const query = "SELECT DISTINCT session FROM speeches WHERE session IS NOT NULL ORDER BY session DESC";
-  const results = db.prepare(query).all();
-  return results.map((r) => r.session);
 }
 function Header() {
   return /* @__PURE__ */ jsx("header", { className: "bg-un-blue text-white shadow-lg", children: /* @__PURE__ */ jsx("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between h-16", children: [
@@ -306,120 +317,30 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
     )
   ] });
 }
-const Input = React.forwardRef(({ className, type, ...props }, ref) => {
-  return /* @__PURE__ */ jsx(
-    "input",
-    {
-      type,
-      className: cn(
-        "flex h-9 w-full rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-un-blue disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      ),
-      ref,
-      ...props
-    }
-  );
-});
-Input.displayName = "Input";
-const Select = React.forwardRef(({ className, children, ...props }, ref) => {
-  return /* @__PURE__ */ jsx(
-    "select",
-    {
-      className: cn(
-        "flex h-9 w-full rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-un-blue disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      ),
-      ref,
-      ...props,
-      children
-    }
-  );
-});
-Select.displayName = "Select";
 function meta$1() {
   return [{
     title: "UN General Assembly Speeches"
   }, {
     name: "description",
-    content: "Browse and search speeches from the UN General Assembly"
+    content: "Browse and search speeches from the UN General Assembly. Explore thousands of historical speeches and statements."
   }];
 }
 async function loader$1({
   request
 }) {
   const url = new URL(request.url);
-  const page = parseInt(url.searchParams.get("page") || "1");
-  const country = url.searchParams.get("country") || "";
-  const year = url.searchParams.get("year") ? parseInt(url.searchParams.get("year")) : void 0;
-  const session = url.searchParams.get("session") ? parseInt(url.searchParams.get("session")) : void 0;
-  const search = url.searchParams.get("search") || "";
-  const filters = {
-    country,
-    year,
-    session,
-    search
-  };
-  const result = getAllSpeeches(page, 20, filters);
-  const countries = getCountries();
-  const years = getYears();
-  const sessions = getSessions();
-  return {
-    ...result,
-    countries,
-    years,
-    sessions,
-    currentFilters: filters
-  };
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
+  return getAllSpeeches(page, 20);
 }
-const home = UNSAFE_withComponentProps(function Home({
-  loaderData
-}) {
-  var _a, _b;
+const home = UNSAFE_withComponentProps(function Home() {
   const {
     speeches,
-    pagination,
-    countries,
-    years,
-    sessions,
-    currentFilters
-  } = loaderData;
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [filters, setFilters] = useState({
-    country: currentFilters.country || "",
-    year: ((_a = currentFilters.year) == null ? void 0 : _a.toString()) || "",
-    session: ((_b = currentFilters.session) == null ? void 0 : _b.toString()) || "",
-    search: currentFilters.search || ""
-  });
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-  const applyFilters = () => {
-    const newParams = new URLSearchParams();
-    if (filters.country) newParams.set("country", filters.country);
-    if (filters.year) newParams.set("year", filters.year);
-    if (filters.session) newParams.set("session", filters.session);
-    if (filters.search) newParams.set("search", filters.search);
-    newParams.set("page", "1");
-    setSearchParams(newParams);
-  };
-  const clearFilters = () => {
-    setFilters({
-      country: "",
-      year: "",
-      session: "",
-      search: ""
-    });
-    setSearchParams({});
-  };
+    pagination
+  } = useLoaderData();
+  const navigate = useNavigate();
   const handlePageChange = (page) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("page", page.toString());
-    setSearchParams(newParams);
+    navigate(`/?page=${page}`);
   };
-  const hasActiveFilters = filters.country || filters.year || filters.session || filters.search;
   return /* @__PURE__ */ jsxs("div", {
     className: "min-h-screen flex flex-col bg-gray-50",
     children: [/* @__PURE__ */ jsx(Header, {}), /* @__PURE__ */ jsxs("main", {
@@ -431,87 +352,7 @@ const home = UNSAFE_withComponentProps(function Home({
           children: "UN General Assembly Speeches"
         }), /* @__PURE__ */ jsxs("p", {
           className: "text-gray-600",
-          children: ["Explore ", pagination.total, " speeches from ", years.length, " years of United Nations General Assembly sessions"]
-        })]
-      }), /* @__PURE__ */ jsxs("div", {
-        className: "bg-white rounded-lg shadow-sm border p-6 mb-8",
-        children: [/* @__PURE__ */ jsxs("div", {
-          className: "flex items-center space-x-2 mb-4",
-          children: [/* @__PURE__ */ jsx(Filter, {
-            className: "h-5 w-5 text-gray-500"
-          }), /* @__PURE__ */ jsx("h2", {
-            className: "text-lg font-semibold",
-            children: "Filters"
-          })]
-        }), /* @__PURE__ */ jsxs("div", {
-          className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4",
-          children: [/* @__PURE__ */ jsxs("div", {
-            children: [/* @__PURE__ */ jsx("label", {
-              className: "block text-sm font-medium text-gray-700 mb-1",
-              children: "Search Text"
-            }), /* @__PURE__ */ jsx(Input, {
-              placeholder: "Search speeches...",
-              value: filters.search,
-              onChange: (e) => handleFilterChange("search", e.target.value)
-            })]
-          }), /* @__PURE__ */ jsxs("div", {
-            children: [/* @__PURE__ */ jsx("label", {
-              className: "block text-sm font-medium text-gray-700 mb-1",
-              children: "Country"
-            }), /* @__PURE__ */ jsxs(Select, {
-              value: filters.country,
-              onChange: (e) => handleFilterChange("country", e.target.value),
-              children: [/* @__PURE__ */ jsx("option", {
-                value: "",
-                children: "All Countries"
-              }), countries.map((country) => /* @__PURE__ */ jsx("option", {
-                value: country.country_name,
-                children: country.country_name
-              }, country.country_code))]
-            })]
-          }), /* @__PURE__ */ jsxs("div", {
-            children: [/* @__PURE__ */ jsx("label", {
-              className: "block text-sm font-medium text-gray-700 mb-1",
-              children: "Year"
-            }), /* @__PURE__ */ jsxs(Select, {
-              value: filters.year,
-              onChange: (e) => handleFilterChange("year", e.target.value),
-              children: [/* @__PURE__ */ jsx("option", {
-                value: "",
-                children: "All Years"
-              }), years.map((year) => /* @__PURE__ */ jsx("option", {
-                value: year,
-                children: year
-              }, year))]
-            })]
-          }), /* @__PURE__ */ jsxs("div", {
-            children: [/* @__PURE__ */ jsx("label", {
-              className: "block text-sm font-medium text-gray-700 mb-1",
-              children: "Session"
-            }), /* @__PURE__ */ jsxs(Select, {
-              value: filters.session,
-              onChange: (e) => handleFilterChange("session", e.target.value),
-              children: [/* @__PURE__ */ jsx("option", {
-                value: "",
-                children: "All Sessions"
-              }), sessions.map((session) => /* @__PURE__ */ jsxs("option", {
-                value: session,
-                children: ["Session ", session]
-              }, session))]
-            })]
-          })]
-        }), /* @__PURE__ */ jsxs("div", {
-          className: "flex space-x-2",
-          children: [/* @__PURE__ */ jsxs(Button, {
-            onClick: applyFilters,
-            children: [/* @__PURE__ */ jsx(Search, {
-              className: "h-4 w-4 mr-2"
-            }), "Apply Filters"]
-          }), hasActiveFilters && /* @__PURE__ */ jsx(Button, {
-            variant: "outline",
-            onClick: clearFilters,
-            children: "Clear Filters"
-          })]
+          children: ["Explore ", pagination.total, " speeches from the United Nations General Assembly"]
         })]
       }), /* @__PURE__ */ jsxs("div", {
         className: "mb-6",
@@ -522,17 +363,12 @@ const home = UNSAFE_withComponentProps(function Home({
           className: "text-gray-600",
           children: ["Showing page ", pagination.page, " of ", pagination.totalPages]
         })]
-      }), speeches.length === 0 ? /* @__PURE__ */ jsxs("div", {
+      }), speeches.length === 0 ? /* @__PURE__ */ jsx("div", {
         className: "text-center py-12",
-        children: [/* @__PURE__ */ jsx("p", {
+        children: /* @__PURE__ */ jsx("p", {
           className: "text-gray-500 text-lg",
-          children: "No speeches found matching your criteria."
-        }), /* @__PURE__ */ jsx(Button, {
-          variant: "outline",
-          onClick: clearFilters,
-          className: "mt-4",
-          children: "Clear Filters"
-        })]
+          children: "No speeches found."
+        })
       }) : /* @__PURE__ */ jsxs(Fragment, {
         children: [/* @__PURE__ */ jsx("div", {
           className: "grid gap-6 mb-8",
@@ -555,27 +391,27 @@ const route1 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   meta: meta$1
 }, Symbol.toStringTag, { value: "Module" }));
 function meta({
-  loaderData
+  data
 }) {
-  if (!loaderData.speech) {
-    return [{
-      title: "Speech Not Found"
-    }];
-  }
   return [{
-    title: `${loaderData.speech.country_name} - ${loaderData.speech.year} UN Speech`
+    title: (data == null ? void 0 : data.speech) ? `Speech by ${data.speech.speaker} - UN General Assembly` : "Speech - UN General Assembly"
   }, {
     name: "description",
-    content: `Speech by ${loaderData.speech.speaker || loaderData.speech.country_name} at the ${loaderData.speech.year} UN General Assembly, Session ${loaderData.speech.session}`
+    content: (data == null ? void 0 : data.speech) ? `Speech by ${data.speech.speaker} from ${data.speech.country} at the UN General Assembly` : "Speech from the UN General Assembly"
   }];
 }
 async function loader({
   params
 }) {
-  const speechId = parseInt(params.id);
+  const speechId = parseInt(params.id, 10);
+  if (isNaN(speechId)) {
+    throw new Response("Invalid speech ID", {
+      status: 400
+    });
+  }
   const speech = getSpeechById(speechId);
   if (!speech) {
-    throw data("Speech not found", {
+    throw new Response("Speech not found", {
       status: 404
     });
   }
@@ -583,12 +419,10 @@ async function loader({
     speech
   };
 }
-const speech_$id = UNSAFE_withComponentProps(function SpeechDetail({
-  loaderData
-}) {
+const speech_$id = UNSAFE_withComponentProps(function SpeechDetail() {
   const {
     speech
-  } = loaderData;
+  } = useLoaderData();
   return /* @__PURE__ */ jsxs("div", {
     className: "min-h-screen flex flex-col bg-gray-50",
     children: [/* @__PURE__ */ jsx(Header, {}), /* @__PURE__ */ jsxs("main", {
@@ -688,7 +522,7 @@ const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   loader,
   meta
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-DIsBjC9v.js", "imports": ["/assets/chunk-NL6KNZEE-B6_Ba6Pt.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/root-C9gSSV-I.js", "imports": ["/assets/chunk-NL6KNZEE-B6_Ba6Pt.js"], "css": ["/assets/root-BsAPpmhM.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/home": { "id": "routes/home", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-BQR2PiNj.js", "imports": ["/assets/chunk-NL6KNZEE-B6_Ba6Pt.js", "/assets/button--G0Y8acw.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/speech.$id": { "id": "routes/speech.$id", "parentId": "root", "path": "speech/:id", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/speech._id-Mk93KBTo.js", "imports": ["/assets/chunk-NL6KNZEE-B6_Ba6Pt.js", "/assets/button--G0Y8acw.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-345db565.js", "version": "345db565", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-CCbnMe67.js", "imports": ["/assets/chunk-NL6KNZEE-De4EO_kh.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": true, "module": "/assets/root-42h5rxgh.js", "imports": ["/assets/chunk-NL6KNZEE-De4EO_kh.js"], "css": ["/assets/root-CRsqieUC.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/home": { "id": "routes/home", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-Di-0adzr.js", "imports": ["/assets/chunk-NL6KNZEE-De4EO_kh.js", "/assets/button-BNJ3Ouei.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/speech.$id": { "id": "routes/speech.$id", "parentId": "root", "path": "speech/:id", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/speech._id-D9ihmH7k.js", "imports": ["/assets/chunk-NL6KNZEE-De4EO_kh.js", "/assets/button-BNJ3Ouei.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-6813f7e3.js", "version": "6813f7e3", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_middleware": false, "unstable_optimizeDeps": false, "unstable_splitRouteModules": false, "unstable_subResourceIntegrity": false, "unstable_viteEnvironmentApi": false };
