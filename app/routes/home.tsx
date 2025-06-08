@@ -12,7 +12,6 @@ import {
 } from "~/lib/database";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
-import StarField from "~/components/star-field";
 import SpeechCard from "~/components/speech-card";
 import Pagination from "~/components/pagination";
 import { Button } from "~/components/ui/button";
@@ -159,9 +158,7 @@ export default function Home() {
 
   return (
     <>
-      <StarField />
-
-      <div className="min-h-screen flex flex-col bg-transparent relative z-10">
+      <div className="min-h-screen flex flex-col bg-white relative z-10">
         <Header />
 
         <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

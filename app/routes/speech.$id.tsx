@@ -2,7 +2,6 @@ import { useLoaderData, Link } from "react-router";
 import { getSpeechById, type Speech } from "~/lib/database";
 import Header from "~/components/header";
 import Footer from "~/components/footer";
-import StarField from "~/components/star-field";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Calendar, User, MapPin, FileText, ArrowLeft } from "lucide-react";
@@ -44,9 +43,7 @@ export default function SpeechDetail() {
 
   return (
     <>
-      <StarField />
-
-      <div className="min-h-screen flex flex-col bg-transparent relative z-10">
+      <div className="min-h-screen flex flex-col bg-white relative z-10">
         <Header />
 
         <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
