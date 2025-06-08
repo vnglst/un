@@ -17,6 +17,10 @@ export default function Header() {
               <BookOpen className="h-4 w-4" />
               <span>Browse</span>
             </Link>
+            <Link to="/globe" className="flex items-center space-x-1 hover:text-un-light-blue transition-colors">
+              <Globe className="h-4 w-4" />
+              <span>Globe</span>
+            </Link>
             <Link to="/search" className="flex items-center space-x-1 hover:text-un-light-blue transition-colors">
               <Search className="h-4 w-4" />
               <span>Search</span>

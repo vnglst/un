@@ -81,3 +81,49 @@ export function getSessions(): number[] {
   const results = db.prepare(query).all() as Array<{ session: number }>;
   return results.map((r) => r.session);
 }
+
+export interface CountrySpeechCount {
+  country_code: string;
+  country_name: string | null;
+  speech_count: number;
+}
+
+export function getCountrySpeechCounts(): CountrySpeechCount[] {
+  const query = `
+    SELECT 
+      country_code,
+      country_name,
+      COUNT(*) as speech_count
+    FROM speeches 
+    WHERE country_code IS NOT NULL
+    GROUP BY country_code, country_name
+    ORDER BY speech_count DESC
+  `;
+  return db.prepare(query).all() as CountrySpeechCount[];
+}
+
+export function getSpeechesByCountryCode(countryCode: string, page: number = 1, limit: number = 20): SpeechesResult {
+  let query = "SELECT * FROM speeches WHERE country_code = ?";
+  let countQuery = "SELECT COUNT(*) as total FROM speeches WHERE country_code = ?";
+
+  // Get total count
+  const totalResult = db.prepare(countQuery).get(countryCode) as { total: number };
+  const total = totalResult.total;
+  const totalPages = Math.ceil(total / limit);
+
+  // Add ordering and pagination
+  query += " ORDER BY year DESC, session DESC";
+  query += " LIMIT ? OFFSET ?";
+
+  const speeches = db.prepare(query).all(countryCode, limit, (page - 1) * limit) as Speech[];
+
+  return {
+    speeches,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+    },
+  };
+}

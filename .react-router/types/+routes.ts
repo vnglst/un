@@ -13,6 +13,14 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/globe": {
+    params: {};
+  };
+  "/country/:code": {
+    params: {
+      "code": string;
+    };
+  };
   "/speech/:id": {
     params: {
       "id": string;
@@ -23,11 +31,19 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/speech/:id";
+    page: "/" | "/globe" | "/country/:code" | "/speech/:id";
   };
   "routes/home.tsx": {
     id: "routes/home";
     page: "/";
+  };
+  "routes/globe.tsx": {
+    id: "routes/globe";
+    page: "/globe";
+  };
+  "routes/country.$code.tsx": {
+    id: "routes/country.$code";
+    page: "/country/:code";
   };
   "routes/speech.$id.tsx": {
     id: "routes/speech.$id";

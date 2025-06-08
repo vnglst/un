@@ -16,7 +16,7 @@ export function meta({ data }: { data?: LoaderData }) {
     {
       name: "description",
       content: data?.speech
-        ? `Speech by ${data.speech.speaker} from ${data.speech.country} at the UN General Assembly`
+        ? `Speech by ${data.speech.speaker} from ${data.speech.country_name} at the UN General Assembly`
         : "Speech from the UN General Assembly",
     },
   ];
