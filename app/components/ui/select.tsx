@@ -1,7 +1,9 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
 
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {}
+export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  children: React.ReactNode;
+}
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ className, children, ...props }, ref) => {
   return (
@@ -19,4 +21,14 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ className, ch
 });
 Select.displayName = "Select";
 
-export { Select };
+// For compatibility with the search component, create these simple wrapper components
+const SelectTrigger = ({ children, className, ...props }: any) => children;
+const SelectValue = ({ placeholder }: { placeholder?: string }) => null;
+const SelectContent = ({ children }: { children: React.ReactNode }) => children;
+const SelectItem = ({ value, children, ...props }: { value: string; children: React.ReactNode }) => (
+  <option value={value} {...props}>
+    {children}
+  </option>
+);
+
+export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };

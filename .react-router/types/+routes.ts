@@ -13,6 +13,9 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/search": {
+    params: {};
+  };
   "/globe": {
     params: {};
   };
@@ -31,11 +34,15 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/globe" | "/country/:code" | "/speech/:id";
+    page: "/" | "/search" | "/globe" | "/country/:code" | "/speech/:id";
   };
   "routes/home.tsx": {
     id: "routes/home";
     page: "/";
+  };
+  "routes/search.tsx": {
+    id: "routes/search";
+    page: "/search";
   };
   "routes/globe.tsx": {
     id: "routes/globe";

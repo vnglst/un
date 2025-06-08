@@ -127,3 +127,56 @@ export function getSpeechesByCountryCode(countryCode: string, page: number = 1, 
     },
   };
 }
+
+export function searchSpeeches(filters: SearchFilters = {}, page: number = 1, limit: number = 20): SpeechesResult {
+  let whereConditions: string[] = [];
+  let queryParams: any[] = [];
+
+  // Build WHERE conditions based on filters
+  if (filters.search && filters.search.trim()) {
+    whereConditions.push("(text LIKE ? OR speaker LIKE ? OR country_name LIKE ?)");
+    const searchTerm = `%${filters.search.trim()}%`;
+    queryParams.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  if (filters.country) {
+    whereConditions.push("country_code = ?");
+    queryParams.push(filters.country);
+  }
+
+  if (filters.year) {
+    whereConditions.push("year = ?");
+    queryParams.push(filters.year);
+  }
+
+  if (filters.session) {
+    whereConditions.push("session = ?");
+    queryParams.push(filters.session);
+  }
+
+  // Build the WHERE clause
+  const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+
+  // Build count query
+  const countQuery = `SELECT COUNT(*) as total FROM speeches ${whereClause}`;
+  const totalResult = db.prepare(countQuery).get(...queryParams) as { total: number };
+  const total = totalResult.total;
+  const totalPages = Math.ceil(total / limit);
+
+  // Build main query with ordering and pagination
+  let query = `SELECT * FROM speeches ${whereClause}`;
+  query += " ORDER BY year DESC, session DESC, country_name ASC";
+  query += " LIMIT ? OFFSET ?";
+
+  const speeches = db.prepare(query).all(...queryParams, limit, (page - 1) * limit) as Speech[];
+
+  return {
+    speeches,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+    },
+  };
+}
