@@ -4,6 +4,8 @@ import Header from "~/components/header";
 import Footer from "~/components/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useEffect, useRef } from "react";
+import topologyData from "~/lib/topology.json";
+import { iso2ToIso3 } from "~/lib/country-codes";
 
 type LoaderData = {
   countryCounts: CountrySpeechCount[];
@@ -22,6 +24,7 @@ export function meta() {
 
 export async function loader(): Promise<LoaderData> {
   const countryCounts = getCountrySpeechCounts();
+  console.log("Loader - Top 3 countries:", countryCounts.slice(0, 3));
   return { countryCounts };
 }
 
@@ -35,6 +38,9 @@ declare global {
 export default function Globe() {
   const { countryCounts } = useLoaderData<LoaderData>();
   const globeRef = useRef<HTMLDivElement>(null);
+
+  // Debug: Check what we received
+  console.log("Component - countryCounts received:", countryCounts.slice(0, 3));
 
   useEffect(() => {
     // Load D3 and TopoJSON from CDN
@@ -66,7 +72,7 @@ export default function Globe() {
       initializeGlobe();
     };
 
-    const initializeGlobe = async () => {
+    const initializeGlobe = () => {
       if (!globeRef.current || !window.d3 || !window.topojson) return;
 
       const container = globeRef.current;
@@ -110,7 +116,7 @@ export default function Globe() {
 
       // Load and render world data
       try {
-        const worldData = await window.d3.json("/data/topology_with_iso_code.json");
+        const worldData = topologyData;
         const countries = window.topojson.feature(worldData, worldData.objects.countries);
 
         // Render countries
@@ -121,7 +127,10 @@ export default function Globe() {
           .append("path")
           .attr("d", path)
           .attr("fill", (d: any) => {
-            const count = countryLookup.get(d.properties.code) || 0;
+            // Convert 2-letter code to 3-letter code for lookup
+            const iso3Code = iso2ToIso3[d.properties.code];
+            const count = countryLookup.get(iso3Code) || 0;
+
             return count > 0 ? colorScale(count) : "#f3f4f6";
           })
           .attr("stroke", "#ffffff")
@@ -131,7 +140,9 @@ export default function Globe() {
         // Add interactivity
         countryPaths
           .on("mouseover", function (this: any, event: any, d: any) {
-            const count = countryLookup.get(d.properties.code) || 0;
+            // Convert 2-letter code to 3-letter code for lookup
+            const iso3Code = iso2ToIso3[d.properties.code];
+            const count = countryLookup.get(iso3Code) || 0;
             window.d3.select(this).attr("stroke-width", 2).attr("stroke", "#009edb");
 
             // Tooltip
@@ -157,10 +168,12 @@ export default function Globe() {
             window.d3.selectAll(".tooltip").remove();
           })
           .on("click", function (_event: any, d: any) {
-            const count = countryLookup.get(d.properties.code) || 0;
+            // Convert 2-letter code to 3-letter code for lookup
+            const iso3Code = iso2ToIso3[d.properties.code];
+            const count = countryLookup.get(iso3Code) || 0;
             if (count > 0) {
-              // Navigate to country speeches page
-              window.location.href = `/country/${d.properties.code}`;
+              // Navigate to country speeches page using the 3-letter code
+              window.location.href = `/country/${iso3Code}`;
             }
           });
 

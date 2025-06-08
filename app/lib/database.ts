@@ -92,11 +92,11 @@ export function getCountrySpeechCounts(): CountrySpeechCount[] {
   const query = `
     SELECT 
       country_code,
-      country_name,
+      MAX(country_name) as country_name,
       COUNT(*) as speech_count
     FROM speeches 
     WHERE country_code IS NOT NULL
-    GROUP BY country_code, country_name
+    GROUP BY country_code
     ORDER BY speech_count DESC
   `;
   return db.prepare(query).all() as CountrySpeechCount[];
