@@ -31,6 +31,11 @@ export default function StarField() {
       star.style.background = "#ffffff";
       star.style.borderRadius = "50%";
       star.style.opacity = `${Math.random() * 0.8 + 0.2}`; // Random opacity between 0.2 and 1
+
+      // Add twinkling animation with random duration and delay
+      star.style.setProperty("--duration", `${2 + Math.random() * 3}s`); // 2-5 seconds
+      star.style.setProperty("--delay", `${Math.random() * 3}s`); // 0-3 seconds delay
+
       starsContainer.appendChild(star);
     }
   };

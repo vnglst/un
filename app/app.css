@@ -5,3 +5,21 @@
   --color-un-dark-blue: #1f4e79;
   --color-un-light-blue: #4fc3f7;
 }
+
+/* Star twinkling animation */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.star {
+  animation: twinkle var(--duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+}
