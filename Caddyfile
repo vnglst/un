@@ -1,0 +1,24 @@
+# Basic configuration for local development
+:80 {
+	reverse_proxy un-speeches:3000
+}
+
+# For production, replace with your domain:
+# yourdomain.com {
+#     reverse_proxy un-speeches:3000
+#     
+#     # Optional: Enable compression
+#     encode gzip
+#     
+#     # Optional: Add security headers
+#     header {
+#         # Enable HSTS
+#         Strict-Transport-Security max-age=31536000;
+#         # Prevent MIME sniffing
+#         X-Content-Type-Options nosniff
+#         # Prevent clickjacking
+#         X-Frame-Options DENY
+#         # Enable XSS protection
+#         X-XSS-Protection "1; mode=block"
+#     }
+# }
