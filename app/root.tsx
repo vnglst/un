@@ -8,6 +8,7 @@ import {
 } from 'react-router'
 import type { LinksFunction } from 'react-router'
 import { logger } from '~/lib/logger'
+import ErrorPage from '~/components/error-page'
 
 import './app.css'
 
@@ -65,6 +66,26 @@ export function ErrorBoundary({ error }: { error: unknown }) {
       message,
       details,
     })
+
+    // Handle 404 errors specifically
+    if (error.status === 404) {
+      return (
+        <ErrorPage
+          title="Page Not Found"
+          message="404 - The page you're looking for doesn't exist"
+          details="The page you're looking for doesn't exist. It might have been moved, deleted, or you entered the wrong URL."
+        />
+      )
+    }
+
+    // Handle other HTTP errors
+    return (
+      <ErrorPage
+        title={`Error ${error.status}`}
+        message={error.statusText || 'An error occurred'}
+        details={details}
+      />
+    )
   } else if (error instanceof Error) {
     logger.error('Application error boundary triggered', error, {
       errorName: error.name,
@@ -75,21 +96,27 @@ export function ErrorBoundary({ error }: { error: unknown }) {
       details = error.message
       stack = error.stack
     }
+
+    return (
+      <ErrorPage
+        title="Application Error"
+        message={error.name || 'An unexpected error occurred'}
+        details={details}
+        showStack={import.meta.env.DEV}
+        stack={stack}
+      />
+    )
   } else {
     logger.error('Unknown error in error boundary', undefined, {
       error: String(error),
     })
-  }
 
-  return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
-    </main>
-  )
+    return (
+      <ErrorPage
+        title="Unknown Error"
+        message="Something unexpected happened"
+        details="An unknown error occurred. Please try refreshing the page or return to the homepage."
+      />
+    )
+  }
 }

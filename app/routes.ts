@@ -6,4 +6,5 @@ export default [
   route('country/:code', 'routes/country.$code.tsx'),
   route('speech/:id', 'routes/speech.$id.tsx'),
   route('health', 'routes/health.tsx'),
+  route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig
