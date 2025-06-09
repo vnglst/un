@@ -25,8 +25,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 Select.displayName = 'Select'
 
 // For compatibility with the search component, create these simple wrapper components
-const SelectTrigger = ({ children, className, ...props }: any) => children
-const SelectValue = ({ placeholder }: { placeholder?: string }) => null
+const SelectTrigger = ({ children }: { children: React.ReactNode }) => children
+const SelectValue = () => null
 const SelectContent = ({ children }: { children: React.ReactNode }) => children
 const SelectItem = ({
   value,
