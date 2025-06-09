@@ -21,6 +21,6 @@ services:
           'http://localhost:3000/health',
         ]
       interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 40s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
