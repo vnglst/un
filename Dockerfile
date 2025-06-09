@@ -28,8 +28,8 @@ RUN npm run build
 # Production stage
 FROM node:22-alpine AS runtime
 
-# Install sqlite for runtime
-RUN apk add --no-cache sqlite
+# Install sqlite and curl for runtime (before switching to non-root user)
+RUN apk add --no-cache sqlite curl
 
 # Create app user for security
 RUN addgroup --system --gid 1001 nodejs
@@ -65,7 +65,7 @@ ENV HOST=0.0.0.0
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD curl -f http://localhost:3000/health || exit 1
 
 # Start the application
 CMD ["npm", "start"]

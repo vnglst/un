@@ -5,4 +5,5 @@ export default [
   route('globe', 'routes/globe.tsx'),
   route('country/:code', 'routes/country.$code.tsx'),
   route('speech/:id', 'routes/speech.$id.tsx'),
+  route('health', 'routes/health.tsx'),
 ] satisfies RouteConfig

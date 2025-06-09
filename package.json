@@ -14,7 +14,12 @@
     "format": "prettier --write \"app/**/*.{ts,tsx,js,jsx}\"",
     "format:check": "prettier --check \"app/**/*.{ts,tsx,js,jsx}\"",
     "knip": "knip",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run knip"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run knip",
+    "docker:build": "docker build -t un-speeches-browser .",
+    "docker:run": "docker run -p 3000:3000 --name un-speeches-container un-speeches-browser",
+    "docker:dev": "npm run docker:build && npm run docker:run",
+    "docker:stop": "docker stop un-speeches-container && docker rm un-speeches-container",
+    "docker:clean": "docker system prune -f && docker image prune -f"
   },
   "keywords": [],
   "author": "",

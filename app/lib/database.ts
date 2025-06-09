@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
 import { join } from 'path'
-import { existsSync, copyFileSync, mkdirSync } from 'fs'
+import { existsSync, copyFileSync, mkdirSync, statSync } from 'fs'
 import { logger, timeOperation, type LogContext } from './logger'
 
 // In production, use data directory for mounted volumes; in development, use root
@@ -24,8 +24,66 @@ if (!isDevelopment && !existsSync(dbPath)) {
 
 logger.info('Initializing database connection', { path: dbPath })
 
-const db = new Database(dbPath)
+// Log database file size
+if (existsSync(dbPath)) {
+  const stats = statSync(dbPath)
+  const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
+  logger.info('Database file found', {
+    path: dbPath,
+    sizeMB: `${sizeMB} MB`,
+    lastModified: stats.mtime.toISOString(),
+  })
+} else {
+  logger.error('Database file not found', { path: dbPath })
+  throw new Error(`Database file not found at ${dbPath}`)
+}
+
+const db = new Database(dbPath, { readonly: true })
 logger.info('Database connection established')
+
+// Health check functions
+export function isDatabaseHealthy(): boolean {
+  try {
+    const result = db.prepare('SELECT 1 as test').get() as { test: number }
+    return result?.test === 1
+  } catch (error) {
+    logger.error('Database health check failed', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return false
+  }
+}
+
+export function getDatabaseStats(): {
+  healthy: boolean
+  speechCount?: number
+  sizeMB?: string
+  error?: string
+} {
+  try {
+    if (!isDatabaseHealthy()) {
+      return { healthy: false, error: 'Database connection failed' }
+    }
+
+    const countResult = db
+      .prepare('SELECT COUNT(*) as count FROM speeches')
+      .get() as {
+      count: number
+    }
+    const stats = statSync(dbPath)
+    const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
+
+    return {
+      healthy: true,
+      speechCount: countResult.count,
+      sizeMB: `${sizeMB} MB`,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    logger.error('Failed to get database stats', { error: errorMessage })
+    return { healthy: false, error: errorMessage }
+  }
+}
 
 // Initialize FTS table and triggers on database connection
 function initializeFTS(): void {
