@@ -179,12 +179,7 @@ export default function Home() {
                   <SearchIcon className="h-5 w-5" />
                   <span>Search & Filter</span>
                 </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="text-gray-900 hover:text-un-light-blue"
-                >
+                <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
                   <Filter className="h-4 w-4 mr-1" />
                   {showFilters ? "Hide" : "Show"} Filters
                 </Button>
@@ -308,20 +303,21 @@ export default function Home() {
                 {/* Action buttons */}
                 <div className="flex items-center justify-between pt-4">
                   <div className="flex space-x-2">
-                    <Button type="submit" className="bg-un-blue hover:bg-un-dark-blue">
+                    <Button type="submit">
                       <SearchIcon className="h-4 w-4 mr-2" />
                       Search
                     </Button>
                     {hasActiveFilters && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={clearFilters}
-                        className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 bg-white"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Clear
-                      </Button>
+                      <>
+                        <Button type="button" variant="outline" onClick={clearFilters}>
+                          <X className="h-4 w-4 mr-2" />
+                          Clear
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={() => setShowFilters(!showFilters)}>
+                          <Filter className="h-4 w-4 mr-2" />
+                          {showFilters ? "Hide" : "Show"} Filters
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>

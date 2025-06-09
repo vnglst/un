@@ -40,13 +40,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
 
   return (
     <div className="flex items-center justify-center space-x-2 mt-8">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
-      >
+      <Button variant="outline" size="sm" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
         <ChevronLeft className="h-4 w-4" />
         Previous
       </Button>
@@ -60,11 +54,6 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
               variant={currentPage === page ? "default" : "outline"}
               size="sm"
               onClick={() => onPageChange(page as number)}
-              className={
-                currentPage === page
-                  ? "bg-un-blue hover:bg-un-dark-blue text-white"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-              }
             >
               {page}
             </Button>
@@ -77,7 +66,6 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
       >
         Next
         <ChevronRight className="h-4 w-4" />

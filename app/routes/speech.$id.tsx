@@ -49,7 +49,7 @@ export default function SpeechDetail() {
         <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6">
             <Link to="/">
-              <Button variant="outline" size="sm" className="bg-white border-gray-200 text-gray-900 hover:bg-gray-50">
+              <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Speeches
               </Button>
@@ -103,7 +103,7 @@ export default function SpeechDetail() {
 
           <div className="mt-8 text-center">
             <Link to="/">
-              <Button className="bg-un-blue hover:bg-un-dark-blue">
+              <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to All Speeches
               </Button>

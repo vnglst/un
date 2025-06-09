@@ -72,7 +72,7 @@ export default function CountrySpeeches() {
           {/* Back Navigation */}
           <div className="mb-6">
             <Link to="/globe">
-              <Button variant="outline" className="mb-4 bg-white border-gray-200 text-gray-900 hover:bg-gray-50">
+              <Button variant="outline" className="mb-4">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Globe
               </Button>
@@ -104,7 +104,7 @@ export default function CountrySpeeches() {
               <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 text-lg">No speeches found for {countryName}.</p>
               <Link to="/globe" className="mt-4 inline-block">
-                <Button className="bg-un-blue hover:bg-un-dark-blue">
+                <Button>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Globe
                 </Button>
