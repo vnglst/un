@@ -147,7 +147,11 @@ export function getCountrySpeechCounts(): CountrySpeechCount[] {
   const query = `
     SELECT 
       country_code,
-      MAX(country_name) as country_name,
+      (SELECT country_name 
+       FROM speeches s2 
+       WHERE s2.country_code = speeches.country_code 
+       ORDER BY year DESC, session DESC 
+       LIMIT 1) as country_name,
       COUNT(*) as speech_count
     FROM speeches 
     WHERE country_code IS NOT NULL
