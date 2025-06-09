@@ -3,6 +3,8 @@ version: '3.8'
 services:
   un-speeches:
     build: .
+    expose:
+      - '3000'
     environment:
       - NODE_ENV=production
       - PORT=3000
