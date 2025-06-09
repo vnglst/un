@@ -1,19 +1,24 @@
-version: "3.8"
+version: '3.8'
 
 services:
   un-speeches:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - PORT=3000
-    volumes:
-      # Mount database as volume to persist data
-      - ./un_speeches.db:/app/un_speeches.db:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3000/',
+        ]
       interval: 30s
       timeout: 3s
       retries: 3

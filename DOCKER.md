@@ -30,13 +30,11 @@ docker build -t un-speeches .
 
 # Run the container
 docker run -p 3000:3000 \
-  -v $(pwd)/un_speeches.db:/app/un_speeches.db:ro \
   --name un-speeches \
   un-speeches
 
 # Run in background
 docker run -d -p 3000:3000 \
-  -v $(pwd)/un_speeches.db:/app/un_speeches.db:ro \
   --name un-speeches \
   un-speeches
 ```
@@ -72,15 +70,17 @@ docker run -p 8080:8080 -e PORT=8080 un-speeches
 docker run -p 3000:3000 -e NODE_ENV=production un-speeches
 ```
 
-### Volume Mounts
+## Database
 
-The SQLite database should be mounted as a read-only volume:
+The UN Speeches application uses a SQLite database that is bundled directly into the Docker image during the build process. The database file (`un_speeches.db`) is copied into the container at build time, so no external volume mounting is required.
 
-```bash
-docker run -p 3000:3000 \
-  -v /path/to/your/un_speeches.db:/app/un_speeches.db:ro \
-  un-speeches
-```
+This approach ensures:
+- The database is always available with the application
+- No external file dependencies during deployment
+- Simplified container orchestration
+- Consistent deployments across environments
+
+**Note**: Since the database is read-only for this application (displaying historical UN speeches), the bundled approach is ideal. Any database updates would require rebuilding the Docker image.
 
 ## Health Checks
 
@@ -120,9 +120,10 @@ docker exec -it un-speeches sh
 
 If you're having database issues, ensure:
 
-1. The `un_speeches.db` file exists and is readable
-2. The volume mount path is correct
-3. File permissions allow the container to read the database
+1. The database was properly bundled during the Docker build process
+2. The `un_speeches.db` file exists in your project directory when building
+3. The build process completed successfully without errors
+4. Check the Dockerfile to verify the database copy step succeeded
 
 ### Port conflicts
 
@@ -176,7 +177,7 @@ For high-traffic deployments, consider:
 ## Security Considerations
 
 - The container runs as a non-root user
-- Database is mounted read-only
+- Database is bundled within the image (read-only by design)
 - Nginx includes security headers
 - Rate limiting is configured
 - Regular updates of base images recommended
