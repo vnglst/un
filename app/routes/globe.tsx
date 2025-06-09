@@ -102,13 +102,17 @@ export default function Globe() {
         .zoom<SVGSVGElement, unknown>()
         .scaleExtent(ZOOM_EXTENT)
         .filter(
-          (event: any) =>
-            (!event.button && event.type === 'wheel') ||
-            (event.type === 'touchstart' && event.touches.length > 1)
+          (event: unknown) =>
+            (!(event as Event as MouseEvent).button &&
+              (event as Event).type === 'wheel') ||
+            ((event as Event).type === 'touchstart' &&
+              (event as Event as TouchEvent).touches?.length > 1)
         )
-        .on('zoom', (event: any) => {
+        .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
           projection.scale((event.transform.k * Math.min(width, height)) / 2.5)
-          globe.selectAll('path').attr('d', (d: any) => path(d) || '')
+          globe
+            .selectAll('path')
+            .attr('d', (d: unknown) => path(d as d3.ExtendedFeature) || '')
           globe.selectAll('circle').attr('r', projection.scale())
 
           if (event.transform.k === ZOOM_EXTENT[0]) {
@@ -121,9 +125,11 @@ export default function Globe() {
       const drag = d3
         .drag<SVGSVGElement, unknown>()
         .filter(
-          (event: any) =>
-            (event.type === 'mousedown' && event.button === 0) ||
-            (event.type === 'touchstart' && event.touches.length === 1)
+          (event: unknown) =>
+            ((event as MouseEvent).type === 'mousedown' &&
+              (event as MouseEvent).button === 0) ||
+            ((event as TouchEvent).type === 'touchstart' &&
+              (event as TouchEvent).touches.length === 1)
         )
         .on('start', () => {
           isDragging = true
@@ -133,18 +139,23 @@ export default function Globe() {
             rotationInterval = null
           }
         })
-        .on('drag', (event: any) => {
-          const rotate = projection.rotate()
-          const k = SENSITIVITY / projection.scale()
-          projection.rotate([
-            rotate[0] + event.dx * k,
-            rotate[1] - event.dy * k,
-          ])
-          path.projection(projection)
-          requestAnimationFrame(() => {
-            globe.selectAll('path').attr('d', (d: any) => path(d) || '')
-          })
-        })
+        .on(
+          'drag',
+          (event: d3.D3DragEvent<SVGSVGElement, unknown, unknown>) => {
+            const rotate = projection.rotate()
+            const k = SENSITIVITY / projection.scale()
+            projection.rotate([
+              rotate[0] + event.dx * k,
+              rotate[1] - event.dy * k,
+            ])
+            path.projection(projection)
+            requestAnimationFrame(() => {
+              globe
+                .selectAll('path')
+                .attr('d', (d: unknown) => path(d as d3.ExtendedFeature) || '')
+            })
+          }
+        )
         .on('end', () => {
           isDragging = false
           startRotation()
@@ -187,7 +198,9 @@ export default function Globe() {
                 rotate[1],
                 rotate[2],
               ])
-              globe.selectAll('path').attr('d', (d: any) => path(d) || '')
+              globe
+                .selectAll('path')
+                .attr('d', (d: unknown) => path(d as d3.ExtendedFeature) || '')
             }
           }, 50)
         }
@@ -195,11 +208,12 @@ export default function Globe() {
 
       // Load and render world data
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const worldData = topologyData as any
         const countries = topojson.feature(
           worldData,
           worldData.objects.countries
-        ) as any
+        ) as { features: Array<{ properties: { code: string; name: string } }> }
 
         // Render countries
         const countryPaths = globe
@@ -207,11 +221,14 @@ export default function Globe() {
           .data(countries.features)
           .enter()
           .append('path')
-          .attr('d', (d: any) => path(d) || '')
-          .attr('fill', (d: any) => {
+          .attr('d', (d: unknown) => path(d as d3.ExtendedFeature) || '')
+          .attr('fill', (d: unknown) => {
             // Convert 2-letter code to 3-letter code for lookup
             const iso3Code =
-              iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3]
+              iso2ToIso3[
+                (d as { properties: { code: string } }).properties
+                  .code as keyof typeof iso2ToIso3
+              ]
             const count = countryLookup.get(iso3Code) || 0
 
             return count > 0 ? colorScale(count) : '#4a5568'
@@ -222,41 +239,53 @@ export default function Globe() {
 
         // Add interactivity
         countryPaths
-          .on('mouseover', function (this: SVGPathElement, event: any, d: any) {
-            // Convert 2-letter code to 3-letter code for lookup
-            const iso3Code =
-              iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3]
-            const count = countryLookup.get(iso3Code) || 0
-            d3.select(this).attr('stroke-width', 2).attr('stroke', '#009edb')
+          .on(
+            'mouseover',
+            function (this: SVGPathElement, event: unknown, d: unknown) {
+              // Convert 2-letter code to 3-letter code for lookup
+              const iso3Code =
+                iso2ToIso3[
+                  (d as { properties: { code: string } }).properties
+                    .code as keyof typeof iso2ToIso3
+                ]
+              const count = countryLookup.get(iso3Code) || 0
+              d3.select(this).attr('stroke-width', 2).attr('stroke', '#009edb')
 
-            // Tooltip
-            d3.select('body')
-              .append('div')
-              .attr('class', 'tooltip')
-              .style('position', 'absolute')
-              .style('background', 'rgba(0, 0, 0, 0.8)')
-              .style('color', 'white')
-              .style('padding', '8px')
-              .style('border-radius', '4px')
-              .style('font-size', '12px')
-              .style('pointer-events', 'none')
-              .style('z-index', '1000')
-              .html(
-                `<strong>${d.properties.name}</strong><br/>${count} speeches`
-              )
-              .style('left', event.pageX + 10 + 'px')
-              .style('top', event.pageY - 10 + 'px')
-          })
+              const mouseEvent = event as MouseEvent
+              // Tooltip
+              d3.select('body')
+                .append('div')
+                .attr('class', 'tooltip')
+                .style('position', 'absolute')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', 'white')
+                .style('padding', '8px')
+                .style('border-radius', '4px')
+                .style('font-size', '12px')
+                .style('pointer-events', 'none')
+                .style('z-index', '1000')
+                .html(
+                  `<strong>${
+                    (d as { properties: { name: string } }).properties.name
+                  }</strong><br/>${count} speeches`
+                )
+                .style('left', mouseEvent.pageX + 10 + 'px')
+                .style('top', mouseEvent.pageY - 10 + 'px')
+            }
+          )
           .on('mouseout', function (this: SVGPathElement) {
             d3.select(this).attr('stroke-width', 0.5).attr('stroke', '#ffffff')
 
             d3.selectAll('.tooltip').remove()
           })
-          .on('click', function (_event: any, d: any) {
+          .on('click', function (_event: unknown, d: unknown) {
             if (!isDragging) {
               // Convert 2-letter code to 3-letter code for lookup
               const iso3Code =
-                iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3]
+                iso2ToIso3[
+                  (d as { properties: { code: string } }).properties
+                    .code as keyof typeof iso2ToIso3
+                ]
               const count = countryLookup.get(iso3Code) || 0
               if (count > 0) {
                 // Stop rotation when navigating

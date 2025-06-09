@@ -95,7 +95,7 @@ export function getAllSpeeches(
   limit: number = 20
 ): SpeechesResult {
   let query = 'SELECT * FROM speeches'
-  let countQuery = 'SELECT COUNT(*) as total FROM speeches'
+  const countQuery = 'SELECT COUNT(*) as total FROM speeches'
 
   // Get total count
   const totalResult = db.prepare(countQuery).get() as { total: number }
@@ -180,7 +180,7 @@ export function getSpeechesByCountryCode(
   limit: number = 20
 ): SpeechesResult {
   let query = 'SELECT * FROM speeches WHERE country_code = ?'
-  let countQuery =
+  const countQuery =
     'SELECT COUNT(*) as total FROM speeches WHERE country_code = ?'
 
   // Get total count
@@ -220,8 +220,8 @@ export function searchSpeeches(
   }
 
   // Otherwise use regular filtering
-  let whereConditions: string[] = []
-  let queryParams: any[] = []
+  const whereConditions: string[] = []
+  const queryParams: (string | number)[] = []
 
   if (filters.country) {
     whereConditions.push('country_code = ?')
@@ -275,8 +275,8 @@ export function searchSpeechesWithFTS(
   page: number = 1,
   limit: number = 20
 ): SpeechesResult {
-  let whereConditions: string[] = []
-  let queryParams: any[] = []
+  const whereConditions: string[] = []
+  const queryParams: (string | number)[] = []
   let joinClause = ''
   let fromClause = 'FROM speeches'
 
@@ -291,21 +291,23 @@ export function searchSpeechesWithFTS(
         // Exact phrase search
         ftsQuery = `"${searchTerm.replace(/"/g, '""')}"`
         break
-      case 'fuzzy':
+      case 'fuzzy': {
         // Split into individual terms for OR search
         const terms = searchTerm
           .split(/\s+/)
           .map((term) => term.replace(/"/g, '""'))
         ftsQuery = terms.join(' OR ')
         break
+      }
       case 'phrase':
-      default:
+      default: {
         // Default phrase search with some flexibility
         const escapedSearchTerm = searchTerm.replace(/"/g, '""')
         ftsQuery = searchTerm.includes(' ')
           ? `"${escapedSearchTerm}"`
           : escapedSearchTerm
         break
+      }
     }
 
     joinClause = 'INNER JOIN speeches_fts ON speeches.id = speeches_fts.rowid'
@@ -443,8 +445,8 @@ export function searchSpeechesWithHighlights(
     }
   }
 
-  let whereConditions: string[] = []
-  let queryParams: any[] = []
+  const whereConditions: string[] = []
+  const queryParams: (string | number)[] = []
 
   const searchTerm = filters.search.trim()
 
@@ -454,19 +456,21 @@ export function searchSpeechesWithHighlights(
     case 'exact':
       ftsQuery = `"${searchTerm.replace(/"/g, '""')}"`
       break
-    case 'fuzzy':
+    case 'fuzzy': {
       const terms = searchTerm
         .split(/\s+/)
         .map((term) => term.replace(/"/g, '""'))
       ftsQuery = terms.join(' OR ')
       break
+    }
     case 'phrase':
-    default:
+    default: {
       const escapedSearchTerm = searchTerm.replace(/"/g, '""')
       ftsQuery = searchTerm.includes(' ')
         ? `"${escapedSearchTerm}"`
         : escapedSearchTerm
       break
+    }
   }
 
   const joinClause =
@@ -501,7 +505,7 @@ export function searchSpeechesWithHighlights(
   const totalPages = Math.ceil(total / limit)
 
   // Build main query with snippets for highlighting
-  let query = `
+  const query = `
     SELECT 
       speeches.*,
       snippet(speeches_fts, 0, '<mark>', '</mark>', '...', 32) as highlighted_text,
