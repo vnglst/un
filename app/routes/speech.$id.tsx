@@ -1,45 +1,53 @@
-import { useLoaderData, Link } from "react-router";
-import { getSpeechById, type Speech } from "~/lib/database";
-import Header from "~/components/header";
-import Footer from "~/components/footer";
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Calendar, User, MapPin, FileText, ArrowLeft } from "lucide-react";
+import { useLoaderData, Link } from 'react-router'
+import { getSpeechById, type Speech } from '~/lib/database'
+import Header from '~/components/header'
+import Footer from '~/components/footer'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Calendar, User, MapPin, FileText, ArrowLeft } from 'lucide-react'
 
 type LoaderData = {
-  speech: Speech;
-};
+  speech: Speech
+}
 
 export function meta({ data }: { data?: LoaderData }) {
   return [
-    { title: data?.speech ? `Speech by ${data.speech.speaker} - UN General Assembly` : "Speech - UN General Assembly" },
     {
-      name: "description",
+      title: data?.speech
+        ? `Speech by ${data.speech.speaker} - UN General Assembly`
+        : 'Speech - UN General Assembly',
+    },
+    {
+      name: 'description',
       content: data?.speech
         ? `Speech by ${data.speech.speaker} from ${data.speech.country_name} at the UN General Assembly`
-        : "Speech from the UN General Assembly",
+        : 'Speech from the UN General Assembly',
     },
-  ];
+  ]
 }
 
-export async function loader({ params }: { params: { id: string } }): Promise<LoaderData> {
-  const speechId = parseInt(params.id, 10);
+export async function loader({
+  params,
+}: {
+  params: { id: string }
+}): Promise<LoaderData> {
+  const speechId = parseInt(params.id, 10)
 
   if (isNaN(speechId)) {
-    throw new Response("Invalid speech ID", { status: 400 });
+    throw new Response('Invalid speech ID', { status: 400 })
   }
 
-  const speech = getSpeechById(speechId);
+  const speech = getSpeechById(speechId)
 
   if (!speech) {
-    throw new Response("Speech not found", { status: 404 });
+    throw new Response('Speech not found', { status: 404 })
   }
 
-  return { speech };
+  return { speech }
 }
 
 export default function SpeechDetail() {
-  const { speech } = useLoaderData<LoaderData>();
+  const { speech } = useLoaderData<LoaderData>()
 
   return (
     <>
@@ -60,7 +68,9 @@ export default function SpeechDetail() {
             <CardHeader className="border-b border-gray-200 bg-gradient-to-r from-un-blue to-un-light-blue text-white">
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-2xl mb-2">{speech.country_name || speech.country_code}</CardTitle>
+                  <CardTitle className="text-2xl mb-2">
+                    {speech.country_name || speech.country_code}
+                  </CardTitle>
                   <div className="flex flex-wrap items-center gap-4 text-sm opacity-90">
                     <span className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />
@@ -96,7 +106,9 @@ export default function SpeechDetail() {
 
             <CardContent className="p-8 bg-white">
               <div className="prose prose-lg max-w-none">
-                <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">{speech.text}</div>
+                <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
+                  {speech.text}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -114,5 +126,5 @@ export default function SpeechDetail() {
         <Footer />
       </div>
     </>
-  );
+  )
 }

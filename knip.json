@@ -1,0 +1,14 @@
+{
+  "entry": ["vite.config.ts"],
+  "project": ["app/**/*.{ts,tsx}", "vite.config.ts"],
+  "ignore": ["app/components/star-field.tsx", "app/components/ui/select.tsx"],
+  "ignoreDependencies": [
+    "@react-router/node",
+    "@types/react-dom",
+    "isbot",
+    "postcss",
+    "react-dom",
+    "sqlite3",
+    "tailwindcss"
+  ]
+}

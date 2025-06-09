@@ -5,10 +5,11 @@ export default function Footer() {
         <div className="text-center">
           <p className="text-gray-600">UN General Assembly Speeches Database</p>
           <p className="text-sm text-gray-500 mt-2">
-            Explore decades of diplomatic discourse from the United Nations General Assembly
+            Explore decades of diplomatic discourse from the United Nations
+            General Assembly
           </p>
         </div>
       </div>
     </footer>
-  );
+  )
 }

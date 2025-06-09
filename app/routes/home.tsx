@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate, useSearchParams, Form } from "react-router";
+import { useLoaderData, useNavigate, useSearchParams, Form } from 'react-router'
 import {
   searchSpeeches,
   searchSpeechesWithHighlights,
@@ -9,50 +9,60 @@ import {
   type HighlightedSpeech,
   type PaginationInfo,
   type SearchFilters,
-} from "~/lib/database";
-import Header from "~/components/header";
-import Footer from "~/components/footer";
-import SpeechCard from "~/components/speech-card";
-import Pagination from "~/components/pagination";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Search as SearchIcon, Filter, X } from "lucide-react";
-import { useState, useEffect } from "react";
+} from '~/lib/database'
+import Header from '~/components/header'
+import Footer from '~/components/footer'
+import SpeechCard from '~/components/speech-card'
+import Pagination from '~/components/pagination'
+import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Search as SearchIcon, Filter, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 type LoaderData = {
-  speeches: HighlightedSpeech[];
-  pagination: PaginationInfo;
-  countries: Array<{ country_name: string; country_code: string }>;
-  years: number[];
-  sessions: number[];
-  currentFilters: SearchFilters;
-  suggestions?: string[];
-};
+  speeches: HighlightedSpeech[]
+  pagination: PaginationInfo
+  countries: Array<{ country_name: string; country_code: string }>
+  years: number[]
+  sessions: number[]
+  currentFilters: SearchFilters
+  suggestions?: string[]
+}
 
 export function meta() {
   return [
-    { title: "UN General Assembly Speeches" },
+    { title: 'UN General Assembly Speeches' },
     {
-      name: "description",
+      name: 'description',
       content:
-        "Browse and search speeches from the UN General Assembly. Explore thousands of historical speeches and statements.",
+        'Browse and search speeches from the UN General Assembly. Explore thousands of historical speeches and statements.',
     },
-  ];
+  ]
 }
 
-export async function loader({ request }: { request: Request }): Promise<LoaderData> {
-  const url = new URL(request.url);
-  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
+export async function loader({
+  request,
+}: {
+  request: Request
+}): Promise<LoaderData> {
+  const url = new URL(request.url)
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
 
   // Extract search filters from URL parameters
   const filters: SearchFilters = {
-    search: url.searchParams.get("q") || undefined,
-    country: url.searchParams.get("country") || undefined,
-    year: url.searchParams.get("year") ? parseInt(url.searchParams.get("year")!, 10) : undefined,
-    session: url.searchParams.get("session") ? parseInt(url.searchParams.get("session")!, 10) : undefined,
-    searchMode: (url.searchParams.get("mode") as "exact" | "phrase" | "fuzzy") || "phrase",
-  };
+    search: url.searchParams.get('q') || undefined,
+    country: url.searchParams.get('country') || undefined,
+    year: url.searchParams.get('year')
+      ? parseInt(url.searchParams.get('year')!, 10)
+      : undefined,
+    session: url.searchParams.get('session')
+      ? parseInt(url.searchParams.get('session')!, 10)
+      : undefined,
+    searchMode:
+      (url.searchParams.get('mode') as 'exact' | 'phrase' | 'fuzzy') ||
+      'phrase',
+  }
 
   // Use highlighted search if there's a search term, otherwise regular search
   const result =
@@ -60,16 +70,19 @@ export async function loader({ request }: { request: Request }): Promise<LoaderD
       ? searchSpeechesWithHighlights(filters, page, 20)
       : {
           ...searchSpeeches(filters, page, 20),
-          speeches: searchSpeeches(filters, page, 20).speeches as HighlightedSpeech[],
-        };
+          speeches: searchSpeeches(filters, page, 20)
+            .speeches as HighlightedSpeech[],
+        }
 
-  const countries = getCountries();
-  const years = getYears();
-  const sessions = getSessions();
+  const countries = getCountries()
+  const years = getYears()
+  const sessions = getSessions()
 
   // Get search suggestions if there's a partial search term
   const suggestions =
-    filters.search && filters.search.trim().length >= 2 ? getSearchSuggestions(filters.search, 5) : [];
+    filters.search && filters.search.trim().length >= 2
+      ? getSearchSuggestions(filters.search, 5)
+      : []
 
   return {
     ...result,
@@ -78,83 +91,102 @@ export async function loader({ request }: { request: Request }): Promise<LoaderD
     sessions,
     currentFilters: filters,
     suggestions,
-  };
+  }
 }
 
 export default function Home() {
-  const { speeches, pagination, countries, years, sessions, currentFilters, suggestions } = useLoaderData<LoaderData>();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [showFilters, setShowFilters] = useState(false);
+  const {
+    speeches,
+    pagination,
+    countries,
+    years,
+    sessions,
+    currentFilters,
+    suggestions,
+  } = useLoaderData<LoaderData>()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [showFilters, setShowFilters] = useState(false)
 
   // Local state for form inputs
-  const [searchQuery, setSearchQuery] = useState(currentFilters.search || "");
-  const [selectedCountry, setSelectedCountry] = useState(currentFilters.country || "");
-  const [selectedYear, setSelectedYear] = useState(currentFilters.year?.toString() || "");
-  const [selectedSession, setSelectedSession] = useState(currentFilters.session?.toString() || "");
-  const [searchMode, setSearchMode] = useState(currentFilters.searchMode || "phrase");
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(currentFilters.search || '')
+  const [selectedCountry, setSelectedCountry] = useState(
+    currentFilters.country || ''
+  )
+  const [selectedYear, setSelectedYear] = useState(
+    currentFilters.year?.toString() || ''
+  )
+  const [selectedSession, setSelectedSession] = useState(
+    currentFilters.session?.toString() || ''
+  )
+  const [searchMode, setSearchMode] = useState(
+    currentFilters.searchMode || 'phrase'
+  )
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   // Update local state when URL changes
   useEffect(() => {
-    setSearchQuery(currentFilters.search || "");
-    setSelectedCountry(currentFilters.country || "");
-    setSelectedYear(currentFilters.year?.toString() || "");
-    setSelectedSession(currentFilters.session?.toString() || "");
-    setSearchMode(currentFilters.searchMode || "phrase");
-  }, [currentFilters]);
+    setSearchQuery(currentFilters.search || '')
+    setSelectedCountry(currentFilters.country || '')
+    setSelectedYear(currentFilters.year?.toString() || '')
+    setSelectedSession(currentFilters.session?.toString() || '')
+    setSearchMode(currentFilters.searchMode || 'phrase')
+  }, [currentFilters])
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    const params = new URLSearchParams();
+    const params = new URLSearchParams()
     if (searchQuery.trim()) {
-      params.set("q", searchQuery.trim());
-      if (searchMode !== "phrase") {
-        params.set("mode", searchMode);
+      params.set('q', searchQuery.trim())
+      if (searchMode !== 'phrase') {
+        params.set('mode', searchMode)
       }
     }
-    if (selectedCountry) params.set("country", selectedCountry);
-    if (selectedYear) params.set("year", selectedYear);
-    if (selectedSession) params.set("session", selectedSession);
+    if (selectedCountry) params.set('country', selectedCountry)
+    if (selectedYear) params.set('year', selectedYear)
+    if (selectedSession) params.set('session', selectedSession)
 
-    navigate(`/?${params.toString()}`);
-    setShowSuggestions(false);
-  };
+    navigate(`/?${params.toString()}`)
+    setShowSuggestions(false)
+  }
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("page", page.toString());
-    navigate(`/?${params.toString()}`);
-  };
+    const params = new URLSearchParams(searchParams)
+    params.set('page', page.toString())
+    navigate(`/?${params.toString()}`)
+  }
 
   const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCountry("");
-    setSelectedYear("");
-    setSelectedSession("");
-    setSearchMode("phrase");
-    setShowSuggestions(false);
-    navigate("/");
-  };
+    setSearchQuery('')
+    setSelectedCountry('')
+    setSelectedYear('')
+    setSelectedSession('')
+    setSearchMode('phrase')
+    setShowSuggestions(false)
+    navigate('/')
+  }
 
   const handleSuggestionClick = (suggestion: string) => {
-    setSearchQuery(suggestion);
-    setShowSuggestions(false);
+    setSearchQuery(suggestion)
+    setShowSuggestions(false)
     // Trigger search with the suggestion
-    const params = new URLSearchParams();
-    params.set("q", suggestion);
-    if (searchMode !== "phrase") {
-      params.set("mode", searchMode);
+    const params = new URLSearchParams()
+    params.set('q', suggestion)
+    if (searchMode !== 'phrase') {
+      params.set('mode', searchMode)
     }
-    if (selectedCountry) params.set("country", selectedCountry);
-    if (selectedYear) params.set("year", selectedYear);
-    if (selectedSession) params.set("session", selectedSession);
-    navigate(`/?${params.toString()}`);
-  };
+    if (selectedCountry) params.set('country', selectedCountry)
+    if (selectedYear) params.set('year', selectedYear)
+    if (selectedSession) params.set('session', selectedSession)
+    navigate(`/?${params.toString()}`)
+  }
 
   const hasActiveFilters =
-    currentFilters.search || currentFilters.country || currentFilters.year || currentFilters.session;
+    currentFilters.search ||
+    currentFilters.country ||
+    currentFilters.year ||
+    currentFilters.session
 
   return (
     <>
@@ -163,7 +195,9 @@ export default function Home() {
 
         <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">UN General Assembly Speeches</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              UN General Assembly Speeches
+            </h1>
             <p className="text-gray-600">
               {hasActiveFilters
                 ? `Search through ${pagination.total} speeches from the United Nations General Assembly`
@@ -179,9 +213,13 @@ export default function Home() {
                   <SearchIcon className="h-5 w-5" />
                   <span>Search & Filter</span>
                 </span>
-                <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
                   <Filter className="h-4 w-4 mr-1" />
-                  {showFilters ? "Hide" : "Show"} Filters
+                  {showFilters ? 'Hide' : 'Show'} Filters
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -194,11 +232,13 @@ export default function Home() {
                     placeholder="Search speeches, speakers, or countries..."
                     value={searchQuery}
                     onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setShowSuggestions(e.target.value.length >= 2);
+                      setSearchQuery(e.target.value)
+                      setShowSuggestions(e.target.value.length >= 2)
                     }}
                     onFocus={() => setShowSuggestions(searchQuery.length >= 2)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    onBlur={() =>
+                      setTimeout(() => setShowSuggestions(false), 150)
+                    }
                     className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
                   />
 
@@ -225,20 +265,42 @@ export default function Home() {
                     <span className="text-gray-600">Search mode:</span>
                     <div className="flex space-x-2">
                       {[
-                        { value: "phrase", label: "Phrase", description: "Find phrases" },
-                        { value: "exact", label: "Exact", description: "Exact matches only" },
-                        { value: "fuzzy", label: "Any words", description: "Find any of these words" },
+                        {
+                          value: 'phrase',
+                          label: 'Phrase',
+                          description: 'Find phrases',
+                        },
+                        {
+                          value: 'exact',
+                          label: 'Exact',
+                          description: 'Exact matches only',
+                        },
+                        {
+                          value: 'fuzzy',
+                          label: 'Any words',
+                          description: 'Find any of these words',
+                        },
                       ].map((mode) => (
-                        <label key={mode.value} className="flex items-center space-x-1 cursor-pointer">
+                        <label
+                          key={mode.value}
+                          className="flex items-center space-x-1 cursor-pointer"
+                        >
                           <input
                             type="radio"
                             name="searchMode"
                             value={mode.value}
                             checked={searchMode === mode.value}
-                            onChange={(e) => setSearchMode(e.target.value as "exact" | "phrase" | "fuzzy")}
+                            onChange={(e) =>
+                              setSearchMode(
+                                e.target.value as 'exact' | 'phrase' | 'fuzzy'
+                              )
+                            }
                             className="text-un-blue focus:ring-un-blue"
                           />
-                          <span className="text-gray-600" title={mode.description}>
+                          <span
+                            className="text-gray-600"
+                            title={mode.description}
+                          >
                             {mode.label}
                           </span>
                         </label>
@@ -251,7 +313,9 @@ export default function Home() {
                 {showFilters && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-300">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Country
+                      </label>
                       <select
                         value={selectedCountry}
                         onChange={(e) => setSelectedCountry(e.target.value)}
@@ -259,7 +323,10 @@ export default function Home() {
                       >
                         <option value="">All countries</option>
                         {countries.map((country) => (
-                          <option key={country.country_code} value={country.country_code}>
+                          <option
+                            key={country.country_code}
+                            value={country.country_code}
+                          >
                             {country.country_name}
                           </option>
                         ))}
@@ -267,7 +334,9 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Year
+                      </label>
                       <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(e.target.value)}
@@ -283,7 +352,9 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Session</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Session
+                      </label>
                       <select
                         value={selectedSession}
                         onChange={(e) => setSelectedSession(e.target.value)}
@@ -309,13 +380,21 @@ export default function Home() {
                     </Button>
                     {hasActiveFilters && (
                       <>
-                        <Button type="button" variant="outline" onClick={clearFilters}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={clearFilters}
+                        >
                           <X className="h-4 w-4 mr-2" />
                           Clear
                         </Button>
-                        <Button type="button" variant="secondary" onClick={() => setShowFilters(!showFilters)}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => setShowFilters(!showFilters)}
+                        >
                           <Filter className="h-4 w-4 mr-2" />
-                          {showFilters ? "Hide" : "Show"} Filters
+                          {showFilters ? 'Hide' : 'Show'} Filters
                         </Button>
                       </>
                     )}
@@ -328,8 +407,9 @@ export default function Home() {
           {/* Results */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              {pagination.total} {pagination.total === 1 ? "speech" : "speeches"}
-              {hasActiveFilters ? " found" : ""}
+              {pagination.total}{' '}
+              {pagination.total === 1 ? 'speech' : 'speeches'}
+              {hasActiveFilters ? ' found' : ''}
             </h2>
             <p className="text-gray-600">
               Showing page {pagination.page} of {pagination.totalPages}
@@ -340,16 +420,18 @@ export default function Home() {
               <div className="flex flex-wrap gap-2 mt-3">
                 {currentFilters.search && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-un-blue text-white">
-                    {currentFilters.searchMode === "exact" && "Exact: "}
-                    {currentFilters.searchMode === "fuzzy" && "Any words: "}
-                    {currentFilters.searchMode === "phrase" && "Text: "}"{currentFilters.search}"
+                    {currentFilters.searchMode === 'exact' && 'Exact: '}
+                    {currentFilters.searchMode === 'fuzzy' && 'Any words: '}
+                    {currentFilters.searchMode === 'phrase' && 'Text: '}"
+                    {currentFilters.search}"
                   </span>
                 )}
                 {currentFilters.country && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-un-blue text-white">
-                    Country:{" "}
-                    {countries.find((c) => c.country_code === currentFilters.country)?.country_name ||
-                      currentFilters.country}
+                    Country:{' '}
+                    {countries.find(
+                      (c) => c.country_code === currentFilters.country
+                    )?.country_name || currentFilters.country}
                   </span>
                 )}
                 {currentFilters.year && (
@@ -370,19 +452,25 @@ export default function Home() {
             <div className="text-center py-12">
               <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-600 text-lg mb-2">
-                {hasActiveFilters ? "No speeches match your search criteria" : "No speeches found"}
+                {hasActiveFilters
+                  ? 'No speeches match your search criteria'
+                  : 'No speeches found'}
               </p>
               <p className="text-gray-500">
                 {hasActiveFilters
-                  ? "Try adjusting your filters or search terms"
-                  : "Something went wrong loading the speeches"}
+                  ? 'Try adjusting your filters or search terms'
+                  : 'Something went wrong loading the speeches'}
               </p>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 {speeches.map((speech: HighlightedSpeech) => (
-                  <SpeechCard key={speech.id} speech={speech} highlighted={!!currentFilters.search} />
+                  <SpeechCard
+                    key={speech.id}
+                    speech={speech}
+                    highlighted={!!currentFilters.search}
+                  />
                 ))}
               </div>
 
@@ -398,5 +486,5 @@ export default function Home() {
         <Footer />
       </div>
     </>
-  );
+  )
 }

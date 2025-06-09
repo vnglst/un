@@ -1,97 +1,101 @@
-import { useLoaderData, Link } from "react-router";
-import { getCountrySpeechCounts, type CountrySpeechCount } from "~/lib/database";
-import Header from "~/components/header";
-import Footer from "~/components/footer";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { useEffect, useRef } from "react";
-import * as d3 from "d3";
-import * as topojson from "topojson-client";
-import topologyData from "~/lib/topology.json";
-import { iso2ToIso3 } from "~/lib/country-codes";
+import { useLoaderData, Link } from 'react-router'
+import { getCountrySpeechCounts, type CountrySpeechCount } from '~/lib/database'
+import Header from '~/components/header'
+import Footer from '~/components/footer'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { useEffect, useRef } from 'react'
+import * as d3 from 'd3'
+import * as topojson from 'topojson-client'
+import topologyData from '~/lib/topology.json'
+import { iso2ToIso3 } from '~/lib/country-codes'
 
 type LoaderData = {
-  countryCounts: CountrySpeechCount[];
-};
+  countryCounts: CountrySpeechCount[]
+}
 
 export function meta() {
   return [
-    { title: "UN Speeches Globe - Interactive World Map" },
+    { title: 'UN Speeches Globe - Interactive World Map' },
     {
-      name: "description",
+      name: 'description',
       content:
-        "Explore an interactive globe showing how often countries have spoken at the UN General Assembly. Click on any country to see their speeches.",
+        'Explore an interactive globe showing how often countries have spoken at the UN General Assembly. Click on any country to see their speeches.',
     },
-  ];
+  ]
 }
 
 export async function loader(): Promise<LoaderData> {
-  const countryCounts = getCountrySpeechCounts();
-  return { countryCounts };
+  const countryCounts = getCountrySpeechCounts()
+  return { countryCounts }
 }
 
 export default function Globe() {
-  const { countryCounts } = useLoaderData<LoaderData>();
-  const globeRef = useRef<HTMLDivElement>(null);
+  const { countryCounts } = useLoaderData<LoaderData>()
+  const globeRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const initializeGlobe = () => {
-      if (!globeRef.current) return;
+      if (!globeRef.current) return
 
-      const container = globeRef.current;
-      const { width, height } = container.getBoundingClientRect();
+      const container = globeRef.current
+      const { width, height } = container.getBoundingClientRect()
 
       // Clear any existing content
-      container.innerHTML = "";
+      container.innerHTML = ''
 
       // Add stars to the globe container
       const addStarsToGlobe = () => {
-        const starsContainer = document.getElementById("globe-stars");
-        if (!starsContainer) return;
+        const starsContainer = document.getElementById('globe-stars')
+        if (!starsContainer) return
 
-        const STAR_COUNT = 150;
-        starsContainer.innerHTML = "";
+        const STAR_COUNT = 150
+        starsContainer.innerHTML = ''
 
         for (let i = 0; i < STAR_COUNT; i++) {
-          const star = document.createElement("div");
-          const size = Math.random() * 3 + 1;
-          star.style.width = `${size}px`;
-          star.style.height = `${size}px`;
-          star.style.top = `${Math.random() * 100}%`;
-          star.style.left = `${Math.random() * 100}%`;
-          star.style.position = "absolute";
-          star.style.background = "#ffffff";
-          star.style.borderRadius = "50%";
-          star.style.opacity = `${Math.random() * 0.8 + 0.2}`;
+          const star = document.createElement('div')
+          const size = Math.random() * 3 + 1
+          star.style.width = `${size}px`
+          star.style.height = `${size}px`
+          star.style.top = `${Math.random() * 100}%`
+          star.style.left = `${Math.random() * 100}%`
+          star.style.position = 'absolute'
+          star.style.background = '#ffffff'
+          star.style.borderRadius = '50%'
+          star.style.opacity = `${Math.random() * 0.8 + 0.2}`
 
-          starsContainer.appendChild(star);
+          starsContainer.appendChild(star)
         }
-      };
+      }
 
-      addStarsToGlobe();
+      addStarsToGlobe()
 
-      const svg = d3.select(container).append("svg").attr("width", width).attr("height", height);
+      const svg = d3
+        .select(container)
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
 
-      const globe = svg.append("g");
+      const globe = svg.append('g')
 
       // Create projection
       const projection = d3
         .geoOrthographic()
         .scale(Math.min(width, height) / 2.5)
         .translate([width / 2, height / 2])
-        .rotate([-10, -20, 0]);
+        .rotate([-10, -20, 0])
 
-      const path = d3.geoPath().projection(projection);
+      const path = d3.geoPath().projection(projection)
 
       // Constants for interaction
-      const SENSITIVITY = 75;
-      const ROTATION_SPEED = 0.2;
-      const ZOOM_EXTENT: [number, number] = [0.5, 4];
-      const INITIAL_SCALE = window.innerWidth > 768 ? 1.2 : 1.0; // Increased from 0.6 and 0.9
+      const SENSITIVITY = 75
+      const ROTATION_SPEED = 0.2
+      const ZOOM_EXTENT: [number, number] = [0.5, 4]
+      const INITIAL_SCALE = window.innerWidth > 768 ? 1.2 : 1.0 // Increased from 0.6 and 0.9
 
       // State variables
-      let rotationStopped = false;
-      let isDragging = false;
-      let rotationInterval: NodeJS.Timeout | null = null;
+      let rotationStopped = false
+      let isDragging = false
+      let rotationInterval: NodeJS.Timeout | null = null
 
       // Setup zoom behavior
       const zoom = d3
@@ -99,172 +103,190 @@ export default function Globe() {
         .scaleExtent(ZOOM_EXTENT)
         .filter(
           (event: any) =>
-            (!event.button && event.type === "wheel") || (event.type === "touchstart" && event.touches.length > 1)
+            (!event.button && event.type === 'wheel') ||
+            (event.type === 'touchstart' && event.touches.length > 1)
         )
-        .on("zoom", (event: any) => {
-          projection.scale((event.transform.k * Math.min(width, height)) / 2.5);
-          globe.selectAll("path").attr("d", (d: any) => path(d) || "");
-          globe.selectAll("circle").attr("r", projection.scale());
+        .on('zoom', (event: any) => {
+          projection.scale((event.transform.k * Math.min(width, height)) / 2.5)
+          globe.selectAll('path').attr('d', (d: any) => path(d) || '')
+          globe.selectAll('circle').attr('r', projection.scale())
 
           if (event.transform.k === ZOOM_EXTENT[0]) {
-            rotationStopped = false;
-            startRotation();
+            rotationStopped = false
+            startRotation()
           }
-        });
+        })
 
       // Setup drag behavior
       const drag = d3
         .drag<SVGSVGElement, unknown>()
         .filter(
           (event: any) =>
-            (event.type === "mousedown" && event.button === 0) ||
-            (event.type === "touchstart" && event.touches.length === 1)
+            (event.type === 'mousedown' && event.button === 0) ||
+            (event.type === 'touchstart' && event.touches.length === 1)
         )
-        .on("start", () => {
-          isDragging = true;
-          rotationStopped = true;
+        .on('start', () => {
+          isDragging = true
+          rotationStopped = true
           if (rotationInterval) {
-            clearInterval(rotationInterval);
-            rotationInterval = null;
+            clearInterval(rotationInterval)
+            rotationInterval = null
           }
         })
-        .on("drag", (event: any) => {
-          const rotate = projection.rotate();
-          const k = SENSITIVITY / projection.scale();
-          projection.rotate([rotate[0] + event.dx * k, rotate[1] - event.dy * k]);
-          path.projection(projection);
+        .on('drag', (event: any) => {
+          const rotate = projection.rotate()
+          const k = SENSITIVITY / projection.scale()
+          projection.rotate([
+            rotate[0] + event.dx * k,
+            rotate[1] - event.dy * k,
+          ])
+          path.projection(projection)
           requestAnimationFrame(() => {
-            globe.selectAll("path").attr("d", (d: any) => path(d) || "");
-          });
+            globe.selectAll('path').attr('d', (d: any) => path(d) || '')
+          })
         })
-        .on("end", () => {
-          isDragging = false;
-          startRotation();
-        });
+        .on('end', () => {
+          isDragging = false
+          startRotation()
+        })
 
       // Add water background
       globe
-        .append("circle")
-        .attr("fill", "#ffffff")
-        .attr("stroke", "#009edb")
-        .attr("stroke-width", 2)
-        .attr("cx", width / 2)
-        .attr("cy", height / 2)
-        .attr("r", projection.scale());
+        .append('circle')
+        .attr('fill', '#ffffff')
+        .attr('stroke', '#009edb')
+        .attr('stroke-width', 2)
+        .attr('cx', width / 2)
+        .attr('cy', height / 2)
+        .attr('r', projection.scale())
 
       // Apply zoom and drag behaviors to SVG
-      const initialTransform = d3.zoomIdentity.scale(INITIAL_SCALE);
-      svg.call(zoom.transform, initialTransform);
-      svg.call(zoom);
-      svg.call(drag);
+      const initialTransform = d3.zoomIdentity.scale(INITIAL_SCALE)
+      svg.call(zoom.transform, initialTransform)
+      svg.call(zoom)
+      svg.call(drag)
 
       // Create country lookup map
-      const countryLookup = new Map();
+      const countryLookup = new Map()
       countryCounts.forEach((country) => {
-        countryLookup.set(country.country_code, country.speech_count);
-      }); // Find max count for color scaling
-      const maxCount = Math.max(...countryCounts.map((c) => c.speech_count));
-      const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([0, maxCount]);
+        countryLookup.set(country.country_code, country.speech_count)
+      }) // Find max count for color scaling
+      const maxCount = Math.max(...countryCounts.map((c) => c.speech_count))
+      const colorScale = d3
+        .scaleSequential(d3.interpolateBlues)
+        .domain([0, maxCount])
 
       // Auto-rotation function
       const startRotation = () => {
         if (!rotationInterval && !rotationStopped) {
           rotationInterval = setInterval(() => {
             if (!isDragging) {
-              const rotate = projection.rotate();
-              projection.rotate([rotate[0] + ROTATION_SPEED, rotate[1], rotate[2]]);
-              globe.selectAll("path").attr("d", (d: any) => path(d) || "");
+              const rotate = projection.rotate()
+              projection.rotate([
+                rotate[0] + ROTATION_SPEED,
+                rotate[1],
+                rotate[2],
+              ])
+              globe.selectAll('path').attr('d', (d: any) => path(d) || '')
             }
-          }, 50);
+          }, 50)
         }
-      };
+      }
 
       // Load and render world data
       try {
-        const worldData = topologyData as any;
-        const countries = topojson.feature(worldData, worldData.objects.countries) as any;
+        const worldData = topologyData as any
+        const countries = topojson.feature(
+          worldData,
+          worldData.objects.countries
+        ) as any
 
         // Render countries
         const countryPaths = globe
-          .selectAll("path")
+          .selectAll('path')
           .data(countries.features)
           .enter()
-          .append("path")
-          .attr("d", (d: any) => path(d) || "")
-          .attr("fill", (d: any) => {
+          .append('path')
+          .attr('d', (d: any) => path(d) || '')
+          .attr('fill', (d: any) => {
             // Convert 2-letter code to 3-letter code for lookup
-            const iso3Code = iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3];
-            const count = countryLookup.get(iso3Code) || 0;
+            const iso3Code =
+              iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3]
+            const count = countryLookup.get(iso3Code) || 0
 
-            return count > 0 ? colorScale(count) : "#4a5568";
+            return count > 0 ? colorScale(count) : '#4a5568'
           })
-          .attr("stroke", "#ffffff")
-          .attr("stroke-width", 0.5)
-          .style("cursor", "pointer");
+          .attr('stroke', '#ffffff')
+          .attr('stroke-width', 0.5)
+          .style('cursor', 'pointer')
 
         // Add interactivity
         countryPaths
-          .on("mouseover", function (this: SVGPathElement, event: any, d: any) {
+          .on('mouseover', function (this: SVGPathElement, event: any, d: any) {
             // Convert 2-letter code to 3-letter code for lookup
-            const iso3Code = iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3];
-            const count = countryLookup.get(iso3Code) || 0;
-            d3.select(this).attr("stroke-width", 2).attr("stroke", "#009edb");
+            const iso3Code =
+              iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3]
+            const count = countryLookup.get(iso3Code) || 0
+            d3.select(this).attr('stroke-width', 2).attr('stroke', '#009edb')
 
             // Tooltip
-            d3.select("body")
-              .append("div")
-              .attr("class", "tooltip")
-              .style("position", "absolute")
-              .style("background", "rgba(0, 0, 0, 0.8)")
-              .style("color", "white")
-              .style("padding", "8px")
-              .style("border-radius", "4px")
-              .style("font-size", "12px")
-              .style("pointer-events", "none")
-              .style("z-index", "1000")
-              .html(`<strong>${d.properties.name}</strong><br/>${count} speeches`)
-              .style("left", event.pageX + 10 + "px")
-              .style("top", event.pageY - 10 + "px");
+            d3.select('body')
+              .append('div')
+              .attr('class', 'tooltip')
+              .style('position', 'absolute')
+              .style('background', 'rgba(0, 0, 0, 0.8)')
+              .style('color', 'white')
+              .style('padding', '8px')
+              .style('border-radius', '4px')
+              .style('font-size', '12px')
+              .style('pointer-events', 'none')
+              .style('z-index', '1000')
+              .html(
+                `<strong>${d.properties.name}</strong><br/>${count} speeches`
+              )
+              .style('left', event.pageX + 10 + 'px')
+              .style('top', event.pageY - 10 + 'px')
           })
-          .on("mouseout", function (this: SVGPathElement) {
-            d3.select(this).attr("stroke-width", 0.5).attr("stroke", "#ffffff");
+          .on('mouseout', function (this: SVGPathElement) {
+            d3.select(this).attr('stroke-width', 0.5).attr('stroke', '#ffffff')
 
-            d3.selectAll(".tooltip").remove();
+            d3.selectAll('.tooltip').remove()
           })
-          .on("click", function (_event: any, d: any) {
+          .on('click', function (_event: any, d: any) {
             if (!isDragging) {
               // Convert 2-letter code to 3-letter code for lookup
-              const iso3Code = iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3];
-              const count = countryLookup.get(iso3Code) || 0;
+              const iso3Code =
+                iso2ToIso3[d.properties.code as keyof typeof iso2ToIso3]
+              const count = countryLookup.get(iso3Code) || 0
               if (count > 0) {
                 // Stop rotation when navigating
-                rotationStopped = true;
+                rotationStopped = true
                 if (rotationInterval) {
-                  clearInterval(rotationInterval);
-                  rotationInterval = null;
+                  clearInterval(rotationInterval)
+                  rotationInterval = null
                 }
                 // Navigate to country speeches page using the 3-letter code
-                window.location.href = `/country/${iso3Code}`;
+                window.location.href = `/country/${iso3Code}`
               }
             }
-          });
+          })
 
         // Start auto-rotation
-        startRotation();
+        startRotation()
 
         // Cleanup function
         return () => {
           if (rotationInterval) {
-            clearInterval(rotationInterval);
+            clearInterval(rotationInterval)
           }
-        };
+        }
       } catch (error) {
-        console.error("Error loading world data:", error);
+        console.error('Error loading world data:', error)
       }
-    };
+    }
 
-    initializeGlobe();
-  }, [countryCounts]);
+    initializeGlobe()
+  }, [countryCounts])
 
   return (
     <>
@@ -273,10 +295,13 @@ export default function Globe() {
 
         <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">UN General Assembly Globe</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              UN General Assembly Globe
+            </h1>
             <p className="text-gray-600">
-              Explore an interactive globe showing how often countries have spoken at the UN General Assembly. Drag to
-              rotate, scroll to zoom, and click on countries to see their speeches.
+              Explore an interactive globe showing how often countries have
+              spoken at the UN General Assembly. Drag to rotate, scroll to zoom,
+              and click on countries to see their speeches.
             </p>
           </div>
 
@@ -285,17 +310,26 @@ export default function Globe() {
             <div className="lg:col-span-2">
               <Card className="bg-white border-gray-200">
                 <CardHeader>
-                  <CardTitle className="text-gray-900">Interactive Globe</CardTitle>
+                  <CardTitle className="text-gray-900">
+                    Interactive Globe
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="relative w-full h-96 lg:h-[500px] bg-black rounded-lg border border-gray-300 overflow-hidden">
-                    <div ref={globeRef} className="w-full h-full relative z-10" />
-                    <div className="absolute inset-0 z-0" id="globe-stars"></div>
+                    <div
+                      ref={globeRef}
+                      className="w-full h-full relative z-10"
+                    />
+                    <div
+                      className="absolute inset-0 z-0"
+                      id="globe-stars"
+                    ></div>
                   </div>
                   <p className="text-sm text-gray-600 mt-4">
-                    <strong>Interact with the globe:</strong> Drag to rotate, scroll or pinch to zoom. Hover over
-                    countries to see speech counts. Click to view their speeches. Countries are colored by frequency of
-                    speeches - darker blue means more speeches.
+                    <strong>Interact with the globe:</strong> Drag to rotate,
+                    scroll or pinch to zoom. Hover over countries to see speech
+                    counts. Click to view their speeches. Countries are colored
+                    by frequency of speeches - darker blue means more speeches.
                   </p>
                 </CardContent>
               </Card>
@@ -305,7 +339,9 @@ export default function Globe() {
             <div>
               <Card className="bg-white border-gray-200">
                 <CardHeader>
-                  <CardTitle className="text-gray-900">Top Speaking Countries</CardTitle>
+                  <CardTitle className="text-gray-900">
+                    Top Speaking Countries
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -317,10 +353,13 @@ export default function Globe() {
                       >
                         <div>
                           <span className="text-sm font-medium text-white">
-                            {index + 1}. {country.country_name || country.country_code}
+                            {index + 1}.{' '}
+                            {country.country_name || country.country_code}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-300">{country.speech_count} speeches</span>
+                        <span className="text-sm text-gray-300">
+                          {country.speech_count} speeches
+                        </span>
                       </Link>
                     ))}
                   </div>
@@ -333,5 +372,5 @@ export default function Globe() {
         <Footer />
       </div>
     </>
-  );
+  )
 }

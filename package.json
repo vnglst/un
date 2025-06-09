@@ -8,7 +8,13 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "lint": "eslint app --ext ts,tsx",
+    "lint:fix": "eslint app --ext ts,tsx --fix",
+    "format": "prettier --write \"app/**/*.{ts,tsx,js,jsx}\"",
+    "format:check": "prettier --check \"app/**/*.{ts,tsx,js,jsx}\"",
+    "knip": "knip",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run knip"
   },
   "keywords": [],
   "author": "",
@@ -38,9 +44,20 @@
     "vite": "^6.3.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.28.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/d3": "^7.4.3",
     "@types/topojson-client": "^3.1.5",
+    "@typescript-eslint/eslint-plugin": "^8.33.1",
+    "@typescript-eslint/parser": "^8.33.1",
+    "eslint": "^9.28.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "knip": "^5.60.2",
+    "prettier": "^3.5.3",
+    "typescript-eslint": "^8.33.1",
     "vite-tsconfig-paths": "^5.1.4"
   }
 }
