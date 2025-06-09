@@ -5,6 +5,8 @@ services:
     build: .
     ports:
       - '3000:3000'
+    volumes:
+      - db_data:/app/data
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -24,3 +26,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 40s
+
+volumes:
+  db_data:

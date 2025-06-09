@@ -1,8 +1,27 @@
 import Database from 'better-sqlite3'
 import { join } from 'path'
+import { existsSync, copyFileSync, mkdirSync } from 'fs'
 import { logger, timeOperation, type LogContext } from './logger'
 
-const dbPath = join(process.cwd(), 'un_speeches.db')
+// In production, use data directory for mounted volumes; in development, use root
+const isDevelopment = process.env.NODE_ENV === 'development'
+const dbPath = isDevelopment
+  ? join(process.cwd(), 'un_speeches.db')
+  : join(process.cwd(), 'data', 'un_speeches.db')
+
+// Ensure database exists in the expected location
+if (!isDevelopment && !existsSync(dbPath)) {
+  const sourceDbPath = join(process.cwd(), 'un_speeches.db')
+  if (existsSync(sourceDbPath)) {
+    mkdirSync(join(process.cwd(), 'data'), { recursive: true })
+    copyFileSync(sourceDbPath, dbPath)
+    logger.info('Database copied to data directory', {
+      from: sourceDbPath,
+      to: dbPath,
+    })
+  }
+}
+
 logger.info('Initializing database connection', { path: dbPath })
 
 const db = new Database(dbPath)

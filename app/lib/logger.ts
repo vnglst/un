@@ -3,7 +3,7 @@
  * Provides structured logging with different levels and context
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export interface LogContext {
   [key: string]: unknown
