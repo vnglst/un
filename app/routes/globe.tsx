@@ -1,5 +1,6 @@
 import { useLoaderData, Link } from 'react-router'
 import { getCountrySpeechCounts, type CountrySpeechCount } from '~/lib/database'
+import { logger, timeAsyncOperation } from '~/lib/logger'
 import Header from '~/components/header'
 import Footer from '~/components/footer'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -25,8 +26,22 @@ export function meta() {
 }
 
 export async function loader(): Promise<LoaderData> {
-  const countryCounts = getCountrySpeechCounts()
-  return { countryCounts }
+  logger.requestStart('GET', '/globe')
+
+  return timeAsyncOperation('globe-loader', async () => {
+    const countryCounts = getCountrySpeechCounts()
+
+    logger.info('Globe data loaded', {
+      countryCount: countryCounts.length,
+      totalSpeeches: countryCounts.reduce((sum, c) => sum + c.speech_count, 0),
+      topCountries: countryCounts.slice(0, 5).map((c) => ({
+        country: c.country_name,
+        speeches: c.speech_count,
+      })),
+    })
+
+    return { countryCounts }
+  })
 }
 
 export default function Globe() {

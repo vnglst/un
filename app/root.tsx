@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from 'react-router'
 import type { LinksFunction } from 'react-router'
+import { logger } from '~/lib/logger'
 
 import './app.css'
 
@@ -50,15 +51,34 @@ export function ErrorBoundary({ error }: { error: unknown }) {
   let details = 'An unexpected error occurred.'
   let stack: string | undefined
 
+  // Log the error
   if (isRouteErrorResponse(error)) {
     message = error.status === 404 ? '404' : 'Error'
     details =
       error.status === 404
         ? 'The requested page could not be found.'
         : error.statusText || details
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message
-    stack = error.stack
+
+    logger.warn('Route error boundary triggered', {
+      status: error.status,
+      statusText: error.statusText,
+      message,
+      details,
+    })
+  } else if (error instanceof Error) {
+    logger.error('Application error boundary triggered', error, {
+      errorName: error.name,
+      message: error.message,
+    })
+
+    if (import.meta.env.DEV) {
+      details = error.message
+      stack = error.stack
+    }
+  } else {
+    logger.error('Unknown error in error boundary', undefined, {
+      error: String(error),
+    })
   }
 
   return (

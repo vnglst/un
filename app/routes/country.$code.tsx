@@ -5,6 +5,7 @@ import {
   type Speech,
   type PaginationInfo,
 } from '~/lib/database'
+import { logger, timeAsyncOperation } from '~/lib/logger'
 import Header from '~/components/header'
 import Footer from '~/components/footer'
 import SpeechCard from '~/components/speech-card'
@@ -50,23 +51,40 @@ export async function loader({
   const url = new URL(request.url)
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
 
-  // Get speeches for this country
-  const result = getSpeechesByCountryCode(code, page, 20)
-
-  // Get country name
-  const countries = getCountries()
-  const country = countries.find((c) => c.country_code === code)
-
-  if (result.speeches.length === 0 && page === 1) {
-    throw new Response('Country not found', { status: 404 })
-  }
-
-  return {
-    speeches: result.speeches,
-    pagination: result.pagination,
-    countryName: country?.country_name || code,
+  logger.requestStart('GET', `/country/${code}`, {
     countryCode: code,
-  }
+    page,
+    searchParams: Object.fromEntries(url.searchParams),
+  })
+
+  return timeAsyncOperation('country-loader', async () => {
+    // Get speeches for this country
+    const result = getSpeechesByCountryCode(code, page, 20)
+
+    // Get country name
+    const countries = getCountries()
+    const country = countries.find((c) => c.country_code === code)
+
+    if (result.speeches.length === 0 && page === 1) {
+      logger.warn('Country not found', { countryCode: code })
+      throw new Response('Country not found', { status: 404 })
+    }
+
+    logger.info('Country page loaded', {
+      countryCode: code,
+      countryName: country?.country_name,
+      speechCount: result.speeches.length,
+      totalSpeeches: result.pagination.total,
+      page,
+    })
+
+    return {
+      speeches: result.speeches,
+      pagination: result.pagination,
+      countryName: country?.country_name || code,
+      countryCode: code,
+    }
+  })
 }
 
 export default function CountrySpeeches() {

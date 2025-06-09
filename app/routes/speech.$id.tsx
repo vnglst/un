@@ -1,5 +1,6 @@
 import { useLoaderData, Link } from 'react-router'
 import { getSpeechById, type Speech } from '~/lib/database'
+import { logger, timeAsyncOperation } from '~/lib/logger'
 import Header from '~/components/header'
 import Footer from '~/components/footer'
 import { Button } from '~/components/ui/button'
@@ -33,17 +34,31 @@ export async function loader({
 }): Promise<LoaderData> {
   const speechId = parseInt(params.id, 10)
 
+  logger.requestStart('GET', `/speech/${params.id}`, { speechId })
+
   if (isNaN(speechId)) {
+    logger.warn('Invalid speech ID provided', { id: params.id })
     throw new Response('Invalid speech ID', { status: 400 })
   }
 
-  const speech = getSpeechById(speechId)
+  return timeAsyncOperation('speech-detail-loader', async () => {
+    const speech = getSpeechById(speechId)
 
-  if (!speech) {
-    throw new Response('Speech not found', { status: 404 })
-  }
+    if (!speech) {
+      logger.warn('Speech not found', { speechId })
+      throw new Response('Speech not found', { status: 404 })
+    }
 
-  return { speech }
+    logger.info('Speech detail loaded', {
+      speechId,
+      speaker: speech.speaker,
+      country: speech.country_name,
+      year: speech.year,
+      textLength: speech.text.length,
+    })
+
+    return { speech }
+  })
 }
 
 export default function SpeechDetail() {

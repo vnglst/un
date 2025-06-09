@@ -10,6 +10,7 @@ import {
   type PaginationInfo,
   type SearchFilters,
 } from '~/lib/database'
+import { logger, timeAsyncOperation } from '~/lib/logger'
 import Header from '~/components/header'
 import Footer from '~/components/footer'
 import SpeechCard from '~/components/speech-card'
@@ -49,49 +50,65 @@ export async function loader({
   const url = new URL(request.url)
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
 
-  // Extract search filters from URL parameters
-  const filters: SearchFilters = {
-    search: url.searchParams.get('q') || undefined,
-    country: url.searchParams.get('country') || undefined,
-    year: url.searchParams.get('year')
-      ? parseInt(url.searchParams.get('year')!, 10)
-      : undefined,
-    session: url.searchParams.get('session')
-      ? parseInt(url.searchParams.get('session')!, 10)
-      : undefined,
-    searchMode:
-      (url.searchParams.get('mode') as 'exact' | 'phrase' | 'fuzzy') ||
-      'phrase',
-  }
+  logger.requestStart('GET', url.pathname, {
+    searchParams: Object.fromEntries(url.searchParams),
+    page,
+  })
 
-  // Use highlighted search if there's a search term, otherwise regular search
-  const result =
-    filters.search && filters.search.trim()
-      ? searchSpeechesWithHighlights(filters, page, 20)
-      : {
-          ...searchSpeeches(filters, page, 20),
-          speeches: searchSpeeches(filters, page, 20)
-            .speeches as HighlightedSpeech[],
-        }
+  return timeAsyncOperation('home-loader', async () => {
+    // Extract search filters from URL parameters
+    const filters: SearchFilters = {
+      search: url.searchParams.get('q') || undefined,
+      country: url.searchParams.get('country') || undefined,
+      year: url.searchParams.get('year')
+        ? parseInt(url.searchParams.get('year')!, 10)
+        : undefined,
+      session: url.searchParams.get('session')
+        ? parseInt(url.searchParams.get('session')!, 10)
+        : undefined,
+      searchMode:
+        (url.searchParams.get('mode') as 'exact' | 'phrase' | 'fuzzy') ||
+        'phrase',
+    }
 
-  const countries = getCountries()
-  const years = getYears()
-  const sessions = getSessions()
+    logger.info('Home loader filters', { filters, page })
 
-  // Get search suggestions if there's a partial search term
-  const suggestions =
-    filters.search && filters.search.trim().length >= 2
-      ? getSearchSuggestions(filters.search, 5)
-      : []
+    // Use highlighted search if there's a search term, otherwise regular search
+    const result =
+      filters.search && filters.search.trim()
+        ? searchSpeechesWithHighlights(filters, page, 20)
+        : {
+            ...searchSpeeches(filters, page, 20),
+            speeches: searchSpeeches(filters, page, 20)
+              .speeches as HighlightedSpeech[],
+          }
 
-  return {
-    ...result,
-    countries,
-    years,
-    sessions,
-    currentFilters: filters,
-    suggestions,
-  }
+    const countries = getCountries()
+    const years = getYears()
+    const sessions = getSessions()
+
+    // Get search suggestions if there's a partial search term
+    const suggestions =
+      filters.search && filters.search.trim().length >= 2
+        ? getSearchSuggestions(filters.search, 5)
+        : []
+
+    logger.info('Home loader completed', {
+      speechCount: result.speeches.length,
+      totalResults: result.pagination.total,
+      suggestionCount: suggestions.length,
+      hasSearchTerm: !!filters.search,
+    })
+
+    return {
+      ...result,
+      countries,
+      years,
+      sessions,
+      currentFilters: filters,
+      suggestions,
+    }
+  })
 }
 
 export default function Home() {
