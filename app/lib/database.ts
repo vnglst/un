@@ -4,7 +4,7 @@ import { join } from 'path'
 const db = new Database(join(process.cwd(), 'un_speeches.db'))
 
 // Initialize FTS table and triggers on database connection
-export function initializeFTS(): void {
+function initializeFTS(): void {
   try {
     // Create FTS table if it doesn't exist
     db.prepare(
@@ -85,38 +85,9 @@ export interface PaginationInfo {
   totalPages: number
 }
 
-export interface SpeechesResult {
+interface SpeechesResult {
   speeches: Speech[]
   pagination: PaginationInfo
-}
-
-export function getAllSpeeches(
-  page: number = 1,
-  limit: number = 20
-): SpeechesResult {
-  let query = 'SELECT * FROM speeches'
-  const countQuery = 'SELECT COUNT(*) as total FROM speeches'
-
-  // Get total count
-  const totalResult = db.prepare(countQuery).get() as { total: number }
-  const total = totalResult.total
-  const totalPages = Math.ceil(total / limit)
-
-  // Add ordering and pagination
-  query += ' ORDER BY year DESC, session DESC, country_name ASC'
-  query += ' LIMIT ? OFFSET ?'
-
-  const speeches = db.prepare(query).all(limit, (page - 1) * limit) as Speech[]
-
-  return {
-    speeches,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
-    },
-  }
 }
 
 export function getSpeechById(id: number): Speech | null {
@@ -270,7 +241,7 @@ export function searchSpeeches(
   }
 }
 
-export function searchSpeechesWithFTS(
+function searchSpeechesWithFTS(
   filters: SearchFilters = {},
   page: number = 1,
   limit: number = 20
@@ -373,7 +344,7 @@ export function searchSpeechesWithFTS(
 }
 
 // Utility function to rebuild FTS index (useful for maintenance)
-export function rebuildFTSIndex(): void {
+function rebuildFTSIndex(): void {
   try {
     db.prepare("INSERT INTO speeches_fts(speeches_fts) VALUES('rebuild')").run()
   } catch (error) {

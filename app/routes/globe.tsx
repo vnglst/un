@@ -210,10 +210,13 @@ export default function Globe() {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const worldData = topologyData as any
-        const countries = topojson.feature(
+        const countriesFeature = topojson.feature(
           worldData,
           worldData.objects.countries
-        ) as { features: Array<{ properties: { code: string; name: string } }> }
+        )
+        const countries = countriesFeature as unknown as {
+          features: Array<{ properties: { code: string; name: string } }>
+        }
 
         // Render countries
         const countryPaths = globe
