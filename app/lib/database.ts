@@ -323,18 +323,34 @@ export function getSessions(): number[] {
 export function getCountrySpeechCounts(): CountrySpeechCount[] {
   logger.debug('Getting country speech counts')
   const query = `
+    WITH country_latest AS (
+      SELECT 
+        country_code,
+        country_name,
+        ROW_NUMBER() OVER (
+          PARTITION BY country_code 
+          ORDER BY year DESC, session DESC
+        ) as rn
+      FROM speeches 
+      WHERE country_code IS NOT NULL 
+        AND country_name IS NOT NULL
+    ),
+    country_counts AS (
+      SELECT 
+        country_code,
+        COUNT(*) as speech_count
+      FROM speeches 
+      WHERE country_code IS NOT NULL
+      GROUP BY country_code
+    )
     SELECT 
-      country_code,
-      (SELECT country_name 
-       FROM speeches s2 
-       WHERE s2.country_code = speeches.country_code 
-       ORDER BY year DESC, session DESC 
-       LIMIT 1) as country_name,
-      COUNT(*) as speech_count
-    FROM speeches 
-    WHERE country_code IS NOT NULL
-    GROUP BY country_code
-    ORDER BY speech_count DESC
+      cc.country_code,
+      cl.country_name,
+      cc.speech_count
+    FROM country_counts cc
+    JOIN country_latest cl ON cc.country_code = cl.country_code
+    WHERE cl.rn = 1
+    ORDER BY cc.speech_count DESC
   `
 
   return timeOperation('getCountrySpeechCounts', () => {
