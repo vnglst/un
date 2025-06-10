@@ -32,20 +32,6 @@ npm run dev
 
 Visit `http://localhost:5173` to view the application.
 
-### Docker Deployment
-
-```bash
-# Build and run with Docker Compose
-docker-compose up --build
-
-# Or run in background
-docker-compose up -d --build
-```
-
-The application will be available at `http://localhost:3000`.
-
-See [DOCKER.md](./DOCKER.md) for detailed deployment instructions.
-
 ## Project Structure
 
 ```
