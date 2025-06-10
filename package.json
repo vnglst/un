@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
-    "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
+    "dev": "node scripts/download-database.js && react-router dev",
+    "start": "node scripts/download-database.js && react-router-serve ./build/server/index.js",
+    "download-db": "node scripts/download-database.js",
     "typecheck": "tsc",
     "lint": "eslint app --ext ts,tsx",
     "lint:fix": "eslint app --ext ts,tsx --fix",

@@ -19,7 +19,10 @@ if (existsSync(dbPath)) {
   })
 } else {
   logger.error('Database file not found', { path: dbPath })
-  throw new Error(`Database file not found at ${dbPath}`)
+  logger.error('Please run "npm run download-db" to download the database file')
+  throw new Error(
+    `Database file not found at ${dbPath}. Run "npm run download-db" to download it.`
+  )
 }
 
 const db = new Database(dbPath, { readonly: true })
