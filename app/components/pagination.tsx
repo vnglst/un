@@ -47,7 +47,7 @@ export default function Pagination({
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-center space-x-2 mt-8">
+    <div className="flex items-center justify-center space-x-1 mt-8">
       <Button
         variant="outline"
         size="sm"
@@ -55,18 +55,18 @@ export default function Pagination({
         disabled={currentPage === 1}
       >
         <ChevronLeft className="h-4 w-4" />
-        Previous
       </Button>
 
       {getPageNumbers().map((page, index) => (
         <div key={index}>
           {page === '...' ? (
-            <span className="px-2 text-gray-500">...</span>
+            <span className="px-3 py-1 text-gray-500">...</span>
           ) : (
             <Button
-              variant={currentPage === page ? 'default' : 'outline'}
+              variant={currentPage === page ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onPageChange(page as number)}
+              className="min-w-[2rem]"
             >
               {page}
             </Button>
@@ -80,7 +80,6 @@ export default function Pagination({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
       >
-        Next
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

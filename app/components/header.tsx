@@ -18,9 +18,9 @@ export default function Header() {
   }
 
   const getNavLinkClass = (path: string) => {
-    const baseClass = 'flex items-center space-x-1 transition-colors'
-    const activeClass = 'text-white font-semibold'
-    const hoverClass = 'hover:text-un-light-blue'
+    const baseClass = 'flex items-center space-x-1 text-sm'
+    const activeClass = 'text-black font-medium'
+    const hoverClass = 'text-gray-600 hover:text-black'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -28,10 +28,9 @@ export default function Header() {
   }
 
   const getMobileNavLinkClass = (path: string) => {
-    const baseClass = 'flex items-center space-x-2 px-4 py-2 transition-colors'
-    const activeClass =
-      'bg-white/10 text-white font-semibold border-l-4 border-white'
-    const hoverClass = 'hover:bg-un-dark-blue'
+    const baseClass = 'flex items-center space-x-2 px-4 py-3 text-sm'
+    const activeClass = 'text-black font-medium'
+    const hoverClass = 'text-gray-600 hover:text-black'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -39,22 +38,22 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-un-blue text-white shadow-lg">
+    <header className="border-b border-gray-200 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo and title */}
-          <div className="flex items-center space-x-2">
-            <Globe className="h-8 w-8" />
-            <Link to="/" className="text-xl font-bold hidden sm:block">
+          <div className="flex items-center space-x-3">
+            <Globe className="h-6 w-6 text-gray-900" />
+            <Link to="/" className="text-lg font-medium text-black hidden sm:block">
               UN General Assembly Speeches
             </Link>
-            <Link to="/" className="text-lg font-bold sm:hidden">
+            <Link to="/" className="text-lg font-medium text-black sm:hidden">
               UN Speeches
             </Link>
           </div>
 
           {/* Desktop navigation */}
-          <nav className="hidden md:flex space-x-6">
+          <nav className="hidden md:flex space-x-8">
             <Link to="/" className={getNavLinkClass('/')}>
               <Search className="h-4 w-4" />
               <span>Browse</span>
@@ -68,21 +67,21 @@ export default function Header() {
           {/* Mobile menu button */}
           <button
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-8 h-8 hover:text-un-light-blue transition-colors"
+            className="md:hidden flex items-center justify-center w-8 h-8 text-gray-600 hover:text-black"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? (
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             ) : (
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             )}
           </button>
         </div>
 
         {/* Mobile navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-un-dark-blue">
-            <nav className="py-4 space-y-2">
+          <div className="md:hidden border-t border-gray-200">
+            <nav className="py-4 space-y-1">
               <Link
                 to="/"
                 className={getMobileNavLinkClass('/')}

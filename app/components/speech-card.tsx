@@ -1,12 +1,5 @@
 import { Link } from 'react-router'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
-import { Calendar, User, FileText } from 'lucide-react'
+import { Calendar, User } from 'lucide-react'
 import type { Speech, HighlightedSpeech } from '~/lib/database'
 
 interface SpeechCardProps {
@@ -51,47 +44,35 @@ export default function SpeechCard({
   }
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200 bg-white border-gray-200 h-full flex flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg text-gray-900 leading-tight">
-              <Link
-                to={`/speech/${speech.id}`}
-                className="hover:underline hover:text-un-light-blue"
-              >
-                {hasHighlights && highlightedSpeech.highlighted_country_name ? (
-                  <span
-                    dangerouslySetInnerHTML={{
-                      __html: highlightedSpeech.highlighted_country_name,
-                    }}
-                  />
-                ) : (
-                  speech.country_name || speech.country_code
-                )}
-              </Link>
-            </CardTitle>
-            <CardDescription className="flex items-center space-x-4 mt-2 text-gray-600">
-              <span className="flex items-center space-x-1">
-                <Calendar className="h-4 w-4" />
-                <span>{speech.year}</span>
-              </span>
-              <span className="flex items-center space-x-1">
-                <FileText className="h-4 w-4" />
-                <span>Session {speech.session}</span>
-              </span>
-            </CardDescription>
-          </div>
-          <div className="text-xs bg-un-blue text-white px-2 py-1 rounded flex-shrink-0">
-            {speech.country_code}
+    <Link to={`/speech/${speech.id}`} className="block">
+      <div className="border border-gray-200 rounded p-4 hover:border-gray-300 transition-colors h-full flex flex-col">
+        <div className="mb-3">
+          <h3 className="font-medium text-black mb-2 line-clamp-2">
+            {hasHighlights && highlightedSpeech.highlighted_country_name ? (
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: highlightedSpeech.highlighted_country_name,
+                }}
+              />
+            ) : (
+              speech.country_name || speech.country_code
+            )}
+          </h3>
+          <div className="flex items-center text-sm text-gray-600 space-x-4">
+            <span className="flex items-center">
+              <Calendar className="h-3 w-3 mr-1" />
+              {speech.year}
+            </span>
+            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+              {speech.country_code}
+            </span>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col justify-between pt-0">
-        <div>
+
+        <div className="flex-1">
           {speech.speaker && (
-            <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
-              <User className="h-4 w-4 flex-shrink-0" />
+            <div className="flex items-center text-sm text-gray-600 mb-3">
+              <User className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">
                 {hasHighlights && highlightedSpeech.highlighted_speaker ? (
                   <span
@@ -103,34 +84,25 @@ export default function SpeechCard({
                   speech.speaker
                 )}
               </span>
-              {speech.post && (
-                <span className="text-gray-500">• {speech.post}</span>
-              )}
             </div>
           )}
 
           {hasHighlights && highlightedSpeech.highlighted_text ? (
             <div
-              className="text-gray-700 leading-relaxed text-sm mb-4"
+              className="text-gray-700 text-sm leading-relaxed"
               dangerouslySetInnerHTML={renderHighlightedText(
                 highlightedSpeech.highlighted_text,
                 speech.text,
-                150
+                120
               )}
             />
           ) : (
-            <p className="text-gray-700 leading-relaxed text-sm mb-4">
-              {truncateText(speech.text, 150)}
+            <p className="text-gray-700 text-sm leading-relaxed">
+              {truncateText(speech.text, 120)}
             </p>
           )}
         </div>
-        <Link
-          to={`/speech/${speech.id}`}
-          className="inline-block text-un-blue hover:text-un-light-blue font-medium text-sm mt-auto"
-        >
-          Read full speech →
-        </Link>
-      </CardContent>
-    </Card>
+      </div>
+    </Link>
   )
 }

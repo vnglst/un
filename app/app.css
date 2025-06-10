@@ -1,41 +1,16 @@
 @import "tailwindcss";
 
-@theme {
-  --color-un-blue: #009edb;
-  --color-un-dark-blue: #1f4e79;
-  --color-un-light-blue: #4fc3f7;
-}
-
-/* Clean white background like UN website */
+/* Clean white background */
 html,
 body {
   background-color: #ffffff;
-  color: #333333;
+  color: #000000;
 }
 
-/* Star twinkling animation */
-@keyframes twinkle {
-  0%,
-  100% {
-    opacity: 0.2;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-}
-
-.star {
-  animation: twinkle var(--duration) ease-in-out infinite;
-  animation-delay: var(--delay);
-}
-
-/* Search highlight styling */
+/* Minimal search highlight styling */
 mark {
-  background-color: #fbbf24;
+  background-color: #f0f0f0;
   color: #000000;
   padding: 0.125rem 0.25rem;
-  border-radius: 0.125rem;
-  font-weight: 600;
+  border-radius: 0.25rem;
 }

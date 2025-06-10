@@ -111,11 +111,10 @@ export default function CountrySpeeches() {
               </Button>
             </Link>
           </div>
-
-          {/* Header */}
+          {/* Header */}{' '}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-2">
-              <Globe className="h-8 w-8 text-un-blue" />
+              <Globe className="h-8 w-8 text-black" />
               <h1 className="text-3xl font-bold text-gray-900">
                 {countryName}
               </h1>
@@ -125,7 +124,6 @@ export default function CountrySpeeches() {
               Assembly
             </p>
           </div>
-
           {/* Results Summary */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -135,7 +133,6 @@ export default function CountrySpeeches() {
               Showing page {pagination.page} of {pagination.totalPages}
             </p>
           </div>
-
           {/* Results */}
           {speeches.length === 0 ? (
             <div className="text-center py-12">
