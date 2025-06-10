@@ -1,3 +1,5 @@
 build/
 .react-router/
 data/
+*.db
+un_speeches.db
