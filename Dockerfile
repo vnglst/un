@@ -43,10 +43,10 @@ COPY --from=deps --chown=react-router:nodejs /app/node_modules ./node_modules
 COPY --from=build --chown=react-router:nodejs /app/build ./build
 COPY --from=build --chown=react-router:nodejs /app/package.json ./package.json
 
-# Copy database file (will be copied to data/ directory at runtime if needed)
-COPY --chown=react-router:nodejs un_speeches.db ./
+# Copy scripts directory for database download
+COPY --from=build --chown=react-router:nodejs /app/scripts ./scripts
 
-# Create data directory for potential volume mounting
+# Create data directory for database download and potential volume mounting
 RUN mkdir -p /app/data && chown react-router:nodejs /app/data
 
 # Copy any other necessary files
