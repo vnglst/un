@@ -7,8 +7,10 @@
   "scripts": {
     "build": "react-router build",
     "dev": "node scripts/download-database.js && react-router dev",
-    "start": "node scripts/download-database.js && react-router-serve ./build/server/index.js",
+    "start": "node scripts/setup-production.js && react-router-serve ./build/server/index.js",
     "download-db": "node scripts/download-database.js",
+    "create-indexes": "node scripts/create-indexes.js",
+    "setup-prod": "node scripts/setup-production.js",
     "typecheck": "tsc",
     "lint": "eslint app --ext ts,tsx",
     "lint:fix": "eslint app --ext ts,tsx --fix",
