@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 
+import { config } from 'dotenv'
 import { existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
+
+// Load environment variables from .env file
+config()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
