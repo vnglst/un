@@ -3,13 +3,30 @@ import { join } from 'path'
 import { existsSync, statSync } from 'fs'
 import { logger, timeOperation, type LogContext } from './logger'
 
-// Always use data directory for both development and production
-const dbPath = join(process.cwd(), 'data', 'un_speeches.db')
+// =============================================================================
+// DATABASE CONFIGURATION & INITIALIZATION
+// =============================================================================
 
-logger.info('Initializing database connection', { path: dbPath })
+/**
+ * Initialize database connection with proper error handling and logging
+ */
+function initializeDatabase(): Database.Database {
+  const dbPath = join(process.cwd(), 'data', 'un_speeches.db')
 
-// Log database file size
-if (existsSync(dbPath)) {
+  logger.info('Initializing database connection', { path: dbPath })
+
+  // Validate database file exists
+  if (!existsSync(dbPath)) {
+    logger.error('Database file not found', { path: dbPath })
+    logger.error(
+      'Please run "npm run download-db" to download the database file'
+    )
+    throw new Error(
+      `Database file not found at ${dbPath}. Run "npm run download-db" to download it.`
+    )
+  }
+
+  // Log database file information
   const stats = statSync(dbPath)
   const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
   logger.info('Database file found', {
@@ -17,18 +34,20 @@ if (existsSync(dbPath)) {
     sizeMB: `${sizeMB} MB`,
     lastModified: stats.mtime.toISOString(),
   })
-} else {
-  logger.error('Database file not found', { path: dbPath })
-  logger.error('Please run "npm run download-db" to download the database file')
-  throw new Error(
-    `Database file not found at ${dbPath}. Run "npm run download-db" to download it.`
-  )
+
+  // Create database connection
+  const database = new Database(dbPath, { readonly: true })
+  logger.info('Database connection established')
+
+  return database
 }
 
-const db = new Database(dbPath, { readonly: true })
-logger.info('Database connection established')
+const db = initializeDatabase()
 
-// Health check functions
+// =============================================================================
+// HEALTH CHECK & DIAGNOSTICS
+// =============================================================================
+
 export function isDatabaseHealthy(): boolean {
   try {
     const result = db.prepare('SELECT 1 as test').get() as { test: number }
@@ -54,9 +73,9 @@ export function getDatabaseStats(): {
 
     const countResult = db
       .prepare('SELECT COUNT(*) as count FROM speeches')
-      .get() as {
-      count: number
-    }
+      .get() as { count: number }
+
+    const dbPath = join(process.cwd(), 'data', 'un_speeches.db')
     const stats = statSync(dbPath)
     const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
 
@@ -72,66 +91,105 @@ export function getDatabaseStats(): {
   }
 }
 
-// Initialize FTS table and triggers on database connection
+// =============================================================================
+// FULL TEXT SEARCH (FTS) INITIALIZATION
+// =============================================================================
+
+/**
+ * Create FTS virtual table for full-text search capabilities
+ */
+function createFTSTable(): void {
+  const createFTSQuery = `
+    CREATE VIRTUAL TABLE IF NOT EXISTS speeches_fts 
+    USING fts5(text, speaker, country_name, content=speeches, content_rowid=id)
+  `
+  logger.debug('Creating FTS table', { query: createFTSQuery.trim() })
+  db.prepare(createFTSQuery).run()
+}
+
+/**
+ * Create database triggers to keep FTS index synchronized with main table
+ */
+function createFTSTriggers(): void {
+  const triggers = [
+    {
+      name: 'speeches_ai',
+      event: 'AFTER INSERT',
+      action: `
+        INSERT INTO speeches_fts(rowid, text, speaker, country_name) 
+        VALUES (new.id, new.text, new.speaker, new.country_name);
+      `,
+    },
+    {
+      name: 'speeches_ad',
+      event: 'AFTER DELETE',
+      action: `
+        INSERT INTO speeches_fts(speeches_fts, rowid, text, speaker, country_name) 
+        VALUES('delete', old.id, old.text, old.speaker, old.country_name);
+      `,
+    },
+    {
+      name: 'speeches_au',
+      event: 'AFTER UPDATE',
+      action: `
+        INSERT INTO speeches_fts(speeches_fts, rowid, text, speaker, country_name) 
+        VALUES('delete', old.id, old.text, old.speaker, old.country_name);
+        INSERT INTO speeches_fts(rowid, text, speaker, country_name) 
+        VALUES (new.id, new.text, new.speaker, new.country_name);
+      `,
+    },
+  ]
+
+  triggers.forEach(({ name, event, action }) => {
+    const triggerQuery = `CREATE TRIGGER IF NOT EXISTS ${name} ${event} ON speeches BEGIN ${action} END`
+    logger.debug(`Creating ${event.toLowerCase()} trigger`, {
+      query: triggerQuery.trim(),
+    })
+    db.prepare(triggerQuery).run()
+  })
+}
+
+/**
+ * Check FTS index status and rebuild if necessary
+ */
+function validateAndRebuildFTSIfNeeded(): void {
+  const ftsCount = db
+    .prepare('SELECT COUNT(*) as count FROM speeches_fts')
+    .get() as { count: number }
+
+  logger.info('FTS index status', { recordCount: ftsCount.count })
+
+  if (ftsCount.count === 0) {
+    logger.warn('FTS index is empty, rebuilding...')
+    rebuildFTSIndex()
+  }
+}
+
+/**
+ * Utility function to rebuild FTS index (useful for maintenance)
+ */
+function rebuildFTSIndex(): void {
+  logger.info('Rebuilding FTS index')
+  try {
+    const start = Date.now()
+    db.prepare("INSERT INTO speeches_fts(speeches_fts) VALUES('rebuild')").run()
+    const duration = Date.now() - start
+    logger.info('FTS index rebuild completed', { duration: `${duration}ms` })
+  } catch (error) {
+    logger.error('Error rebuilding FTS index', error)
+    throw error
+  }
+}
+
+/**
+ * Initialize FTS table and triggers on database connection
+ */
 function initializeFTS(): void {
   logger.info('Initializing FTS (Full Text Search)')
   try {
-    // Create FTS table if it doesn't exist
-    const createFTSQuery = `
-      CREATE VIRTUAL TABLE IF NOT EXISTS speeches_fts 
-      USING fts5(text, speaker, country_name, content=speeches, content_rowid=id)
-    `
-    logger.debug('Creating FTS table', { query: createFTSQuery.trim() })
-    db.prepare(createFTSQuery).run()
-
-    // Create triggers to keep FTS in sync with main table
-    const insertTriggerQuery = `
-      CREATE TRIGGER IF NOT EXISTS speeches_ai AFTER INSERT ON speeches BEGIN
-        INSERT INTO speeches_fts(rowid, text, speaker, country_name) 
-        VALUES (new.id, new.text, new.speaker, new.country_name);
-      END
-    `
-    logger.debug('Creating insert trigger', {
-      query: insertTriggerQuery.trim(),
-    })
-    db.prepare(insertTriggerQuery).run()
-
-    const deleteTriggerQuery = `
-      CREATE TRIGGER IF NOT EXISTS speeches_ad AFTER DELETE ON speeches BEGIN
-        INSERT INTO speeches_fts(speeches_fts, rowid, text, speaker, country_name) 
-        VALUES('delete', old.id, old.text, old.speaker, old.country_name);
-      END
-    `
-    logger.debug('Creating delete trigger', {
-      query: deleteTriggerQuery.trim(),
-    })
-    db.prepare(deleteTriggerQuery).run()
-
-    const updateTriggerQuery = `
-      CREATE TRIGGER IF NOT EXISTS speeches_au AFTER UPDATE ON speeches BEGIN
-        INSERT INTO speeches_fts(speeches_fts, rowid, text, speaker, country_name) 
-        VALUES('delete', old.id, old.text, old.speaker, old.country_name);
-        INSERT INTO speeches_fts(rowid, text, speaker, country_name) 
-        VALUES (new.id, new.text, new.speaker, new.country_name);
-      END
-    `
-    logger.debug('Creating update trigger', {
-      query: updateTriggerQuery.trim(),
-    })
-    db.prepare(updateTriggerQuery).run()
-
-    // Check if FTS table is empty and rebuild if necessary
-    const ftsCount = db
-      .prepare('SELECT COUNT(*) as count FROM speeches_fts')
-      .get() as { count: number }
-
-    logger.info('FTS index status', { recordCount: ftsCount.count })
-
-    if (ftsCount.count === 0) {
-      logger.warn('FTS index is empty, rebuilding...')
-      rebuildFTSIndex()
-    }
-
+    createFTSTable()
+    createFTSTriggers()
+    validateAndRebuildFTSIfNeeded()
     logger.info('FTS initialization completed successfully')
   } catch (error) {
     logger.error('Error initializing FTS', error)
@@ -140,6 +198,10 @@ function initializeFTS(): void {
 
 // Initialize FTS on module load
 initializeFTS()
+
+// =============================================================================
+// TYPE DEFINITIONS
+// =============================================================================
 
 export interface Speech {
   id: number
@@ -167,10 +229,26 @@ export interface PaginationInfo {
   totalPages: number
 }
 
+export interface CountrySpeechCount {
+  country_code: string
+  country_name: string | null
+  speech_count: number
+}
+
+export interface HighlightedSpeech extends Speech {
+  highlighted_text?: string
+  highlighted_speaker?: string
+  highlighted_country_name?: string
+}
+
 interface SpeechesResult {
   speeches: Speech[]
   pagination: PaginationInfo
 }
+
+// =============================================================================
+// BASIC SPEECH QUERIES
+// =============================================================================
 
 export function getSpeechById(id: number): Speech | null {
   logger.debug('Getting speech by ID', { id })
@@ -187,6 +265,10 @@ export function getSpeechById(id: number): Speech | null {
     return result
   })
 }
+
+// =============================================================================
+// METADATA QUERIES
+// =============================================================================
 
 export function getCountries(): Array<{
   country_name: string
@@ -238,12 +320,6 @@ export function getSessions(): number[] {
   })
 }
 
-export interface CountrySpeechCount {
-  country_code: string
-  country_name: string | null
-  speech_count: number
-}
-
 export function getCountrySpeechCounts(): CountrySpeechCount[] {
   logger.debug('Getting country speech counts')
   const query = `
@@ -272,6 +348,10 @@ export function getCountrySpeechCounts(): CountrySpeechCount[] {
   })
 }
 
+// =============================================================================
+// COUNTRY-SPECIFIC QUERIES
+// =============================================================================
+
 export function getSpeechesByCountryCode(
   countryCode: string,
   page: number = 1,
@@ -280,7 +360,6 @@ export function getSpeechesByCountryCode(
   logger.debug('Getting speeches by country code', { countryCode, page, limit })
 
   return timeOperation(`getSpeechesByCountryCode(${countryCode})`, () => {
-    let query = 'SELECT * FROM speeches WHERE country_code = ?'
     const countQuery =
       'SELECT COUNT(*) as total FROM speeches WHERE country_code = ?'
 
@@ -293,9 +372,13 @@ export function getSpeechesByCountryCode(
 
     logger.debug('Country speeches count', { countryCode, total, totalPages })
 
-    // Add ordering and pagination
-    query += ' ORDER BY year DESC, session DESC'
-    query += ' LIMIT ? OFFSET ?'
+    // Build main query with ordering and pagination
+    const query = `
+      SELECT * FROM speeches 
+      WHERE country_code = ? 
+      ORDER BY year DESC, session DESC
+      LIMIT ? OFFSET ?
+    `
 
     const speeches = db
       .prepare(query)
@@ -320,6 +403,64 @@ export function getSpeechesByCountryCode(
   })
 }
 
+// =============================================================================
+// SEARCH FUNCTIONALITY
+// =============================================================================
+
+/**
+ * Build FTS query string based on search mode and term
+ */
+function buildFTSQuery(
+  searchTerm: string,
+  searchMode?: 'exact' | 'phrase' | 'fuzzy'
+): string {
+  switch (searchMode) {
+    case 'exact':
+      return `"${searchTerm.replace(/"/g, '""')}"`
+    case 'fuzzy': {
+      const terms = searchTerm
+        .split(/\s+/)
+        .map((term) => term.replace(/"/g, '""'))
+      return terms.join(' OR ')
+    }
+    case 'phrase':
+    default: {
+      const escapedSearchTerm = searchTerm.replace(/"/g, '""')
+      return searchTerm.includes(' ')
+        ? `"${escapedSearchTerm}"`
+        : escapedSearchTerm
+    }
+  }
+}
+
+/**
+ * Build query conditions and parameters for filtering
+ */
+function buildQueryConditions(filters: SearchFilters): {
+  whereConditions: string[]
+  queryParams: (string | number)[]
+} {
+  const whereConditions: string[] = []
+  const queryParams: (string | number)[] = []
+
+  if (filters.country) {
+    whereConditions.push('country_code = ?')
+    queryParams.push(filters.country)
+  }
+
+  if (filters.year) {
+    whereConditions.push('year = ?')
+    queryParams.push(filters.year)
+  }
+
+  if (filters.session) {
+    whereConditions.push('session = ?')
+    queryParams.push(filters.session)
+  }
+
+  return { whereConditions, queryParams }
+}
+
 export function searchSpeeches(
   filters: SearchFilters = {},
   page: number = 1,
@@ -336,24 +477,7 @@ export function searchSpeeches(
   logger.debug('Using regular filtering (no search term)')
 
   return timeOperation('searchSpeeches', () => {
-    // Otherwise use regular filtering
-    const whereConditions: string[] = []
-    const queryParams: (string | number)[] = []
-
-    if (filters.country) {
-      whereConditions.push('country_code = ?')
-      queryParams.push(filters.country)
-    }
-
-    if (filters.year) {
-      whereConditions.push('year = ?')
-      queryParams.push(filters.year)
-    }
-
-    if (filters.session) {
-      whereConditions.push('session = ?')
-      queryParams.push(filters.session)
-    }
+    const { whereConditions, queryParams } = buildQueryConditions(filters)
 
     // Build the WHERE clause
     const whereClause =
@@ -372,9 +496,11 @@ export function searchSpeeches(
     logger.debug('Search count result', { total, totalPages })
 
     // Build main query with ordering and pagination
-    let query = `SELECT * FROM speeches ${whereClause}`
-    query += ' ORDER BY year DESC, session DESC, country_name ASC'
-    query += ' LIMIT ? OFFSET ?'
+    const query = `
+      SELECT * FROM speeches ${whereClause}
+      ORDER BY year DESC, session DESC, country_name ASC
+      LIMIT ? OFFSET ?
+    `
 
     const speeches = db
       .prepare(query)
@@ -402,74 +528,29 @@ function searchSpeechesWithFTS(
   logger.debug('Executing FTS search', { filters, page, limit })
 
   return timeOperation('searchSpeechesWithFTS', () => {
-    const whereConditions: string[] = []
-    const queryParams: (string | number)[] = []
-    let joinClause = ''
-    let fromClause = 'FROM speeches'
+    const { whereConditions, queryParams } = buildQueryConditions(filters)
 
-    // Use FTS search if there's a search term
+    // Handle FTS search if search term exists
     if (filters.search && filters.search.trim()) {
       const searchTerm = filters.search.trim()
       logger.debug('FTS search term', { searchTerm, mode: filters.searchMode })
 
-      // Handle different search modes
-      let ftsQuery: string
-      switch (filters.searchMode) {
-        case 'exact':
-          // Exact phrase search
-          ftsQuery = `"${searchTerm.replace(/"/g, '""')}"`
-          break
-        case 'fuzzy': {
-          // Split into individual terms for OR search
-          const terms = searchTerm
-            .split(/\s+/)
-            .map((term) => term.replace(/"/g, '""'))
-          ftsQuery = terms.join(' OR ')
-          break
-        }
-        case 'phrase':
-        default: {
-          // Default phrase search with some flexibility
-          const escapedSearchTerm = searchTerm.replace(/"/g, '""')
-          ftsQuery = searchTerm.includes(' ')
-            ? `"${escapedSearchTerm}"`
-            : escapedSearchTerm
-          break
-        }
-      }
-
+      const ftsQuery = buildFTSQuery(searchTerm, filters.searchMode)
       logger.debug('FTS query generated', { ftsQuery })
 
-      joinClause = 'INNER JOIN speeches_fts ON speeches.id = speeches_fts.rowid'
-      whereConditions.push('speeches_fts MATCH ?')
-      queryParams.push(ftsQuery)
-      fromClause = 'FROM speeches'
+      whereConditions.unshift('speeches_fts MATCH ?')
+      queryParams.unshift(ftsQuery)
     }
 
-    // Add other filters
-    if (filters.country) {
-      whereConditions.push('country_code = ?')
-      queryParams.push(filters.country)
-    }
-
-    if (filters.year) {
-      whereConditions.push('year = ?')
-      queryParams.push(filters.year)
-    }
-
-    if (filters.session) {
-      whereConditions.push('session = ?')
-      queryParams.push(filters.session)
-    }
-
-    // Build the WHERE clause
+    const joinClause =
+      'INNER JOIN speeches_fts ON speeches.id = speeches_fts.rowid'
     const whereClause =
       whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
 
     logger.debug('FTS query conditions', { whereConditions, queryParams })
 
     // Build count query
-    const countQuery = `SELECT COUNT(*) as total ${fromClause} ${joinClause} ${whereClause}`
+    const countQuery = `SELECT COUNT(*) as total FROM speeches ${joinClause} ${whereClause}`
     const totalResult = db.prepare(countQuery).get(...queryParams) as {
       total: number
     }
@@ -479,17 +560,16 @@ function searchSpeechesWithFTS(
     logger.debug('FTS count result', { total, totalPages })
 
     // Build main query with ordering and pagination
-    // When using FTS, we can order by relevance (bm25) or stick with chronological
-    let query = `SELECT speeches.* ${fromClause} ${joinClause} ${whereClause}`
+    const orderBy =
+      filters.search && filters.search.trim()
+        ? 'ORDER BY bm25(speeches_fts) ASC, year DESC, session DESC'
+        : 'ORDER BY year DESC, session DESC, country_name ASC'
 
-    if (filters.search && filters.search.trim()) {
-      // Order by relevance first, then by year/session
-      query += ' ORDER BY bm25(speeches_fts) ASC, year DESC, session DESC'
-    } else {
-      query += ' ORDER BY year DESC, session DESC, country_name ASC'
-    }
-
-    query += ' LIMIT ? OFFSET ?'
+    const query = `
+      SELECT speeches.* FROM speeches ${joinClause} ${whereClause}
+      ${orderBy}
+      LIMIT ? OFFSET ?
+    `
 
     const speeches = db
       .prepare(query)
@@ -509,21 +589,10 @@ function searchSpeechesWithFTS(
   })
 }
 
-// Utility function to rebuild FTS index (useful for maintenance)
-function rebuildFTSIndex(): void {
-  logger.info('Rebuilding FTS index')
-  try {
-    const start = Date.now()
-    db.prepare("INSERT INTO speeches_fts(speeches_fts) VALUES('rebuild')").run()
-    const duration = Date.now() - start
-    logger.info('FTS index rebuild completed', { duration: `${duration}ms` })
-  } catch (error) {
-    logger.error('Error rebuilding FTS index', error)
-    throw error
-  }
-}
+// =============================================================================
+// ADVANCED SEARCH FEATURES
+// =============================================================================
 
-// Function to get search suggestions based on partial text
 export function getSearchSuggestions(
   partialText: string,
   limit: number = 10
@@ -537,6 +606,7 @@ export function getSearchSuggestions(
 
   return timeOperation('getSearchSuggestions', () => {
     const searchTerm = partialText.trim()
+    const searchPattern = `%${searchTerm}%`
 
     // Get common words/phrases from speeches that match the partial text
     const query = `
@@ -553,7 +623,6 @@ export function getSearchSuggestions(
       LIMIT ?
     `
 
-    const searchPattern = `%${searchTerm}%`
     const results = db
       .prepare(query)
       .all(
@@ -562,9 +631,7 @@ export function getSearchSuggestions(
         searchPattern,
         searchPattern,
         limit
-      ) as Array<{
-      suggestion: string
-    }>
+      ) as Array<{ suggestion: string }>
 
     const suggestions = results.map((r) => r.suggestion).filter(Boolean)
     logger.debug('Search suggestions result', {
@@ -575,13 +642,6 @@ export function getSearchSuggestions(
 
     return suggestions
   })
-}
-
-// Function to get highlighted search results (returns text with search terms highlighted)
-export interface HighlightedSpeech extends Speech {
-  highlighted_text?: string
-  highlighted_speaker?: string
-  highlighted_country_name?: string
 }
 
 export function searchSpeechesWithHighlights(
@@ -602,8 +662,7 @@ export function searchSpeechesWithHighlights(
   }
 
   return timeOperation('searchSpeechesWithHighlights', () => {
-    const whereConditions: string[] = []
-    const queryParams: (string | number)[] = []
+    const { whereConditions, queryParams } = buildQueryConditions(filters)
 
     const searchTerm = filters.search!.trim()
     logger.debug('Highlighted search term', {
@@ -611,52 +670,14 @@ export function searchSpeechesWithHighlights(
       mode: filters.searchMode,
     })
 
-    // Handle different search modes
-    let ftsQuery: string
-    switch (filters.searchMode) {
-      case 'exact':
-        ftsQuery = `"${searchTerm.replace(/"/g, '""')}"`
-        break
-      case 'fuzzy': {
-        const terms = searchTerm
-          .split(/\s+/)
-          .map((term) => term.replace(/"/g, '""'))
-        ftsQuery = terms.join(' OR ')
-        break
-      }
-      case 'phrase':
-      default: {
-        const escapedSearchTerm = searchTerm.replace(/"/g, '""')
-        ftsQuery = searchTerm.includes(' ')
-          ? `"${escapedSearchTerm}"`
-          : escapedSearchTerm
-        break
-      }
-    }
-
+    const ftsQuery = buildFTSQuery(searchTerm, filters.searchMode)
     logger.debug('Highlighted FTS query generated', { ftsQuery })
+
+    whereConditions.unshift('speeches_fts MATCH ?')
+    queryParams.unshift(ftsQuery)
 
     const joinClause =
       'INNER JOIN speeches_fts ON speeches.id = speeches_fts.rowid'
-    whereConditions.push('speeches_fts MATCH ?')
-    queryParams.push(ftsQuery)
-
-    // Add other filters
-    if (filters.country) {
-      whereConditions.push('country_code = ?')
-      queryParams.push(filters.country)
-    }
-
-    if (filters.year) {
-      whereConditions.push('year = ?')
-      queryParams.push(filters.year)
-    }
-
-    if (filters.session) {
-      whereConditions.push('session = ?')
-      queryParams.push(filters.session)
-    }
-
     const whereClause = `WHERE ${whereConditions.join(' AND ')}`
 
     logger.debug('Highlighted query conditions', {
