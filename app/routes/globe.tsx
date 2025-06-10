@@ -3,7 +3,6 @@ import { getCountrySpeechCounts, type CountrySpeechCount } from '~/lib/database'
 import { logger, timeAsyncOperation } from '~/lib/logger'
 import Header from '~/components/header'
 import Footer from '~/components/footer'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import * as topojson from 'topojson-client'
@@ -336,88 +335,80 @@ export default function Globe() {
   }, [countryCounts])
 
   return (
-    <>
-      <div className="min-h-screen flex flex-col bg-white relative z-10">
-        <Header />
+    <div className="min-h-screen flex flex-col bg-white">
+      <Header />
 
-        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              UN General Assembly Globe
-            </h1>
-            <p className="text-gray-600">
-              Explore an interactive globe showing how often countries have
-              spoken at the UN General Assembly. Drag to rotate, scroll to zoom,
-              and click on countries to see their speeches.
-            </p>
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-12">
+          <h1 className="text-4xl font-medium text-black mb-3">
+            UN General Assembly Globe
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Explore an interactive globe showing how often countries have spoken
+            at the UN General Assembly. Drag to rotate, scroll to zoom, and
+            click on countries to see their speeches.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Globe */}
+          <div className="lg:col-span-2">
+            <div className="border border-gray-200 rounded">
+              <div className="border-b border-gray-200 p-4">
+                <h2 className="text-lg font-medium text-black">
+                  Interactive Globe
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="relative w-full h-96 lg:h-[500px] bg-black rounded border border-gray-300 overflow-hidden">
+                  <div ref={globeRef} className="w-full h-full relative z-10" />
+                  <div className="absolute inset-0 z-0" id="globe-stars"></div>
+                </div>
+                <p className="text-sm text-gray-600 mt-4">
+                  <strong>Interact with the globe:</strong> Drag to rotate,
+                  scroll or pinch to zoom. Hover over countries to see speech
+                  counts. Click to view their speeches. Countries are colored by
+                  frequency of speeches - darker blue means more speeches.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Globe */}
-            <div className="lg:col-span-2">
-              <Card className="bg-white border-gray-200">
-                <CardHeader>
-                  <CardTitle className="text-gray-900">
-                    Interactive Globe
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative w-full h-96 lg:h-[500px] bg-black rounded-lg border border-gray-300 overflow-hidden">
-                    <div
-                      ref={globeRef}
-                      className="w-full h-full relative z-10"
-                    />
-                    <div
-                      className="absolute inset-0 z-0"
-                      id="globe-stars"
-                    ></div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-4">
-                    <strong>Interact with the globe:</strong> Drag to rotate,
-                    scroll or pinch to zoom. Hover over countries to see speech
-                    counts. Click to view their speeches. Countries are colored
-                    by frequency of speeches - darker blue means more speeches.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Top Speaking Countries */}
-            <div>
-              <Card className="bg-white border-gray-200">
-                <CardHeader>
-                  <CardTitle className="text-gray-900">
-                    Top Speaking Countries
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {countryCounts.slice(0, 10).map((country, index) => (
-                      <Link
-                        key={country.country_code}
-                        to={`/country/${country.country_code}`}
-                        className="flex items-center justify-between p-3 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
-                      >
-                        <div>
-                          <span className="text-sm font-medium text-white">
-                            {index + 1}.{' '}
-                            {country.country_name || country.country_code}
-                          </span>
-                        </div>
-                        <span className="text-sm text-gray-300">
-                          {country.speech_count} speeches
+          {/* Top Speaking Countries */}
+          <div>
+            <div className="border border-gray-200 rounded">
+              <div className="border-b border-gray-200 p-4">
+                <h2 className="text-lg font-medium text-black">
+                  Top Speaking Countries
+                </h2>
+              </div>
+              <div className="p-4">
+                <div className="space-y-2">
+                  {countryCounts.slice(0, 10).map((country, index) => (
+                    <Link
+                      key={country.country_code}
+                      to={`/country/${country.country_code}`}
+                      className="flex items-center justify-between p-3 rounded border border-gray-200 hover:border-gray-300 transition-colors"
+                    >
+                      <div>
+                        <span className="text-sm font-medium text-black">
+                          {index + 1}.{' '}
+                          {country.country_name || country.country_code}
                         </span>
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {country.speech_count} speeches
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </main>
+        </div>
+      </main>
 
-        <Footer />
-      </div>
-    </>
+      <Footer />
+    </div>
   )
 }

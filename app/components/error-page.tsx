@@ -32,8 +32,8 @@ export default function ErrorPage({
         <Card className="max-w-2xl w-full">
           <CardHeader className="text-center pb-4">
             <div className="flex justify-center mb-4">
-              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-10 w-10 text-red-500" />
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-10 w-10 text-gray-600" />
               </div>
             </div>
             <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
