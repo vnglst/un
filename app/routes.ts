@@ -5,6 +5,10 @@ export default [
   route('globe', 'routes/globe.tsx'),
   route('country/:code', 'routes/country.$code.tsx'),
   route('speech/:id', 'routes/speech.$id.tsx'),
+  route('year/:year', 'routes/year.$year.tsx'),
+  route('session/:session', 'routes/session.$session.tsx'),
+  route('speaker/:speaker', 'routes/speaker.$speaker.tsx'),
+  route('role/:role', 'routes/role.$role.tsx'),
   route('health', 'routes/health.tsx'),
   route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig
