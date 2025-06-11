@@ -105,7 +105,7 @@ export default function SessionSpeeches() {
 
         {speeches.length > 0 ? (
           <>
-            <div className="grid gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
               {speeches.map((speech) => (
                 <SpeechCard key={speech.id} speech={speech} />
               ))}

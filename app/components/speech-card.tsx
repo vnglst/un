@@ -98,7 +98,7 @@ export default function SpeechCard({
             />
           ) : (
             <p className="text-gray-700 text-sm leading-relaxed">
-              {truncateText(speech.text, 120)}
+              {truncateText(speech.text, 150)}
             </p>
           )}
         </div>
