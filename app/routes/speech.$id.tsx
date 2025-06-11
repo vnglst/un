@@ -4,7 +4,7 @@ import { logger, timeAsyncOperation } from '~/lib/logger'
 import Header from '~/components/header'
 import Footer from '~/components/footer'
 import { Button } from '~/components/ui/button'
-import { Calendar, User, MapPin, FileText, ArrowLeft } from 'lucide-react'
+import { Calendar, User, FileText, ArrowLeft } from 'lucide-react'
 
 type LoaderData = {
   speech: Speech
@@ -14,14 +14,14 @@ export function meta({ data }: { data?: LoaderData }) {
   return [
     {
       title: data?.speech
-        ? `Speech by ${data.speech.speaker} - UN General Assembly`
-        : 'Speech - UN General Assembly',
+        ? `${data.speech.speaker} - UN Speeches`
+        : 'Speech - UN Speeches',
     },
     {
       name: 'description',
       content: data?.speech
-        ? `Speech by ${data.speech.speaker} from ${data.speech.country_name} at the UN General Assembly`
-        : 'Speech from the UN General Assembly',
+        ? `Speech by ${data.speech.speaker} from ${data.speech.country_name}.`
+        : 'UN General Assembly speech.',
     },
   ]
 }
@@ -78,31 +78,23 @@ export default function SpeechDetail() {
         </div>
 
         <div className="border border-gray-200 rounded">
-          <div className="border-b border-gray-200 bg-gray-50 p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl font-medium text-black mb-2">
-                  {speech.country_name || speech.country_code}
-                </h1>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                  <span className="flex items-center space-x-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>{speech.year}</span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <FileText className="h-4 w-4" />
-                    <span>Session {speech.session}</span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{speech.country_code}</span>
-                  </span>
-                </div>
-              </div>
+          <div className="border-b border-gray-200 bg-gray-50 p-4">
+            <h1 className="text-xl font-medium text-black mb-2">
+              {speech.country_name || speech.country_code}
+            </h1>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+              <span className="flex items-center space-x-1">
+                <Calendar className="h-4 w-4" />
+                <span>{speech.year}</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <FileText className="h-4 w-4" />
+                <span>Session {speech.session}</span>
+              </span>
             </div>
 
             {speech.speaker && (
-              <div className="mt-4 pt-4 border-t border-gray-300">
+              <div className="mt-3 pt-3 border-t border-gray-300">
                 <div className="flex items-center space-x-2 text-sm text-gray-700">
                   <User className="h-4 w-4" />
                   <span className="font-medium">{speech.speaker}</span>
@@ -117,20 +109,18 @@ export default function SpeechDetail() {
             )}
           </div>
 
-          <div className="p-8 bg-white">
-            <div className="prose prose-lg max-w-none">
-              <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
-                {speech.text}
-              </div>
+          <div className="p-6 bg-white">
+            <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">
+              {speech.text}
             </div>
           </div>
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
           <Link to="/">
-            <Button>
+            <Button size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to All Speeches
+              Back
             </Button>
           </Link>
         </div>

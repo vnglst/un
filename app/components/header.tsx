@@ -44,13 +44,7 @@ export default function Header() {
           {/* Logo and title */}
           <div className="flex items-center space-x-3">
             <Globe className="h-6 w-6 text-gray-900" />
-            <Link
-              to="/"
-              className="text-lg font-medium text-black hidden sm:block"
-            >
-              UN General Assembly Speeches
-            </Link>
-            <Link to="/" className="text-lg font-medium text-black sm:hidden">
+            <Link to="/" className="text-lg font-medium text-black">
               UN Speeches
             </Link>
           </div>

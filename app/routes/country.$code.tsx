@@ -32,10 +32,10 @@ export function meta({ data }: { data: LoaderData }) {
   }
 
   return [
-    { title: `${data.countryName} - UN General Assembly Speeches` },
+    { title: `${data.countryName} - UN Speeches` },
     {
       name: 'description',
-      content: `Browse ${data.pagination.total} speeches from ${data.countryName} at the UN General Assembly.`,
+      content: `${data.pagination.total} speeches from ${data.countryName}.`,
     },
   ]
 }
@@ -111,27 +111,15 @@ export default function CountrySpeeches() {
               </Button>
             </Link>
           </div>
-          {/* Header */}{' '}
-          <div className="mb-8">
-            <div className="flex items-center space-x-3 mb-2">
-              <Globe className="h-8 w-8 text-black" />
-              <h1 className="text-3xl font-bold text-gray-900">
-                {countryName}
-              </h1>
-            </div>
-            <p className="text-gray-600">
-              {pagination.total} speeches from {countryName} at the UN General
-              Assembly
-            </p>
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-medium text-black mb-2">
+              {countryName}
+            </h1>
           </div>
           {/* Results Summary */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              {pagination.total} speeches found
-            </h2>
-            <p className="text-gray-600">
-              Showing page {pagination.page} of {pagination.totalPages}
-            </p>
+            <p className="text-gray-600 text-sm">{pagination.total} speeches</p>
           </div>
           {/* Results */}
           {speeches.length === 0 ? (

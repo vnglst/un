@@ -15,11 +15,10 @@ type LoaderData = {
 
 export function meta() {
   return [
-    { title: 'UN Speeches Globe - Interactive World Map' },
+    { title: 'Globe - UN Speeches' },
     {
       name: 'description',
-      content:
-        'Explore an interactive globe showing how often countries have spoken at the UN General Assembly. Click on any country to see their speeches.',
+      content: 'Interactive globe showing UN speech data by country.',
     },
   ]
 }
@@ -313,35 +312,21 @@ export default function Globe() {
       <Header />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12">
-          <h1 className="text-4xl font-medium text-black mb-3">
-            UN General Assembly Globe
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Explore an interactive globe showing how often countries have spoken
-            at the UN General Assembly. Drag to rotate, scroll to zoom, and
-            click on countries to see their speeches.
-          </p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-medium text-black mb-2">Globe</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Globe */}
           <div className="lg:col-span-2">
             <div className="border border-gray-200 rounded">
-              <div className="border-b border-gray-200 p-4">
-                <h2 className="text-lg font-medium text-black">
-                  Interactive Globe
-                </h2>
-              </div>
               <div className="p-6">
                 <div className="relative w-full h-96 lg:h-[500px] bg-gray-50 rounded border border-gray-300 overflow-hidden">
                   <div ref={globeRef} className="w-full h-full relative z-10" />
                 </div>
-                <p className="text-sm text-gray-600 mt-4">
-                  <strong>Interact with the globe:</strong> Drag to rotate,
-                  scroll or pinch to zoom. Hover over countries to see speech
-                  counts. Click to view their speeches. Countries are colored by
-                  frequency of speeches - darker blue means more speeches.
+                <p className="text-sm text-gray-600 mt-3">
+                  Drag to rotate, scroll to zoom, click countries to view
+                  speeches.
                 </p>
               </div>
             </div>
@@ -350,11 +335,6 @@ export default function Globe() {
           {/* Top Speaking Countries */}
           <div>
             <div className="border border-gray-200 rounded">
-              <div className="border-b border-gray-200 p-4">
-                <h2 className="text-lg font-medium text-black">
-                  Top Speaking Countries
-                </h2>
-              </div>
               <div className="p-4">
                 <div className="space-y-2">
                   {countryCounts.slice(0, 10).map((country, index) => (

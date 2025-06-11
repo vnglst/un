@@ -32,11 +32,10 @@ type LoaderData = {
 
 export function meta() {
   return [
-    { title: 'UN General Assembly Speeches' },
+    { title: 'UN Speeches' },
     {
       name: 'description',
-      content:
-        'Browse and search speeches from the UN General Assembly. Explore thousands of historical speeches and statements.',
+      content: 'Browse UN General Assembly speeches.',
     },
   ]
 }
@@ -209,21 +208,13 @@ export default function Home() {
       <Header />
 
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12">
-          <h1 className="text-4xl font-medium text-black mb-3">
-            UN General Assembly Speeches
-          </h1>
-          <p className="text-gray-600 text-lg">
-            {hasActiveFilters
-              ? `Search through ${pagination.total} speeches`
-              : `Explore ${pagination.total} speeches from the United Nations`}
-          </p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-medium text-black mb-2">Speeches</h1>
         </div>
 
         {/* Search Form */}
-        <div className="border border-gray-200 rounded p-6 mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium text-black">Search</h2>
+        <div className="border border-gray-200 rounded p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
               size="sm"
@@ -408,13 +399,9 @@ export default function Home() {
         </div>
 
         {/* Results */}
-        <div className="mb-8">
-          <h2 className="text-xl font-medium text-black mb-4">
-            {pagination.total} {pagination.total === 1 ? 'speech' : 'speeches'}
-            {hasActiveFilters ? ' found' : ''}
-          </h2>
-          <p className="text-gray-600">
-            Showing page {pagination.page} of {pagination.totalPages}
+        <div className="mb-6">
+          <p className="text-gray-600 text-sm">
+            {pagination.total} {pagination.total === 1 ? 'result' : 'results'}
           </p>
 
           {/* Active filters display */}
