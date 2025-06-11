@@ -57,32 +57,6 @@ export default function Globe() {
       // Clear any existing content
       container.innerHTML = ''
 
-      // Add stars to the globe container
-      const addStarsToGlobe = () => {
-        const starsContainer = document.getElementById('globe-stars')
-        if (!starsContainer) return
-
-        const STAR_COUNT = 150
-        starsContainer.innerHTML = ''
-
-        for (let i = 0; i < STAR_COUNT; i++) {
-          const star = document.createElement('div')
-          const size = Math.random() * 3 + 1
-          star.style.width = `${size}px`
-          star.style.height = `${size}px`
-          star.style.top = `${Math.random() * 100}%`
-          star.style.left = `${Math.random() * 100}%`
-          star.style.position = 'absolute'
-          star.style.background = '#ffffff'
-          star.style.borderRadius = '50%'
-          star.style.opacity = `${Math.random() * 0.8 + 0.2}`
-
-          starsContainer.appendChild(star)
-        }
-      }
-
-      addStarsToGlobe()
-
       const svg = d3
         .select(container)
         .append('svg')
@@ -179,7 +153,7 @@ export default function Globe() {
       globe
         .append('circle')
         .attr('fill', '#ffffff')
-        .attr('stroke', '#009edb')
+        .attr('stroke', '#6b7280')
         .attr('stroke-width', 2)
         .attr('cx', width / 2)
         .attr('cy', height / 2)
@@ -360,9 +334,8 @@ export default function Globe() {
                 </h2>
               </div>
               <div className="p-6">
-                <div className="relative w-full h-96 lg:h-[500px] bg-black rounded border border-gray-300 overflow-hidden">
+                <div className="relative w-full h-96 lg:h-[500px] bg-gray-50 rounded border border-gray-300 overflow-hidden">
                   <div ref={globeRef} className="w-full h-full relative z-10" />
-                  <div className="absolute inset-0 z-0" id="globe-stars"></div>
                 </div>
                 <p className="text-sm text-gray-600 mt-4">
                   <strong>Interact with the globe:</strong> Drag to rotate,
