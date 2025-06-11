@@ -24,6 +24,14 @@ export default function Footer() {
             >
               Research
             </a>
+            <a
+              href="https://github.com/vnglst/un"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Source Code
+            </a>
           </div>
         </div>
       </div>
