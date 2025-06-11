@@ -18,9 +18,12 @@ export default function Header() {
   }
 
   const getNavLinkClass = (path: string) => {
-    const baseClass = 'flex items-center space-x-1 text-sm'
-    const activeClass = 'text-black font-medium'
-    const hoverClass = 'text-gray-600 hover:text-black'
+    const baseClass =
+      'flex items-center space-x-1 text-sm drop-shadow-sm transition-all duration-200'
+    const activeClass =
+      'text-white font-medium bg-white/20 px-3 py-2 rounded-lg backdrop-blur-sm'
+    const hoverClass =
+      'text-white/90 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -28,9 +31,10 @@ export default function Header() {
   }
 
   const getMobileNavLinkClass = (path: string) => {
-    const baseClass = 'flex items-center space-x-2 px-4 py-3 text-sm'
-    const activeClass = 'text-black font-medium'
-    const hoverClass = 'text-gray-600 hover:text-black'
+    const baseClass =
+      'flex items-center space-x-2 px-4 py-3 text-sm transition-all duration-200'
+    const activeClass = 'text-white font-medium bg-white/20 backdrop-blur-sm'
+    const hoverClass = 'text-white/90 hover:text-white hover:bg-white/10'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -38,13 +42,18 @@ export default function Header() {
   }
 
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="border-b border-[#009edb]/30 bg-gradient-to-r from-[#009edb] to-[#009edb]/95 shadow-lg relative overflow-hidden">
+      {/* Glossy overlay effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/5 pointer-events-none"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex items-center justify-between h-16">
           {/* Logo and title */}
           <div className="flex items-center space-x-3">
-            <Globe className="h-6 w-6 text-gray-900" />
-            <Link to="/" className="text-lg font-medium text-black">
+            <Globe className="h-6 w-6 text-white drop-shadow-sm" />
+            <Link
+              to="/"
+              className="text-lg font-medium text-white drop-shadow-sm"
+            >
               UN Speeches
             </Link>
           </div>
@@ -64,7 +73,7 @@ export default function Header() {
           {/* Mobile menu button */}
           <button
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-8 h-8 text-gray-600 hover:text-black"
+            className="md:hidden flex items-center justify-center w-8 h-8 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? (
@@ -77,7 +86,7 @@ export default function Header() {
 
         {/* Mobile navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200">
+          <div className="md:hidden border-t border-white/20 bg-black/10 backdrop-blur-sm">
             <nav className="py-4 space-y-1">
               <Link
                 to="/"
