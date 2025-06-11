@@ -77,8 +77,7 @@ export default function Globe() {
       const SENSITIVITY = 75
       const ROTATION_SPEED = 0.2
       const ZOOM_EXTENT: [number, number] = [0.5, 4]
-      const INITIAL_SCALE = window.innerWidth > 768 ? 1.2 : 1.0 // Increased from 0.6 and 0.9
-
+      const INITIAL_SCALE = window.innerWidth > 768 ? 1.1 : 1.0 // Adjust initial scale based on screen size
       // State variables
       let rotationStopped = false
       let isDragging = false
@@ -319,17 +318,12 @@ export default function Globe() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Globe */}
           <div className="lg:col-span-2">
-            <div className="border border-gray-200 rounded">
-              <div className="p-6">
-                <div className="relative w-full h-96 lg:h-[500px] bg-gray-50 rounded border border-gray-300 overflow-hidden">
-                  <div ref={globeRef} className="w-full h-full relative z-10" />
-                </div>
-                <p className="text-sm text-gray-600 mt-3">
-                  Drag to rotate, scroll to zoom, click countries to view
-                  speeches.
-                </p>
-              </div>
+            <div className="relative w-full h-[600px] bg-gray-50 rounded border border-gray-300 overflow-hidden">
+              <div ref={globeRef} className="w-full h-full relative z-10" />
             </div>
+            <p className="text-sm text-gray-600 mt-3">
+              Drag to rotate, scroll to zoom, click countries to view speeches.
+            </p>
           </div>
 
           {/* Top Speaking Countries */}
