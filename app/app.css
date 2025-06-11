@@ -1,13 +1,16 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-/* Clean white background */
+:root {
+  --color-primary: #009edb;
+  --color-primary-hover: #0087c4;
+}
+
 html,
 body {
   background-color: #ffffff;
   color: #000000;
 }
 
-/* Minimal search highlight styling */
 mark {
   background-color: #f0f0f0;
   color: #000000;

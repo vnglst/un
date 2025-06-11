@@ -369,7 +369,7 @@ export default function Home() {
             {/* Action buttons */}
             <div className="flex items-center justify-between pt-4">
               <div className="flex space-x-2">
-                <Button type="submit">
+                <Button type="submit" variant="primary">
                   <SearchIcon className="h-4 w-4 mr-2" />
                   Search
                 </Button>
