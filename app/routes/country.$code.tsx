@@ -6,8 +6,7 @@ import {
   type PaginationInfo,
 } from '~/lib/database'
 import { logger, timeAsyncOperation } from '~/lib/logger'
-import Header from '~/components/header'
-import Footer from '~/components/footer'
+import PageLayout from '~/components/page-layout'
 import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { Button } from '~/components/ui/button'
@@ -98,62 +97,56 @@ export default function CountrySpeeches() {
 
   return (
     <>
-      <div className="min-h-screen flex flex-col bg-white relative z-10">
-        <Header />
-
-        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Back Navigation */}
-          <div className="mb-6">
-            <Link to="/globe">
-              <Button variant="outline" className="mb-4">
+      <PageLayout maxWidth="wide">
+        {/* Back Navigation */}
+        <div className="mb-6">
+          <Link to="/globe">
+            <Button variant="outline" className="mb-4">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Globe
+            </Button>
+          </Link>
+        </div>
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-medium text-black mb-2">
+            {countryName}
+          </h1>
+        </div>
+        {/* Results Summary */}
+        <div className="mb-6">
+          <p className="text-gray-600 text-sm">{pagination.total} speeches</p>
+        </div>
+        {/* Results */}
+        {speeches.length === 0 ? (
+          <div className="text-center py-12">
+            <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">
+              No speeches found for {countryName}.
+            </p>
+            <Link to="/globe" className="mt-4 inline-block">
+              <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Globe
               </Button>
             </Link>
           </div>
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-medium text-black mb-2">
-              {countryName}
-            </h1>
-          </div>
-          {/* Results Summary */}
-          <div className="mb-6">
-            <p className="text-gray-600 text-sm">{pagination.total} speeches</p>
-          </div>
-          {/* Results */}
-          {speeches.length === 0 ? (
-            <div className="text-center py-12">
-              <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">
-                No speeches found for {countryName}.
-              </p>
-              <Link to="/globe" className="mt-4 inline-block">
-                <Button>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Globe
-                </Button>
-              </Link>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              {speeches.map((speech: Speech) => (
+                <SpeechCard key={speech.id} speech={speech} />
+              ))}
             </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                {speeches.map((speech: Speech) => (
-                  <SpeechCard key={speech.id} speech={speech} />
-                ))}
-              </div>
 
-              <Pagination
-                currentPage={pagination.page}
-                totalPages={pagination.totalPages}
-                onPageChange={handlePageChange}
-              />
-            </>
-          )}
-        </main>
-
-        <Footer />
-      </div>
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
+        )}
+      </PageLayout>
     </>
   )
 }

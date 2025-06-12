@@ -1,8 +1,7 @@
 import { useLoaderData, Link } from 'react-router'
 import { getCountrySpeechCounts, type CountrySpeechCount } from '~/lib/database'
 import { logger, timeAsyncOperation } from '~/lib/logger'
-import Header from '~/components/header'
-import Footer from '~/components/footer'
+import PageLayout from '~/components/page-layout'
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import * as topojson from 'topojson-client'
@@ -307,55 +306,49 @@ export default function Globe() {
   }, [countryCounts])
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <Header />
+    <PageLayout maxWidth="default" className="w-full">
+      <div className="mb-8">
+        <h1 className="text-3xl font-medium text-black mb-2">Globe</h1>
+      </div>
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-medium text-black mb-2">Globe</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Globe */}
+        <div className="lg:col-span-2">
+          <div className="relative w-full h-[600px] bg-gray-50 rounded border border-gray-300 overflow-hidden">
+            <div ref={globeRef} className="w-full h-full relative z-10" />
+          </div>
+          <p className="text-sm text-gray-600 mt-3">
+            Drag to rotate, scroll to zoom, click countries to view speeches.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Globe */}
-          <div className="lg:col-span-2">
-            <div className="relative w-full h-[600px] bg-gray-50 rounded border border-gray-300 overflow-hidden">
-              <div ref={globeRef} className="w-full h-full relative z-10" />
-            </div>
-            <p className="text-sm text-gray-600 mt-3">
-              Drag to rotate, scroll to zoom, click countries to view speeches.
-            </p>
-          </div>
-
-          {/* Top Speaking Countries */}
-          <div>
-            <div className="border border-gray-200 rounded">
-              <div className="p-4">
-                <div className="space-y-2">
-                  {countryCounts.slice(0, 10).map((country, index) => (
-                    <Link
-                      key={country.country_code}
-                      to={`/country/${country.country_code}`}
-                      className="flex items-center justify-between p-3 rounded border border-gray-200 hover:border-gray-300 transition-colors"
-                    >
-                      <div>
-                        <span className="text-sm font-medium text-black">
-                          {index + 1}.{' '}
-                          {country.country_name || country.country_code}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        {country.speech_count} speeches
+        {/* Top Speaking Countries */}
+        <div>
+          <div className="border border-gray-200 rounded">
+            <div className="p-4">
+              <div className="space-y-2">
+                {countryCounts.slice(0, 10).map((country, index) => (
+                  <Link
+                    key={country.country_code}
+                    to={`/country/${country.country_code}`}
+                    className="flex items-center justify-between p-3 rounded border border-gray-200 hover:border-gray-300 transition-colors"
+                  >
+                    <div>
+                      <span className="text-sm font-medium text-black">
+                        {index + 1}.{' '}
+                        {country.country_name || country.country_code}
                       </span>
-                    </Link>
-                  ))}
-                </div>
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {country.speech_count} speeches
+                    </span>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </PageLayout>
   )
 }

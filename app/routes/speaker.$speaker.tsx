@@ -5,8 +5,7 @@ import {
   type PaginationInfo,
 } from '~/lib/database'
 import { logger, timeAsyncOperation } from '~/lib/logger'
-import Header from '~/components/header'
-import Footer from '~/components/footer'
+import PageLayout from '~/components/page-layout'
 import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { User, ArrowLeft } from 'lucide-react'
@@ -74,56 +73,50 @@ export default function SpeakerSpeeches() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <Header />
+    <PageLayout maxWidth="wide">
+      <div className="mb-8">
+        <Link to="/" className="inline-block mb-4">
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Browse
+          </Button>
+        </Link>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8">
-          <Link to="/" className="inline-block mb-4">
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Browse
-            </Button>
-          </Link>
-
-          <div className="flex items-center space-x-3 mb-2">
-            <User className="h-6 w-6 text-[#009edb]" />
-            <h1 className="text-3xl font-medium text-black">
-              Speeches by {speaker}
-            </h1>
-          </div>
-
-          <p className="text-gray-600">
-            {pagination.total} speech{pagination.total !== 1 ? 'es' : ''} found
-          </p>
+        <div className="flex items-center space-x-3 mb-2">
+          <User className="h-6 w-6 text-[#009edb]" />
+          <h1 className="text-3xl font-medium text-black">
+            Speeches by {speaker}
+          </h1>
         </div>
 
-        {speeches.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-              {speeches.map((speech) => (
-                <SpeechCard key={speech.id} speech={speech} />
-              ))}
-            </div>
+        <p className="text-gray-600">
+          {pagination.total} speech{pagination.total !== 1 ? 'es' : ''} found
+        </p>
+      </div>
 
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
-            />
-          </>
-        ) : (
-          <div className="text-center py-12">
-            <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-600">No speeches found by {speaker}</p>
-            <Link to="/" className="mt-4 inline-block">
-              <Button>Browse All Speeches</Button>
-            </Link>
+      {speeches.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+            {speeches.map((speech) => (
+              <SpeechCard key={speech.id} speech={speech} />
+            ))}
           </div>
-        )}
-      </main>
 
-      <Footer />
-    </div>
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </>
+      ) : (
+        <div className="text-center py-12">
+          <User className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <p className="text-gray-600">No speeches found by {speaker}</p>
+          <Link to="/" className="mt-4 inline-block">
+            <Button>Browse All Speeches</Button>
+          </Link>
+        </div>
+      )}
+    </PageLayout>
   )
 }
