@@ -9,6 +9,7 @@ export default [
   route('session/:session', 'routes/session.$session.tsx'),
   route('speaker/:speaker', 'routes/speaker.$speaker.tsx'),
   route('role/:role', 'routes/role.$role.tsx'),
+  route('sitemap.xml', 'routes/sitemap[.]xml.tsx'),
   route('health', 'routes/health.tsx'),
   route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig

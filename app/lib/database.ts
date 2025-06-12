@@ -320,6 +320,44 @@ export function getSessions(): number[] {
   })
 }
 
+export function getSpeakers(): string[] {
+  logger.debug('Getting speakers list')
+  const query =
+    'SELECT DISTINCT speaker FROM speeches WHERE speaker IS NOT NULL ORDER BY speaker ASC'
+
+  return timeOperation('getSpeakers', () => {
+    const results = db.prepare(query).all() as Array<{ speaker: string }>
+    const speakers = results.map((r) => r.speaker)
+    logger.debug('Speakers query result', { count: speakers.length })
+    return speakers
+  })
+}
+
+export function getRoles(): string[] {
+  logger.debug('Getting roles list')
+  const query =
+    'SELECT DISTINCT post FROM speeches WHERE post IS NOT NULL ORDER BY post ASC'
+
+  return timeOperation('getRoles', () => {
+    const results = db.prepare(query).all() as Array<{ post: string }>
+    const roles = results.map((r) => r.post)
+    logger.debug('Roles query result', { count: roles.length })
+    return roles
+  })
+}
+
+export function getAllSpeechIds(): number[] {
+  logger.debug('Getting all speech IDs')
+  const query = 'SELECT id FROM speeches ORDER BY id ASC'
+
+  return timeOperation('getAllSpeechIds', () => {
+    const results = db.prepare(query).all() as Array<{ id: number }>
+    const ids = results.map((r) => r.id)
+    logger.debug('Speech IDs query result', { count: ids.length })
+    return ids
+  })
+}
+
 export function getCountrySpeechCounts(): CountrySpeechCount[] {
   logger.debug('Getting country speech counts')
   const query = `
