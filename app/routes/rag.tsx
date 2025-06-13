@@ -11,6 +11,7 @@ import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Select } from '../components/ui/select'
+import { logger, timeAsyncOperation } from '~/lib/logger'
 
 interface RAGResponse {
   question: string
@@ -63,13 +64,30 @@ export function meta() {
   ]
 }
 
-export async function loader(): Promise<LoaderData> {
-  // Check if RAG is available
-  const ragAvailable = !!process.env.OPENAI_API_KEY
+export async function loader({
+  request,
+}: {
+  request: Request
+}): Promise<LoaderData> {
+  const url = new URL(request.url)
 
-  return {
-    ragAvailable,
-  }
+  logger.requestStart('GET', url.pathname, {
+    searchParams: Object.fromEntries(url.searchParams),
+  })
+
+  return timeAsyncOperation('rag-loader', async () => {
+    // Check if RAG is available
+    const ragAvailable = !!process.env.OPENAI_API_KEY
+
+    logger.info('RAG loader completed', {
+      ragAvailable,
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+    })
+
+    return {
+      ragAvailable,
+    }
+  })
 }
 
 export async function action({
@@ -77,62 +95,95 @@ export async function action({
 }: {
   request: Request
 }): Promise<ActionData> {
-  const formData = await request.formData()
-  const question = formData.get('question') as string
-  const country = formData.get('country') as string
-  const yearFrom = formData.get('yearFrom') as string
-  const yearTo = formData.get('yearTo') as string
-  const searchLimit = formData.get('searchLimit') as string
+  const url = new URL(request.url)
 
-  if (!question?.trim()) {
-    throw new Response('Question is required', { status: 400 })
-  }
+  logger.requestStart('POST', url.pathname, {})
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Response('OpenAI API key is not configured', { status: 500 })
-  }
+  return timeAsyncOperation('rag-action', async () => {
+    const formData = await request.formData()
+    const question = formData.get('question') as string
+    const country = formData.get('country') as string
+    const yearFrom = formData.get('yearFrom') as string
+    const yearTo = formData.get('yearTo') as string
+    const searchLimit = formData.get('searchLimit') as string
 
-  try {
-    // Dynamic import to avoid loading RAG modules if not needed
-    // @ts-expect-error - RAG modules are JavaScript without TypeScript declarations
-    const { initDatabase } = await import('../../rag-js/vector-search.js')
-    // @ts-expect-error - RAG modules are JavaScript without TypeScript declarations
-    const { ragQuery } = await import('../../rag-js/rag-pipeline.js')
+    logger.info('RAG query received', {
+      questionLength: question?.length || 0,
+      country: country || 'all',
+      yearFrom: yearFrom || 'none',
+      yearTo: yearTo || 'none',
+      searchLimit: searchLimit || '5',
+    })
 
-    const db = await initDatabase()
-
-    // Build filters
-    const filters: Record<string, unknown> = {}
-    if (country && country !== 'all') {
-      filters.country = country
-    }
-    if (yearFrom) {
-      filters.year_from = parseInt(yearFrom)
-    }
-    if (yearTo) {
-      filters.year_to = parseInt(yearTo)
+    if (!question?.trim()) {
+      logger.warn('RAG query failed - missing question')
+      throw new Response('Question is required', { status: 400 })
     }
 
-    const options = {
-      searchLimit: searchLimit ? parseInt(searchLimit) : 5,
-      filters,
-      includeContext: true,
+    if (!process.env.OPENAI_API_KEY) {
+      logger.warn('RAG query failed - OpenAI API key not configured')
+      throw new Response('OpenAI API key is not configured', { status: 500 })
     }
 
-    const result = await ragQuery(db, question, options)
+    try {
+      // Dynamic import to avoid loading RAG modules if not needed
+      // @ts-expect-error - RAG modules are JavaScript without TypeScript declarations
+      const { initDatabase } = await import('../../rag-js/vector-search.js')
+      // @ts-expect-error - RAG modules are JavaScript without TypeScript declarations
+      const { ragQuery } = await import('../../rag-js/rag-pipeline.js')
 
-    db.close()
+      const db = await initDatabase()
 
-    return { success: true, result }
-  } catch (error) {
-    console.error('RAG query error:', error)
-    throw new Response(
-      error instanceof Error
-        ? error.message
-        : 'An error occurred while processing your question',
-      { status: 500 }
-    )
-  }
+      // Build filters
+      const filters: Record<string, unknown> = {}
+      if (country && country !== 'all') {
+        filters.country = country
+      }
+      if (yearFrom) {
+        filters.year_from = parseInt(yearFrom)
+      }
+      if (yearTo) {
+        filters.year_to = parseInt(yearTo)
+      }
+
+      const options = {
+        searchLimit: searchLimit ? parseInt(searchLimit) : 5,
+        filters,
+        includeContext: true,
+      }
+
+      logger.info('Executing RAG query', {
+        question:
+          question.substring(0, 100) + (question.length > 100 ? '...' : ''),
+        options,
+      })
+
+      const result = await ragQuery(db, question, options)
+
+      db.close()
+
+      logger.info('RAG query completed successfully', {
+        answerLength: result.answer.length,
+        sourceCount: result.sources.length,
+        model: result.metadata.model,
+        totalTokens: result.metadata.usage.total_tokens,
+        searchCount: result.metadata.search_count,
+      })
+
+      return { success: true, result }
+    } catch (error) {
+      logger.error('RAG query error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      })
+      throw new Response(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred while processing your question',
+        { status: 500 }
+      )
+    }
+  })
 }
 
 export default function RAGPage() {
@@ -151,6 +202,25 @@ export default function RAGPage() {
 
   const isLoading = navigation.state === 'submitting'
 
+  // Log component mount and RAG availability
+  useEffect(() => {
+    logger.info('RAG page loaded', {
+      ragAvailable,
+    })
+  }, [ragAvailable])
+
+  // Log filter changes
+  useEffect(() => {
+    if (showFilters) {
+      logger.info('RAG filters shown', {
+        country,
+        yearFrom,
+        yearTo,
+        searchLimit,
+      })
+    }
+  }, [showFilters, country, yearFrom, yearTo, searchLimit])
+
   // Scroll to bottom when new messages are added
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -164,6 +234,12 @@ export default function RAGPage() {
         return
       }
       lastProcessedActionData.current = actionData
+
+      logger.info('RAG response processed', {
+        answerLength: actionData.result.answer.length,
+        sourceCount: actionData.result.sources.length,
+        conversationLength: conversation.length + 2, // +2 for new user and assistant messages
+      })
 
       const userMessage: ConversationMessage = {
         id: Date.now().toString(),
@@ -183,7 +259,7 @@ export default function RAGPage() {
       setConversation((prev) => [...prev, userMessage, assistantMessage])
       setQuestion('')
     }
-  }, [actionData, question])
+  }, [actionData, question, conversation.length])
 
   const handleSubmit = (e: React.FormEvent) => {
     if (!question.trim() || isLoading) {
@@ -192,6 +268,9 @@ export default function RAGPage() {
   }
 
   const clearConversation = () => {
+    logger.info('RAG conversation cleared', {
+      previousMessageCount: conversation.length,
+    })
     setConversation([])
   }
 
