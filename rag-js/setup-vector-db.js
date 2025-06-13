@@ -1,0 +1,336 @@
+#!/usr/bin/env node
+
+/**
+ * Set up the vector database for RAG pipeline
+ * Creates speech_chunks and speech_embeddings tables and populates them
+ */
+
+import Database from 'better-sqlite3'
+import { OpenAI } from 'openai'
+import { config } from 'dotenv'
+import { existsSync } from 'fs'
+import { join } from 'path'
+import { load } from 'sqlite-vec'
+
+// Load environment variables
+config()
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
+
+const DB_PATH = join(process.cwd(), 'data', 'un_speeches.db')
+const CHUNK_SIZE = 2000 // characters per chunk
+const OVERLAP_SIZE = 200 // overlap between chunks
+
+/**
+ * Initialize database connection with sqlite-vec extension
+ */
+function initDatabase() {
+  if (!existsSync(DB_PATH)) {
+    throw new Error(`Database file not found at ${DB_PATH}. Run "npm run db:setup" first.`)
+  }
+
+  const db = new Database(DB_PATH, { readonly: false })
+  
+  // Disable foreign key constraints to avoid issues
+  db.pragma('foreign_keys = OFF')
+  
+  try {
+    // Load sqlite-vec extension
+    load(db)
+    console.log('✅ sqlite-vec extension loaded successfully')
+    
+    // Check if vec_version is available
+    const version = db.prepare('SELECT vec_version()').get()
+    console.log(`📦 sqlite-vec version: ${version['vec_version()']}`)
+    
+  } catch (error) {
+    console.error('❌ Failed to load sqlite-vec extension:', error.message)
+    console.error('Please ensure sqlite-vec and sqlite-vec-darwin-x64 are properly installed')
+    throw error
+  }
+
+  return db
+}
+
+/**
+ * Create necessary tables for the RAG pipeline
+ */
+function createTables(db) {
+  console.log('🔧 Creating tables...')
+
+  // Create speech_chunks table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS speech_chunks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      speech_id INTEGER NOT NULL,
+      chunk_text TEXT NOT NULL,
+      chunk_index INTEGER NOT NULL,
+      embedding_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
+
+  // Create speech_embeddings table using sqlite-vec
+  db.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS speech_embeddings USING vec0(
+      embedding FLOAT[1536]
+    )
+  `)
+
+  // Create indexes for better performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_speech_chunks_speech_id ON speech_chunks(speech_id);
+    CREATE INDEX IF NOT EXISTS idx_speech_chunks_chunk_index ON speech_chunks(chunk_index);
+  `)
+
+  console.log('✅ Tables created successfully')
+}
+
+/**
+ * Split text into overlapping chunks
+ */
+function chunkText(text, chunkSize = CHUNK_SIZE, overlap = OVERLAP_SIZE) {
+  const chunks = []
+  let start = 0
+
+  while (start < text.length) {
+    let end = start + chunkSize
+    
+    // If this isn't the first chunk, try to find a good break point
+    if (start > 0 && end < text.length) {
+      // Look for sentence endings within the last 200 characters
+      const searchStart = Math.max(start + chunkSize - 200, start)
+      const segment = text.slice(searchStart, end)
+      const sentenceEnd = segment.lastIndexOf('. ')
+      
+      if (sentenceEnd > -1) {
+        end = searchStart + sentenceEnd + 1
+      }
+    }
+
+    const chunk = text.slice(start, end).trim()
+    if (chunk.length > 0) {
+      chunks.push(chunk)
+    }
+
+    // Move start position with overlap
+    start = end - overlap
+    if (start >= text.length) break
+  }
+
+  return chunks
+}
+
+/**
+ * Generate embedding for a text chunk
+ */
+async function generateEmbedding(text) {
+  try {
+    const response = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+      encoding_format: 'float'
+    })
+    
+    return response.data[0].embedding
+  } catch (error) {
+    console.error('Error generating embedding:', error.message)
+    throw error
+  }
+}
+
+/**
+ * Process speeches and create chunks with embeddings
+ */
+async function processSpeeches(db, limit = null) {
+  console.log('📝 Processing speeches...')
+
+  // Get speeches to process
+  let query = 'SELECT id, country_name, speaker, year, session, text FROM speeches'
+  if (limit) {
+    query += ` LIMIT ${limit}`
+  }
+
+  const speeches = db.prepare(query).all()
+  console.log(`Found ${speeches.length} speeches to process`)
+
+  const insertChunk = db.prepare(`
+    INSERT INTO speech_chunks (speech_id, chunk_text, chunk_index)
+    VALUES (?, ?, ?)
+  `)
+
+  const insertEmbedding = db.prepare(`
+    INSERT INTO speech_embeddings (embedding)
+    VALUES (?)
+  `)
+
+  const updateChunkWithEmbeddingId = db.prepare(`
+    UPDATE speech_chunks SET embedding_id = ? WHERE id = ?
+  `)
+
+  const checkExistingChunks = db.prepare(`
+    SELECT COUNT(*) as count FROM speech_chunks WHERE speech_id = ?
+  `)
+
+  let processedCount = 0
+  let skippedCount = 0
+  let totalChunks = 0
+
+  for (const speech of speeches) {
+    const { id: speechId, country_name: country, speaker, year, text } = speech
+
+    // Check if this speech already has chunks
+    const existing = checkExistingChunks.get(speechId)
+    if (existing.count > 0) {
+      console.log(`⏭️  Skipping speech ${speechId} (${country}, ${year}) - already processed`)
+      skippedCount++
+      continue
+    }
+
+    console.log(`🔄 Processing speech ${speechId} (${country}, ${speaker}, ${year})...`)
+
+    try {
+      // Split text into chunks
+      const chunks = chunkText(text)
+      console.log(`   Split into ${chunks.length} chunks`)
+
+      // Process each chunk
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkText = chunks[i]
+
+        // Insert chunk into database
+        const result = insertChunk.run(speechId, chunkText, i)
+        const chunkId = result.lastInsertRowid
+
+        // Generate and store embedding
+        const embedding = await generateEmbedding(chunkText)
+        const embeddingResult = insertEmbedding.run(JSON.stringify(embedding))
+        const embeddingId = embeddingResult.lastInsertRowid
+        
+        // Update chunk with embedding ID
+        updateChunkWithEmbeddingId.run(embeddingId, chunkId)
+
+        totalChunks++
+        
+        // Show progress
+        if (totalChunks % 10 === 0) {
+          console.log(`   Processed ${totalChunks} chunks...`)
+        }
+      }
+
+      processedCount++
+      console.log(`✅ Completed speech ${speechId} (${chunks.length} chunks)`)
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+    } catch (error) {
+      console.error(`❌ Error processing speech ${speechId}:`, error.message)
+      continue
+    }
+  }
+
+  console.log(`\n📊 Processing complete:`)
+  console.log(`   - Processed: ${processedCount} speeches`)
+  console.log(`   - Skipped: ${skippedCount} speeches`)
+  console.log(`   - Total chunks: ${totalChunks}`)
+}
+
+/**
+ * Verify the setup
+ */
+function verifySetup(db) {
+  console.log('\n🔍 Verifying setup...')
+
+  try {
+    // Check speech_chunks table
+    const chunkCount = db.prepare('SELECT COUNT(*) as count FROM speech_chunks').get()
+    console.log(`   speech_chunks: ${chunkCount.count} rows`)
+
+    // Check speech_embeddings table
+    const embeddingCount = db.prepare('SELECT COUNT(*) as count FROM speech_embeddings').get()
+    console.log(`   speech_embeddings: ${embeddingCount.count} rows`)
+
+    // Check for any chunks without embeddings
+    const missingEmbeddings = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM speech_chunks c 
+      WHERE c.embedding_id IS NULL
+    `).get()
+
+    if (missingEmbeddings.count > 0) {
+      console.log(`⚠️  Warning: ${missingEmbeddings.count} chunks missing embeddings`)
+    } else {
+      console.log('✅ All chunks have embeddings')
+    }
+
+    // Sample a few chunks to verify data integrity
+    const sampleChunks = db.prepare(`
+      SELECT c.id, c.chunk_text, c.chunk_index, s.country_name, s.year
+      FROM speech_chunks c
+      JOIN speeches s ON c.speech_id = s.id
+      LIMIT 3
+    `).all()
+
+    console.log('\n📋 Sample chunks:')
+    sampleChunks.forEach((chunk, i) => {
+      console.log(`   ${i + 1}. Chunk ${chunk.id} (${chunk.country_name}, ${chunk.year}): "${chunk.chunk_text.slice(0, 100)}..."`)
+    })
+
+  } catch (error) {
+    console.error('❌ Verification failed:', error.message)
+  }
+}
+
+/**
+ * Main function
+ */
+async function main() {
+  console.log('🚀 Setting up UN Speeches RAG Pipeline\n')
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('❌ OPENAI_API_KEY environment variable is required')
+    console.error('Please set your OpenAI API key in the environment or .env file')
+    process.exit(1)
+  }
+
+  let db
+  try {
+    // Initialize database
+    db = initDatabase()
+
+    // Create tables
+    createTables(db)
+
+    // Get processing limit from command line argument
+    const limit = process.argv[2] ? parseInt(process.argv[2]) : null
+    if (limit) {
+      console.log(`📊 Processing limited to ${limit} speeches`)
+    }
+
+    // Process speeches
+    await processSpeeches(db, limit)
+
+    // Verify setup
+    verifySetup(db)
+
+    console.log('\n🎉 RAG pipeline setup complete!')
+
+  } catch (error) {
+    console.error('❌ Setup failed:', error.message)
+    process.exit(1)
+  } finally {
+    if (db) {
+      db.close()
+    }
+  }
+}
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error)
+}
+
+export { initDatabase, createTables, chunkText, generateEmbedding, processSpeeches, verifySetup }
