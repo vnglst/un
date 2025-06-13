@@ -28,7 +28,8 @@
     "rag:verify": "node rag-ts/tests/verify-rag.ts",
     "rag:stats": "node rag-ts/tests/verify-rag.ts stats",
     "rag:chat": "node rag-ts/runtime/rag-pipeline.ts",
-    "rag:examples": "node rag-ts/tests/examples.ts"
+    "rag:examples": "node rag-ts/tests/examples.ts",
+    "analysis:climate": "node analysis/run-climate-analysis.ts"
   },
   "keywords": [],
   "author": "",

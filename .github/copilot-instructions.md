@@ -45,6 +45,7 @@ The `npm run check` command runs:
    - Follow the project's coding style (indentation, naming conventions, etc.)
    - Don't use comments to clarify code.
    - Don't use barrel files (index.ts) to re-export components or utilities
+   - Don't use tsx, we're using Node > 23.6 which supports TypeScript natively
 
 ## Project Structure
 
