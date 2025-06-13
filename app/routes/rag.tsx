@@ -147,6 +147,7 @@ export default function RAGPage() {
   const [searchLimit, setSearchLimit] = useState('5')
   const [showFilters, setShowFilters] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const lastProcessedActionData = useRef<ActionData | null>(null)
 
   const isLoading = navigation.state === 'submitting'
 
@@ -158,6 +159,12 @@ export default function RAGPage() {
   // Handle successful response
   useEffect(() => {
     if (actionData && 'success' in actionData && actionData.success) {
+      // Prevent processing the same actionData twice
+      if (lastProcessedActionData.current === actionData) {
+        return
+      }
+      lastProcessedActionData.current = actionData
+
       const userMessage: ConversationMessage = {
         id: Date.now().toString(),
         type: 'user',
@@ -250,247 +257,255 @@ export default function RAGPage() {
 
   return (
     <PageLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2">RAG Chat</h1>
-            <p className="text-gray-600">
-              Ask questions about UN General Assembly speeches and get
-              AI-powered answers based on the speech database with semantic
-              search.
-            </p>
-          </div>
+      <div className="space-y-6">
+        {/* Chat Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">RAG Chat</h1>
+          <p className="text-gray-600">
+            Ask questions about UN General Assembly speeches and get AI-powered
+            answers based on semantic search across the speech database.
+          </p>
+        </div>
 
-          {/* Conversation Area */}
-          <Card className="mb-6 h-96 overflow-y-auto">
-            <div className="p-4 space-y-4">
-              {conversation.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
-                  <p className="mb-4">
-                    Start a conversation by asking a question about UN speeches.
+        {/* Messages Area */}
+        <div className="border border-gray-200 rounded p-6 space-y-4 min-h-[400px]">
+          {conversation.length === 0 ? (
+            <div className="text-center text-gray-500 py-12">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Welcome to RAG Chat
+                </h3>
+                <p className="mb-6">
+                  Start a conversation by asking a question about UN speeches.
+                </p>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-gray-700 mb-3">
+                    Example questions:
                   </p>
-                  <p className="text-sm">Examples:</p>
-                  <ul className="text-sm text-left max-w-md mx-auto mt-2 space-y-1">
-                    <li>• "What did countries say about climate change?"</li>
-                    <li>
-                      • "How has the discussion on nuclear weapons evolved?"
+                  <ul className="text-sm space-y-2 text-gray-600">
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      "What did countries say about climate change?"
                     </li>
-                    <li>
-                      • "What are the main concerns about global security?"
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      "How has the discussion on nuclear weapons evolved?"
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-500 mr-2">•</span>
+                      "What are the main concerns about global security?"
                     </li>
                   </ul>
                 </div>
-              ) : (
-                conversation.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.type === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <div className="whitespace-pre-wrap">
-                        {message.content}
-                      </div>
-
-                      {/* Show sources for assistant messages */}
-                      {message.type === 'assistant' && message.ragResponse && (
-                        <div className="mt-3 pt-3 border-t border-gray-300">
-                          <details className="text-sm">
-                            <summary className="cursor-pointer font-medium mb-2">
-                              Sources ({message.ragResponse.sources.length})
-                            </summary>
-                            <div className="space-y-2">
-                              {message.ragResponse.sources.map((source) => (
-                                <div
-                                  key={source.chunk_id}
-                                  className="bg-white p-2 rounded border"
-                                >
-                                  <div className="font-medium text-xs mb-1 flex items-center justify-between">
-                                    <span>
-                                      {source.country} ({source.year}) -{' '}
-                                      {source.speaker}
-                                    </span>
-                                    <Link
-                                      to={`/speech/${source.speech_id}`}
-                                      className="text-blue-600 hover:text-blue-800 hover:underline ml-2"
-                                      target="_blank"
-                                    >
-                                      View Speech
-                                    </Link>
-                                  </div>
-                                  <div className="text-xs text-gray-600 mb-2">
-                                    {source.preview}
-                                  </div>
-                                  <div className="text-xs text-gray-500 flex items-center justify-between">
-                                    <span>
-                                      Similarity:{' '}
-                                      {(1 - source.distance).toFixed(3)}
-                                    </span>
-                                    <span className="text-gray-400">
-                                      Speech ID: {source.speech_id}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="mt-2 text-xs text-gray-500">
-                              Model: {message.ragResponse.metadata.model} |
-                              Tokens:{' '}
-                              {message.ragResponse.metadata.usage.total_tokens}
-                            </div>
-                          </details>
-                        </div>
-                      )}
-
-                      <div className="text-xs opacity-75 mt-2">
-                        {message.timestamp.toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 text-gray-900 rounded-lg p-3 max-w-[80%]">
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-                      <span>Thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-          </Card>
-
-          {/* Input Form */}
-          <Card className="p-4">
-            <Form method="post" onSubmit={handleSubmit} className="space-y-4">
-              {/* Question Input */}
-              <div className="flex space-x-2">
-                <Input
-                  name="question"
-                  placeholder="Ask a question about UN speeches..."
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="flex-1"
-                  disabled={isLoading}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                  disabled={isLoading}
-                >
-                  Filters
-                </Button>
-                <Button type="submit" disabled={isLoading || !question.trim()}>
-                  {isLoading ? 'Asking...' : 'Ask'}
-                </Button>
               </div>
-
-              {/* Filters */}
-              {showFilters && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Country
-                    </label>
-                    <Select
-                      name="country"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                    >
-                      <option value="all">All Countries</option>
-                      <option value="United States">United States</option>
-                      <option value="China">China</option>
-                      <option value="Russia">Russia</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="France">France</option>
-                      <option value="Germany">Germany</option>
-                      <option value="Japan">Japan</option>
-                      <option value="India">India</option>
-                      <option value="Brazil">Brazil</option>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Year From
-                    </label>
-                    <Input
-                      name="yearFrom"
-                      type="number"
-                      min="1946"
-                      max="2023"
-                      placeholder="1946"
-                      value={yearFrom}
-                      onChange={(e) => setYearFrom(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Year To
-                    </label>
-                    <Input
-                      name="yearTo"
-                      type="number"
-                      min="1946"
-                      max="2024"
-                      placeholder="2024"
-                      value={yearTo}
-                      onChange={(e) => setYearTo(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Search Limit
-                    </label>
-                    <Select
-                      name="searchLimit"
-                      value={searchLimit}
-                      onChange={(e) => setSearchLimit(e.target.value)}
-                    >
-                      <option value="3">3 sources</option>
-                      <option value="5">5 sources</option>
-                      <option value="10">10 sources</option>
-                      <option value="15">15 sources</option>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              {/* Error Display */}
-              {actionData && 'error' in actionData && (
-                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                  {actionData.error}
-                </div>
-              )}
-            </Form>
-
-            {/* Clear Conversation */}
-            {conversation.length > 0 && (
-              <div className="mt-4 flex justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={clearConversation}
-                  disabled={isLoading}
+            </div>
+          ) : (
+            conversation.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[75%] rounded-xl px-4 py-3 ${
+                    message.type === 'user'
+                      ? 'bg-blue-600 text-white ml-4'
+                      : 'bg-gray-100 text-gray-900 mr-4'
+                  }`}
                 >
-                  Clear Conversation
-                </Button>
+                  <div className="whitespace-pre-wrap leading-relaxed">
+                    {message.content}
+                  </div>
+
+                  {/* Show sources for assistant messages */}
+                  {message.type === 'assistant' && message.ragResponse && (
+                    <div className="mt-3 pt-3 border-t border-gray-300">
+                      <details className="text-sm">
+                        <summary className="cursor-pointer font-medium mb-2">
+                          Sources ({message.ragResponse.sources.length})
+                        </summary>
+                        <div className="space-y-2">
+                          {message.ragResponse.sources.map((source) => (
+                            <div
+                              key={source.chunk_id}
+                              className="bg-white p-2 rounded border"
+                            >
+                              <div className="font-medium text-xs mb-1 flex items-center justify-between">
+                                <span>
+                                  {source.country} ({source.year}) -{' '}
+                                  {source.speaker}
+                                </span>
+                                <Link
+                                  to={`/speech/${source.speech_id}`}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline ml-2"
+                                  target="_blank"
+                                >
+                                  View Speech
+                                </Link>
+                              </div>
+                              <div className="text-xs text-gray-600 mb-2">
+                                {source.preview}
+                              </div>
+                              <div className="text-xs text-gray-500 flex items-center justify-between">
+                                <span>
+                                  Similarity: {(1 - source.distance).toFixed(3)}
+                                </span>
+                                <span className="text-gray-400">
+                                  Speech ID: {source.speech_id}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500">
+                          Model: {message.ragResponse.metadata.model} | Tokens:{' '}
+                          {message.ragResponse.metadata.usage.total_tokens}
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
+                  <div className="text-xs opacity-75 mt-2">
+                    {message.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 text-gray-900 rounded-lg p-3 max-w-[80%]">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                  <span>Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Form */}
+        <div className="border border-gray-200 rounded p-4">
+          <Form method="post" onSubmit={handleSubmit} className="space-y-4">
+            {/* Question Input */}
+            <div className="flex space-x-2">
+              <Input
+                name="question"
+                placeholder="Ask a question about UN speeches..."
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                className="flex-1"
+                disabled={isLoading}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                disabled={isLoading}
+              >
+                Filters
+              </Button>
+              <Button type="submit" disabled={isLoading || !question.trim()}>
+                {isLoading ? 'Asking...' : 'Ask'}
+              </Button>
+            </div>
+
+            {/* Filters */}
+            {showFilters && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Country
+                  </label>
+                  <Select
+                    name="country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                  >
+                    <option value="all">All Countries</option>
+                    <option value="United States">United States</option>
+                    <option value="China">China</option>
+                    <option value="Russia">Russia</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="France">France</option>
+                    <option value="Germany">Germany</option>
+                    <option value="Japan">Japan</option>
+                    <option value="India">India</option>
+                    <option value="Brazil">Brazil</option>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Year From
+                  </label>
+                  <Input
+                    name="yearFrom"
+                    type="number"
+                    min="1946"
+                    max="2023"
+                    placeholder="1946"
+                    value={yearFrom}
+                    onChange={(e) => setYearFrom(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Year To
+                  </label>
+                  <Input
+                    name="yearTo"
+                    type="number"
+                    min="1946"
+                    max="2024"
+                    placeholder="2024"
+                    value={yearTo}
+                    onChange={(e) => setYearTo(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Search Limit
+                  </label>
+                  <Select
+                    name="searchLimit"
+                    value={searchLimit}
+                    onChange={(e) => setSearchLimit(e.target.value)}
+                  >
+                    <option value="3">3 sources</option>
+                    <option value="5">5 sources</option>
+                    <option value="10">10 sources</option>
+                    <option value="15">15 sources</option>
+                  </Select>
+                </div>
               </div>
             )}
-          </Card>
+
+            {/* Error Display */}
+            {actionData && 'error' in actionData && (
+              <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {actionData.error}
+              </div>
+            )}
+          </Form>
+
+          {/* Clear Conversation */}
+          {conversation.length > 0 && (
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={clearConversation}
+                disabled={isLoading}
+              >
+                Clear Conversation
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </PageLayout>

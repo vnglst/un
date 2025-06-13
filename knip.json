@@ -1,10 +1,4 @@
 {
-  "ignore": ["app/components/star-field.tsx", "app/components/ui/select.tsx"],
-  "ignoreDependencies": [
-    "@react-router/node",
-    "isbot",
-    "postcss",
-    "sqlite3",
-    "tailwindcss"
-  ]
+  "ignore": [],
+  "ignoreDependencies": []
 }
