@@ -18,8 +18,8 @@ interface RAGResponse {
   answer: string
   sources: Array<{
     index: number
-    chunk_id: string
-    speech_id: string
+    chunk_id: number
+    speech_id: number
     country: string
     speaker: string
     year: number
@@ -28,8 +28,8 @@ interface RAGResponse {
     preview: string
   }>
   metadata: {
-    model: string
-    usage: {
+    model: string | undefined
+    usage?: {
       prompt_tokens: number
       completion_tokens: number
       total_tokens: number
@@ -127,10 +127,8 @@ export async function action({
 
     try {
       // Dynamic import to avoid loading RAG modules if not needed
-      // @ts-expect-error - RAG modules are JavaScript without TypeScript declarations
-      const { initDatabase } = await import('../../rag-js/vector-search.js')
-      // @ts-expect-error - RAG modules are JavaScript without TypeScript declarations
-      const { ragQuery } = await import('../../rag-js/rag-pipeline.js')
+      const { initDatabase } = await import('../../rag-ts/vector-search.ts')
+      const { ragQuery } = await import('../../rag-ts/rag-pipeline.ts')
 
       const db = await initDatabase()
 
@@ -166,7 +164,7 @@ export async function action({
         answerLength: result.answer.length,
         sourceCount: result.sources.length,
         model: result.metadata.model,
-        totalTokens: result.metadata.usage.total_tokens,
+        totalTokens: result.metadata.usage?.total_tokens || 0,
         searchCount: result.metadata.search_count,
       })
 
@@ -437,7 +435,8 @@ export default function RAGPage() {
                         </div>
                         <div className="mt-2 text-xs text-gray-500">
                           Model: {message.ragResponse.metadata.model} | Tokens:{' '}
-                          {message.ragResponse.metadata.usage.total_tokens}
+                          {message.ragResponse.metadata.usage?.total_tokens ||
+                            'N/A'}
                         </div>
                       </details>
                     </div>

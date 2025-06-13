@@ -1,4 +1,4 @@
-# UN Speeches RAG Pipeline (JavaScript)
+# UN Speeches RAG Pipeline (TypeScript)
 
 A robust Retrieval-Augmented Generation (RAG) system for UN General Assembly speeches using SQLite, sqlite-vec extension, and OpenAI embeddings.
 
@@ -13,7 +13,7 @@ This RAG pipeline provides semantic search and question-answering capabilities f
 
 ## Prerequisites
 
-1. **Node.js 22+** with ES modules support
+1. **Node.js 23.6+** with TypeScript erasable types support
 2. **sqlite-vec extension** properly installed and loadable
 3. **OpenAI API key** for embeddings and completions
 4. **UN speeches database** (`data/un_speeches.db`)
@@ -70,10 +70,10 @@ npm run rag:chat -- compare "nuclear weapons" "United States" "Russia" "China"
 
 ### Core Components
 
-1. **setup-vector-db.js** - Sets up vector database with chunking and embeddings
-2. **vector-search.js** - Provides semantic search functionality
-3. **rag-pipeline.js** - Complete RAG pipeline with answer generation
-4. **verify-rag.js** - Verification and testing utilities
+1. **setup-vector-db.ts** - Sets up vector database with chunking and embeddings
+2. **vector-search.ts** - Provides semantic search functionality
+3. **rag-pipeline.ts** - Complete RAG pipeline with answer generation
+4. **verify-rag.ts** - Verification and testing utilities
 
 ### Database Schema
 
@@ -102,7 +102,7 @@ CREATE VIRTUAL TABLE speech_embeddings USING vec0(
 
 ### Vector Search
 
-```javascript
+```typescript
 import { semanticSearch, advancedSearch } from './vector-search.js'
 
 // Basic semantic search
@@ -124,7 +124,7 @@ const results = await advancedSearch(
 
 ### RAG Pipeline
 
-```javascript
+```typescript
 import { ragQuery, compareperspectives } from './rag-pipeline.js'
 
 // Ask a question

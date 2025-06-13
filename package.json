@@ -23,18 +23,18 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run knip",
     "clean": "rm -rf build data/un_speeches.db",
     "clean:all": "npm run clean && rm -rf node_modules",
-    "rag:setup": "node rag-js/setup-vector-db.js",
-    "rag:setup-test": "node rag-js/setup-vector-db.js 50",
-    "rag:verify": "node rag-js/verify-rag.js",
-    "rag:stats": "node rag-js/verify-rag.js stats",
-    "rag:chat": "node rag-js/rag-pipeline.js",
-    "rag:examples": "node rag-js/examples.js"
+    "rag:setup": "node rag-ts/setup-vector-db.ts",
+    "rag:setup-test": "node rag-ts/setup-vector-db.ts 50",
+    "rag:verify": "node rag-ts/verify-rag.ts",
+    "rag:stats": "node rag-ts/verify-rag.ts stats",
+    "rag:chat": "node rag-ts/rag-pipeline.ts",
+    "rag:examples": "node rag-ts/examples.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=23.6.0"
   },
   "dependencies": {
     "@react-router/dev": "^7.6.2",

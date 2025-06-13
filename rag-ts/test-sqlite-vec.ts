@@ -7,7 +7,7 @@
 import Database from 'better-sqlite3'
 import { load, getLoadablePath } from 'sqlite-vec'
 
-async function testSqliteVec() {
+async function testSqliteVec(): Promise<boolean> {
   console.log('Testing sqlite-vec extension...')
 
   try {
@@ -23,7 +23,9 @@ async function testSqliteVec() {
       console.log('✅ sqlite-vec extension loaded successfully')
 
       // Test basic functionality
-      const version = db.prepare('SELECT vec_version()').get()
+      const version = db.prepare('SELECT vec_version()').get() as {
+        'vec_version()': string
+      }
       console.log(`✅ sqlite-vec version: ${version['vec_version()']}`)
 
       // Test creating a virtual table
@@ -44,11 +46,12 @@ async function testSqliteVec() {
       const retrieved = db
         .prepare('SELECT * FROM test_embeddings WHERE rowid = ?')
         .get(result.lastInsertRowid)
-      console.log('✅ Vector retrieval successful')
+      console.log('✅ Vector retrieval successful:', retrieved ? 'Found' : 'Not found')
 
       console.log('\n🎉 sqlite-vec is working correctly!')
     } catch (error) {
-      console.error('❌ Failed to load sqlite-vec extension:', error.message)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('❌ Failed to load sqlite-vec extension:', errorMessage)
       console.error('\nTroubleshooting:')
       console.error(
         '1. Make sure sqlite-vec is properly installed: npm install sqlite-vec'
@@ -63,7 +66,8 @@ async function testSqliteVec() {
     db.close()
     return true
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Database connection failed:', errorMessage)
     return false
   }
 }
@@ -73,6 +77,7 @@ testSqliteVec()
     process.exit(success ? 0 : 1)
   })
   .catch((error) => {
-    console.error('❌ Test failed:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Test failed:', errorMessage)
     process.exit(1)
   })

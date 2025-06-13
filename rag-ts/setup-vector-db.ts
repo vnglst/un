@@ -25,10 +25,26 @@ const OVERLAP_SIZE = 200 // overlap between chunks
 const BATCH_SIZE = 100 // number of chunks to process in parallel
 const RATE_LIMIT_DELAY = 10 // delay between batches in ms
 
+type Speech = {
+  id: number
+  country_name: string
+  speaker: string
+  year: number
+  session: number
+  text: string
+}
+
+type ChunkProcessResult = {
+  success: boolean
+  chunkIndex: number
+  chunkId?: number
+  error?: string
+}
+
 /**
  * Initialize database connection with sqlite-vec extension
  */
-function initDatabase() {
+function initDatabase(): Database.Database {
   if (!existsSync(DB_PATH)) {
     throw new Error(
       `Database file not found at ${DB_PATH}. Run "npm run db:setup" first.`
@@ -46,10 +62,13 @@ function initDatabase() {
     console.log('✅ sqlite-vec extension loaded successfully')
 
     // Check if vec_version is available
-    const version = db.prepare('SELECT vec_version()').get()
+    const version = db.prepare('SELECT vec_version()').get() as {
+      'vec_version()': string
+    }
     console.log(`📦 sqlite-vec version: ${version['vec_version()']}`)
   } catch (error) {
-    console.error('❌ Failed to load sqlite-vec extension:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Failed to load sqlite-vec extension:', errorMessage)
     console.error(
       'Please ensure sqlite-vec and sqlite-vec-darwin-x64 are properly installed'
     )
@@ -62,7 +81,7 @@ function initDatabase() {
 /**
  * Create necessary tables for the RAG pipeline
  */
-function createTables(db) {
+function createTables(db: Database.Database): void {
   console.log('🔧 Creating tables...')
 
   // Create speech_chunks table
@@ -96,8 +115,12 @@ function createTables(db) {
 /**
  * Split text into overlapping chunks
  */
-function chunkText(text, chunkSize = CHUNK_SIZE, overlap = OVERLAP_SIZE) {
-  const chunks = []
+function chunkText(
+  text: string,
+  chunkSize: number = CHUNK_SIZE,
+  overlap: number = OVERLAP_SIZE
+): string[] {
+  const chunks: string[] = []
   let start = 0
 
   while (start < text.length) {
@@ -131,7 +154,7 @@ function chunkText(text, chunkSize = CHUNK_SIZE, overlap = OVERLAP_SIZE) {
 /**
  * Generate embedding for a text chunk
  */
-async function generateEmbedding(text) {
+async function generateEmbedding(text: string): Promise<number[]> {
   try {
     const response = await openai.embeddings.create({
       model: 'text-embedding-3-small',
@@ -141,7 +164,8 @@ async function generateEmbedding(text) {
 
     return response.data[0].embedding
   } catch (error) {
-    console.error('Error generating embedding:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Error generating embedding:', errorMessage)
     throw error
   }
 }
@@ -150,38 +174,36 @@ async function generateEmbedding(text) {
  * Process a batch of chunks in parallel
  */
 async function processBatchOfChunks(
-  chunks,
-  speechId,
-  insertChunk,
-  insertEmbedding,
-  updateChunkWithEmbeddingId,
-  startIndex = 0
-) {
-  const promises = chunks.map(async (chunkText, i) => {
+  chunks: string[],
+  speechId: number,
+  insertChunk: Database.Statement<[number, string, number]>,
+  insertEmbedding: Database.Statement<[string]>,
+  updateChunkWithEmbeddingId: Database.Statement<[number, number]>,
+  startIndex: number = 0
+): Promise<ChunkProcessResult[]> {
+  const promises = chunks.map(async (chunkText, i): Promise<ChunkProcessResult> => {
     const chunkIndex = startIndex + i
 
     try {
       // Insert chunk into database
       const result = insertChunk.run(speechId, chunkText, chunkIndex)
-      const chunkId = result.lastInsertRowid
+      const chunkId = result.lastInsertRowid as number
 
       // Generate embedding
       const embedding = await generateEmbedding(chunkText)
 
       // Store embedding
       const embeddingResult = insertEmbedding.run(JSON.stringify(embedding))
-      const embeddingId = embeddingResult.lastInsertRowid
+      const embeddingId = embeddingResult.lastInsertRowid as number
 
       // Update chunk with embedding ID
       updateChunkWithEmbeddingId.run(embeddingId, chunkId)
 
       return { success: true, chunkIndex, chunkId }
     } catch (error) {
-      console.error(
-        `   ❌ Error processing chunk ${chunkIndex}:`,
-        error.message
-      )
-      return { success: false, chunkIndex, error: error.message }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(`   ❌ Error processing chunk ${chunkIndex}:`, errorMessage)
+      return { success: false, chunkIndex, error: errorMessage }
     }
   })
 
@@ -191,7 +213,10 @@ async function processBatchOfChunks(
 /**
  * Process speeches and create chunks with embeddings
  */
-async function processSpeeches(db, limit = null) {
+async function processSpeeches(
+  db: Database.Database,
+  limit: number | null = null
+): Promise<void> {
   console.log('📝 Processing speeches (starting with most recent years)...')
 
   // Get speeches to process, prioritizing recent years and excluding already processed ones
@@ -206,7 +231,7 @@ async function processSpeeches(db, limit = null) {
     query += ` LIMIT ${limit}`
   }
 
-  const speeches = db.prepare(query).all()
+  const speeches = db.prepare(query).all() as Speech[]
   console.log(`Found ${speeches.length} unprocessed speeches to process`)
 
   if (speeches.length > 0) {
@@ -235,7 +260,7 @@ async function processSpeeches(db, limit = null) {
 
   let processedCount = 0
   let totalChunks = 0
-  let currentYear = null
+  let currentYear: number | null = null
 
   for (const speech of speeches) {
     const { id: speechId, country_name: country, speaker, year, text } = speech
@@ -258,7 +283,6 @@ async function processSpeeches(db, limit = null) {
       console.log(`   Split into ${chunks.length} chunks`)
 
       // Process chunks in parallel batches
-      let processedChunks = 0
       let successfulChunks = 0
 
       for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
@@ -280,7 +304,6 @@ async function processSpeeches(db, limit = null) {
         const batchSuccessful = results.filter((r) => r.success).length
         const batchFailed = results.filter((r) => !r.success).length
 
-        processedChunks += results.length
         successfulChunks += batchSuccessful
 
         if (batchFailed > 0) {
@@ -309,7 +332,8 @@ async function processSpeeches(db, limit = null) {
       // Small delay between speeches
       await new Promise((resolve) => setTimeout(resolve, 50))
     } catch (error) {
-      console.error(`❌ Error processing speech ${speechId}:`, error.message)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(`❌ Error processing speech ${speechId}:`, errorMessage)
       continue
     }
   }
@@ -330,32 +354,30 @@ async function processSpeeches(db, limit = null) {
 /**
  * Verify the setup
  */
-function verifySetup(db) {
+function verifySetup(db: Database.Database): void {
   console.log('\n🔍 Verifying setup...')
 
   try {
     // Check speech_chunks table
     const chunkCount = db
       .prepare('SELECT COUNT(*) as count FROM speech_chunks')
-      .get()
+      .get() as { count: number }
     console.log(`   speech_chunks: ${chunkCount.count} rows`)
 
     // Check speech_embeddings table
     const embeddingCount = db
       .prepare('SELECT COUNT(*) as count FROM speech_embeddings')
-      .get()
+      .get() as { count: number }
     console.log(`   speech_embeddings: ${embeddingCount.count} rows`)
 
     // Check for any chunks without embeddings
     const missingEmbeddings = db
-      .prepare(
-        `
-      SELECT COUNT(*) as count 
-      FROM speech_chunks c 
-      WHERE c.embedding_id IS NULL
-    `
-      )
-      .get()
+      .prepare(`
+        SELECT COUNT(*) as count 
+        FROM speech_chunks c 
+        WHERE c.embedding_id IS NULL
+      `)
+      .get() as { count: number }
 
     if (missingEmbeddings.count > 0) {
       console.log(
@@ -367,15 +389,19 @@ function verifySetup(db) {
 
     // Sample a few chunks to verify data integrity
     const sampleChunks = db
-      .prepare(
-        `
-      SELECT c.id, c.chunk_text, c.chunk_index, s.country_name, s.year
-      FROM speech_chunks c
-      JOIN speeches s ON c.speech_id = s.id
-      LIMIT 3
-    `
-      )
-      .all()
+      .prepare(`
+        SELECT c.id, c.chunk_text, c.chunk_index, s.country_name, s.year
+        FROM speech_chunks c
+        JOIN speeches s ON c.speech_id = s.id
+        LIMIT 3
+      `)
+      .all() as Array<{
+        id: number
+        chunk_text: string
+        chunk_index: number
+        country_name: string
+        year: number
+      }>
 
     console.log('\n📋 Sample chunks:')
     sampleChunks.forEach((chunk, i) => {
@@ -384,14 +410,15 @@ function verifySetup(db) {
       )
     })
   } catch (error) {
-    console.error('❌ Verification failed:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Verification failed:', errorMessage)
   }
 }
 
 /**
  * Main function
  */
-async function main() {
+async function main(): Promise<void> {
   console.log('🚀 Setting up UN Speeches RAG Pipeline\n')
 
   if (!process.env.OPENAI_API_KEY) {
@@ -402,7 +429,7 @@ async function main() {
     process.exit(1)
   }
 
-  let db
+  let db: Database.Database | undefined
   try {
     // Initialize database
     db = initDatabase()
@@ -424,7 +451,8 @@ async function main() {
 
     console.log('\n🎉 RAG pipeline setup complete!')
   } catch (error) {
-    console.error('❌ Setup failed:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Setup failed:', errorMessage)
     process.exit(1)
   } finally {
     if (db) {
@@ -446,4 +474,6 @@ export {
   processBatchOfChunks,
   processSpeeches,
   verifySetup,
+  type Speech,
+  type ChunkProcessResult,
 }

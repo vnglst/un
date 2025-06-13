@@ -10,11 +10,7 @@ import { config } from 'dotenv'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { load } from 'sqlite-vec'
-import {
-  semanticSearch,
-  getSearchStats,
-  findSimilarChunks,
-} from './vector-search.js'
+import { semanticSearch, getSearchStats } from './vector-search.js'
 import { ragQuery } from './rag-pipeline.js'
 
 // Load environment variables
@@ -22,10 +18,48 @@ config()
 
 const DB_PATH = join(process.cwd(), 'data', 'un_speeches.db')
 
+type VerificationResult = {
+  tablesExist: boolean
+  correctStructure: boolean
+  errors: string[]
+}
+
+type EmbeddingVerificationResult = {
+  embeddingsExist: boolean
+  correctFormat: boolean
+  consistentData: boolean
+  stats: {
+    totalEmbeddings?: number
+    totalChunks?: number
+  }
+  errors: string[]
+}
+
+type VectorSearchResult = {
+  searchWorks: boolean
+  resultsReturned: boolean
+  relevantResults: boolean
+  errors: string[]
+}
+
+type RAGTestResult = {
+  ragWorks: boolean
+  answerGenerated: boolean
+  sourcesProvided: boolean
+  errors: string[]
+}
+
+type AllResults = {
+  structure: VerificationResult
+  embeddings: EmbeddingVerificationResult
+  vectorSearch: VectorSearchResult
+  endToEnd: RAGTestResult
+}
+
 /**
  * Initialize database connection with sqlite-vec extension
  */
-function initDatabase() {
+function initDatabase(): Database.Database {
   if (!existsSync(DB_PATH)) {
     throw new Error(`Database file not found at ${DB_PATH}`)
   }
@@ -36,7 +70,8 @@ function initDatabase() {
     // Load sqlite-vec extension
     load(db)
   } catch (error) {
-    console.error('Failed to load sqlite-vec extension:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Failed to load sqlite-vec extension:', errorMessage)
     throw error
   }
 
@@ -46,10 +81,10 @@ function initDatabase() {
 /**
  * Verify database tables exist and have correct structure
  */
-function verifyDatabaseStructure(db) {
+function verifyDatabaseStructure(db: Database.Database): VerificationResult {
   console.log('🔍 Verifying database structure...')
 
-  const results = {
+  const results: VerificationResult = {
     tablesExist: false,
     correctStructure: false,
     errors: [],
@@ -58,13 +93,11 @@ function verifyDatabaseStructure(db) {
   try {
     // Check if main tables exist
     const tables = db
-      .prepare(
-        `
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name IN ('speeches', 'speech_chunks', 'speech_embeddings')
-    `
-      )
-      .all()
+      .prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name IN ('speeches', 'speech_chunks', 'speech_embeddings')
+      `)
+      .all() as Array<{ name: string }>
 
     const tableNames = tables.map((t) => t.name)
     const requiredTables = ['speeches', 'speech_chunks', 'speech_embeddings']
@@ -79,7 +112,9 @@ function verifyDatabaseStructure(db) {
     console.log('✅ All required tables exist')
 
     // Check speech_chunks structure
-    const chunkColumns = db.prepare(`PRAGMA table_info(speech_chunks)`).all()
+    const chunkColumns = db.prepare(`PRAGMA table_info(speech_chunks)`).all() as Array<{
+      name: string
+    }>
     const expectedChunkCols = [
       'id',
       'speech_id',
@@ -100,13 +135,11 @@ function verifyDatabaseStructure(db) {
 
     // Check speech_embeddings is a virtual table
     const embedTableInfo = db
-      .prepare(
-        `
-      SELECT sql FROM sqlite_master 
-      WHERE type='table' AND name='speech_embeddings'
-    `
-      )
-      .get()
+      .prepare(`
+        SELECT sql FROM sqlite_master 
+        WHERE type='table' AND name='speech_embeddings'
+      `)
+      .get() as { sql?: string } | undefined
 
     if (!embedTableInfo?.sql?.includes('VIRTUAL TABLE')) {
       results.errors.push(
@@ -122,8 +155,9 @@ function verifyDatabaseStructure(db) {
       results.errors.forEach((error) => console.log(`   - ${error}`))
     }
   } catch (error) {
-    results.errors.push(`Database structure check failed: ${error.message}`)
-    console.error('❌ Error verifying database structure:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    results.errors.push(`Database structure check failed: ${errorMessage}`)
+    console.error('❌ Error verifying database structure:', errorMessage)
   }
 
   return results
@@ -132,10 +166,10 @@ function verifyDatabaseStructure(db) {
 /**
  * Verify embeddings are stored and retrievable
  */
-function verifyEmbeddings(db) {
+function verifyEmbeddings(db: Database.Database): EmbeddingVerificationResult {
   console.log('🔍 Verifying embeddings...')
 
-  const results = {
+  const results: EmbeddingVerificationResult = {
     embeddingsExist: false,
     correctFormat: false,
     consistentData: false,
@@ -147,7 +181,7 @@ function verifyEmbeddings(db) {
     // Check if embeddings exist
     const embeddingCount = db
       .prepare('SELECT COUNT(*) as count FROM speech_embeddings')
-      .get()
+      .get() as { count: number }
     if (embeddingCount.count === 0) {
       results.errors.push('No embeddings found in speech_embeddings table')
       return results
@@ -160,7 +194,7 @@ function verifyEmbeddings(db) {
     // Check chunk count matches embedding count
     const chunkCount = db
       .prepare('SELECT COUNT(*) as count FROM speech_chunks')
-      .get()
+      .get() as { count: number }
     results.stats.totalChunks = chunkCount.count
 
     if (chunkCount.count !== embeddingCount.count) {
@@ -173,12 +207,10 @@ function verifyEmbeddings(db) {
 
     // Sample a few embeddings to check format
     const sampleEmbeddings = db
-      .prepare(
-        `
-      SELECT rowid, embedding FROM speech_embeddings LIMIT 3
-    `
-      )
-      .all()
+      .prepare(`
+        SELECT rowid, embedding FROM speech_embeddings LIMIT 3
+      `)
+      .all() as Array<{ rowid: number; embedding: string }>
 
     let validEmbeddings = 0
     for (const sample of sampleEmbeddings) {
@@ -186,21 +218,20 @@ function verifyEmbeddings(db) {
         // For sqlite-vec, embeddings should be stored as binary or in a specific format
         // We'll check if we can query against them
         const testQuery = db
-          .prepare(
-            `
-          SELECT vec_distance_cosine(embedding, embedding) as self_distance 
-          FROM speech_embeddings 
-          WHERE rowid = ?
-        `
-          )
-          .get(sample.rowid)
+          .prepare(`
+            SELECT vec_distance_cosine(embedding, embedding) as self_distance 
+            FROM speech_embeddings 
+            WHERE rowid = ?
+          `)
+          .get(sample.rowid) as { self_distance: number } | undefined
 
         if (testQuery && testQuery.self_distance !== null) {
           validEmbeddings++
         }
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
         results.errors.push(
-          `Invalid embedding format for chunk ${sample.rowid}: ${error.message}`
+          `Invalid embedding format for chunk ${sample.rowid}: ${errorMessage}`
         )
       }
     }
@@ -216,25 +247,21 @@ function verifyEmbeddings(db) {
 
     // Check data consistency
     const orphanedEmbeddings = db
-      .prepare(
-        `
-      SELECT COUNT(*) as count
-      FROM speech_embeddings e
-      LEFT JOIN speech_chunks c ON e.rowid = c.embedding_id
-      WHERE c.embedding_id IS NULL
-    `
-      )
-      .get()
+      .prepare(`
+        SELECT COUNT(*) as count
+        FROM speech_embeddings e
+        LEFT JOIN speech_chunks c ON e.rowid = c.embedding_id
+        WHERE c.embedding_id IS NULL
+      `)
+      .get() as { count: number }
 
     const orphanedChunks = db
-      .prepare(
-        `
-      SELECT COUNT(*) as count
-      FROM speech_chunks c
-      WHERE c.embedding_id IS NULL
-    `
-      )
-      .get()
+      .prepare(`
+        SELECT COUNT(*) as count
+        FROM speech_chunks c
+        WHERE c.embedding_id IS NULL
+      `)
+      .get() as { count: number }
 
     if (orphanedEmbeddings.count > 0) {
       results.errors.push(
@@ -251,8 +278,9 @@ function verifyEmbeddings(db) {
       console.log('✅ Data consistency verified')
     }
   } catch (error) {
-    results.errors.push(`Embedding verification failed: ${error.message}`)
-    console.error('❌ Error verifying embeddings:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    results.errors.push(`Embedding verification failed: ${errorMessage}`)
+    console.error('❌ Error verifying embeddings:', errorMessage)
   }
 
   return results
@@ -261,10 +289,10 @@ function verifyEmbeddings(db) {
 /**
  * Test vector search functionality
  */
-async function testVectorSearch(db) {
+async function testVectorSearch(db: Database.Database): Promise<VectorSearchResult> {
   console.log('🔍 Testing vector search functionality...')
 
-  const results = {
+  const results: VectorSearchResult = {
     searchWorks: false,
     resultsReturned: false,
     relevantResults: false,
@@ -341,8 +369,9 @@ async function testVectorSearch(db) {
       results.errors.push('Search returned no results')
     }
   } catch (error) {
-    results.errors.push(`Vector search test failed: ${error.message}`)
-    console.error('❌ Error testing vector search:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    results.errors.push(`Vector search test failed: ${errorMessage}`)
+    console.error('❌ Error testing vector search:', errorMessage)
   }
 
   return results
@@ -351,10 +380,10 @@ async function testVectorSearch(db) {
 /**
  * Test end-to-end RAG pipeline
  */
-async function testEndToEndRAG(db) {
+async function testEndToEndRAG(db: Database.Database): Promise<RAGTestResult> {
   console.log('🔍 Testing end-to-end RAG pipeline...')
 
-  const results = {
+  const results: RAGTestResult = {
     ragWorks: false,
     answerGenerated: false,
     sourcesProvided: false,
@@ -421,8 +450,9 @@ async function testEndToEndRAG(db) {
       }
     }
   } catch (error) {
-    results.errors.push(`End-to-end RAG test failed: ${error.message}`)
-    console.error('❌ Error testing RAG pipeline:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    results.errors.push(`End-to-end RAG test failed: ${errorMessage}`)
+    console.error('❌ Error testing RAG pipeline:', errorMessage)
   }
 
   return results
@@ -431,11 +461,11 @@ async function testEndToEndRAG(db) {
 /**
  * Run comprehensive verification suite
  */
-async function runFullVerification() {
+async function runFullVerification(): Promise<AllResults> {
   console.log('🚀 Running comprehensive RAG pipeline verification\n')
 
   const db = initDatabase()
-  const allResults = {}
+  const allResults: AllResults = {} as AllResults
 
   try {
     // 1. Verify database structure
@@ -459,7 +489,12 @@ async function runFullVerification() {
       allResults.endToEnd = await testEndToEndRAG(db)
     } else {
       console.log('⏭️  Skipping end-to-end test due to previous failures')
-      allResults.endToEnd = { errors: ['Skipped due to previous failures'] }
+      allResults.endToEnd = { 
+        ragWorks: false,
+        answerGenerated: false,
+        sourcesProvided: false,
+        errors: ['Skipped due to previous failures'] 
+      }
     }
   } finally {
     db.close()
@@ -506,7 +541,7 @@ async function runFullVerification() {
 /**
  * Show database statistics
  */
-async function showStats() {
+async function showStats(): Promise<void> {
   console.log('📊 RAG Pipeline Statistics\n')
 
   const db = initDatabase()
@@ -556,7 +591,7 @@ async function showStats() {
 /**
  * Main CLI function
  */
-async function main() {
+async function main(): Promise<void> {
   const command = process.argv[2]
 
   try {
@@ -570,29 +605,33 @@ async function main() {
         await showStats()
         break
 
-      case 'structure':
+      case 'structure': {
         const db = initDatabase()
         verifyDatabaseStructure(db)
         db.close()
         break
+      }
 
-      case 'embeddings':
+      case 'embeddings': {
         const db2 = initDatabase()
         verifyEmbeddings(db2)
         db2.close()
         break
+      }
 
-      case 'search':
+      case 'search': {
         const db3 = initDatabase()
         await testVectorSearch(db3)
         db3.close()
         break
+      }
 
-      case 'rag':
+      case 'rag': {
         const db4 = initDatabase()
         await testEndToEndRAG(db4)
         db4.close()
         break
+      }
 
       default:
         console.log('Usage: node verify-rag.js [command]')
@@ -606,7 +645,8 @@ async function main() {
         console.log('  rag              - Test end-to-end RAG only')
     }
   } catch (error) {
-    console.error('❌ Verification failed:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Verification failed:', errorMessage)
     process.exit(1)
   }
 }
@@ -623,4 +663,9 @@ export {
   testEndToEndRAG,
   runFullVerification,
   showStats,
+  type VerificationResult,
+  type EmbeddingVerificationResult,
+  type VectorSearchResult,
+  type RAGTestResult,
+  type AllResults,
 }

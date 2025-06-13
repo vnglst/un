@@ -7,11 +7,14 @@
 
 import { OpenAI } from 'openai'
 import { config } from 'dotenv'
+import type Database from 'better-sqlite3'
 import {
   initDatabase,
   semanticSearch,
   getChunkContext,
   advancedSearch,
+  type SearchResult,
+  type SearchFilters,
 } from './vector-search.js'
 
 // Load environment variables
@@ -21,10 +24,77 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+type GenerateAnswerOptions = {
+  model?: string
+  temperature?: number
+  maxTokens?: number
+  includeMetadata?: boolean
+}
+
+type AnswerResult = {
+  answer: string
+  usage: OpenAI.Completions.CompletionUsage | undefined
+  model: string | undefined
+}
+
+type RagQueryOptions = {
+  searchLimit?: number
+  includeContext?: boolean
+  filters?: SearchFilters
+  searchThreshold?: number | null
+}
+
+type RagSource = {
+  index: number
+  chunk_id: number
+  speech_id: number
+  country: string
+  speaker: string
+  year: number
+  session: number
+  distance: number
+  preview: string
+}
+
+type RagResult = {
+  question: string
+  answer: string
+  sources: RagSource[]
+  searchResults: SearchResult[]
+  metadata: {
+    model: string | undefined
+    usage: OpenAI.Completions.CompletionUsage | undefined
+    search_count: number
+    filters_applied: string[]
+  }
+}
+
+type PerspectiveResult = {
+  type: 'country' | 'speaker'
+  entity: string
+  perspective: string
+  sources: number
+  sample_years: number[]
+}
+
+type ComparisonResult = {
+  topic: string
+  perspectives: PerspectiveResult[]
+  summary: string
+}
+
+type EnhancedSearchResult = SearchResult & {
+  enhanced_text?: string
+}
+
 /**
  * Generate an answer using retrieved context and OpenAI
  */
-async function generateAnswer(question, contexts, options = {}) {
+async function generateAnswer(
+  question: string,
+  contexts: SearchResult[],
+  options: GenerateAnswerOptions = {}
+): Promise<AnswerResult> {
   const {
     model = 'gpt-4o',
     temperature = 0.1,
@@ -73,12 +143,13 @@ Please provide a comprehensive answer based on the provided context.`
     })
 
     return {
-      answer: response.choices[0].message.content,
+      answer: response.choices[0].message.content || '',
       usage: response.usage,
       model: response.model,
     }
   } catch (error) {
-    console.error('Error generating answer:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Error generating answer:', errorMessage)
     throw error
   }
 }
@@ -86,7 +157,11 @@ Please provide a comprehensive answer based on the provided context.`
 /**
  * Perform complete RAG pipeline: search + generate
  */
-async function ragQuery(db, question, options = {}) {
+async function ragQuery(
+  db: Database.Database,
+  question: string,
+  options: RagQueryOptions = {}
+): Promise<RagResult> {
   const {
     searchLimit = 5,
     includeContext = true,
@@ -98,7 +173,7 @@ async function ragQuery(db, question, options = {}) {
     console.log(`🔍 Searching for: "${question}"`)
 
     // Perform semantic search
-    let searchResults
+    let searchResults: SearchResult[]
     if (Object.keys(filters).length > 0) {
       searchResults = await advancedSearch(db, question, filters, searchLimit)
     } else {
@@ -112,17 +187,24 @@ async function ragQuery(db, question, options = {}) {
 
     if (searchResults.length === 0) {
       return {
+        question,
         answer:
           "I couldn't find any relevant information in the UN speeches database to answer your question.",
         sources: [],
         searchResults: [],
+        metadata: {
+          model: undefined,
+          usage: undefined,
+          search_count: 0,
+          filters_applied: Object.keys(filters),
+        },
       }
     }
 
     console.log(`📚 Found ${searchResults.length} relevant chunks`)
 
     // Optionally enhance with context
-    let contexts = searchResults
+    let contexts: EnhancedSearchResult[] = searchResults
     if (includeContext) {
       contexts = searchResults.map((result) => {
         const contextInfo = getChunkContext(db, result.chunk_id, 1)
@@ -140,7 +222,7 @@ async function ragQuery(db, question, options = {}) {
     const answerResult = await generateAnswer(question, contexts)
 
     // Prepare sources information
-    const sources = searchResults.map((result, i) => ({
+    const sources: RagSource[] = searchResults.map((result, i) => ({
       index: i + 1,
       chunk_id: result.chunk_id,
       speech_id: result.speech_id,
@@ -165,7 +247,8 @@ async function ragQuery(db, question, options = {}) {
       },
     }
   } catch (error) {
-    console.error('Error in RAG query:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Error in RAG query:', errorMessage)
     throw error
   }
 }
@@ -174,17 +257,17 @@ async function ragQuery(db, question, options = {}) {
  * Compare perspectives from different countries/speakers
  */
 async function compareperspectives(
-  db,
-  topic,
-  countries = [],
-  speakers = [],
-  options = {}
-) {
+  db: Database.Database,
+  topic: string,
+  countries: string[] = [],
+  speakers: string[] = [],
+  options: { searchLimit?: number } = {}
+): Promise<ComparisonResult> {
   const { searchLimit = 3 } = options
 
   console.log(`🔍 Comparing perspectives on: "${topic}"`)
 
-  const perspectives = []
+  const perspectives: PerspectiveResult[] = []
 
   // Search for each country
   for (const country of countries) {
@@ -206,7 +289,8 @@ async function compareperspectives(
         })
       }
     } catch (error) {
-      console.error(`Error getting perspective for ${country}:`, error.message)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(`Error getting perspective for ${country}:`, errorMessage)
     }
   }
 
@@ -230,7 +314,8 @@ async function compareperspectives(
         })
       }
     } catch (error) {
-      console.error(`Error getting perspective for ${speaker}:`, error.message)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(`Error getting perspective for ${speaker}:`, errorMessage)
     }
   }
 
@@ -244,7 +329,7 @@ async function compareperspectives(
 /**
  * Interactive chat interface
  */
-async function startChatInterface() {
+async function startChatInterface(): Promise<void> {
   console.log('🚀 Starting UN Speeches RAG Chat Interface')
   console.log('Ask questions about UN speeches. Type "exit" to quit.\n')
 
@@ -262,7 +347,7 @@ async function startChatInterface() {
     output: process.stdout,
   })
 
-  const askQuestion = (prompt) => {
+  const askQuestion = (prompt: string): Promise<string> => {
     return new Promise((resolve) => {
       rl.question(prompt, resolve)
     })
@@ -302,7 +387,8 @@ async function startChatInterface() {
         console.log(`\n⏱️  Query completed in ${duration}ms`)
         console.log('─'.repeat(80))
       } catch (error) {
-        console.error('❌ Error processing question:', error.message)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('❌ Error processing question:', errorMessage)
       }
     }
   } finally {
@@ -314,7 +400,7 @@ async function startChatInterface() {
 /**
  * Command line interface
  */
-async function main() {
+async function main(): Promise<void> {
   const args = process.argv.slice(2)
 
   if (args.length === 0) {
@@ -395,4 +481,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error)
 }
 
-export { generateAnswer, ragQuery, compareperspectives, startChatInterface }
+export { 
+  generateAnswer, 
+  ragQuery, 
+  compareperspectives, 
+  startChatInterface,
+  type GenerateAnswerOptions,
+  type AnswerResult,
+  type RagQueryOptions,
+  type RagSource,
+  type RagResult,
+  type PerspectiveResult,
+  type ComparisonResult,
+}

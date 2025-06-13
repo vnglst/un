@@ -17,7 +17,7 @@ import { ragQuery, compareperspectives } from './rag-pipeline.js'
 // Load environment variables
 config()
 
-async function runExamples() {
+async function runExamples(): Promise<void> {
   console.log('🚀 UN Speeches RAG Pipeline Examples\n')
 
   if (!process.env.OPENAI_API_KEY) {
@@ -122,7 +122,7 @@ async function runExamples() {
     })
 
     console.log(`\n${comparison.summary}`)
-    comparison.perspectives.forEach((perspective, i) => {
+    comparison.perspectives.forEach((perspective) => {
       console.log(`\n--- ${perspective.entity} ---`)
       console.log(
         `Sources: ${perspective.sources} (Years: ${perspective.sample_years.join(', ')})`
@@ -139,16 +139,20 @@ async function runExamples() {
 
     // Get a sample chunk first
     const sampleChunk = db
-      .prepare(
-        `
-      SELECT c.id, c.chunk_text, s.country_name as country, s.year, s.speaker
-      FROM speech_chunks c
-      JOIN speeches s ON c.speech_id = s.id
-      WHERE c.chunk_text LIKE '%peace%'
-      LIMIT 1
-    `
-      )
-      .get()
+      .prepare(`
+        SELECT c.id, c.chunk_text, s.country_name as country, s.year, s.speaker
+        FROM speech_chunks c
+        JOIN speeches s ON c.speech_id = s.id
+        WHERE c.chunk_text LIKE '%peace%'
+        LIMIT 1
+      `)
+      .get() as {
+        id: number
+        chunk_text: string
+        country: string
+        year: number
+        speaker: string
+      } | undefined
 
     if (sampleChunk) {
       console.log(
@@ -166,8 +170,11 @@ async function runExamples() {
     console.log('\nTo try these features interactively, run:')
     console.log('  node rag-pipeline.js')
   } catch (error) {
-    console.error('❌ Error running examples:', error.message)
-    console.error(error.stack)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ Error running examples:', errorMessage)
+    if (error instanceof Error && error.stack) {
+      console.error(error.stack)
+    }
   } finally {
     db.close()
   }

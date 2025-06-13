@@ -15,7 +15,7 @@ try {
   // Check basic tables
   const tables = db
     .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-    .all()
+    .all() as Array<{ name: string }>
   console.log(
     '✅ Found tables:',
     tables.map((t) => t.name)
@@ -26,14 +26,19 @@ try {
     load(db)
     console.log('✅ sqlite-vec loaded')
 
-    const version = db.prepare('SELECT vec_version()').get()
+    const version = db.prepare('SELECT vec_version()').get() as {
+      'vec_version()': string
+    }
     console.log('✅ sqlite-vec version:', version['vec_version()'])
   } catch (error) {
-    console.error('❌ sqlite-vec failed:', error.message)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('❌ sqlite-vec failed:', errorMessage)
   }
 
   // Check speeches table
-  const speechCount = db.prepare('SELECT COUNT(*) as count FROM speeches').get()
+  const speechCount = db.prepare('SELECT COUNT(*) as count FROM speeches').get() as {
+    count: number
+  }
   console.log(`✅ Speeches count: ${speechCount.count}`)
 
   // Check if our tables exist
@@ -41,7 +46,7 @@ try {
     .prepare(
       "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('speech_chunks', 'speech_embeddings')"
     )
-    .all()
+    .all() as Array<{ name: string }>
   console.log(
     'Our tables:',
     ourTables.map((t) => t.name)
@@ -50,6 +55,7 @@ try {
   db.close()
   console.log('✅ Test completed successfully')
 } catch (error) {
-  console.error('❌ Test failed:', error.message)
+  const errorMessage = error instanceof Error ? error.message : String(error)
+  console.error('❌ Test failed:', errorMessage)
   process.exit(1)
 }
