@@ -181,31 +181,37 @@ async function processBatchOfChunks(
   updateChunkWithEmbeddingId: Database.Statement<[number, number]>,
   startIndex: number = 0
 ): Promise<ChunkProcessResult[]> {
-  const promises = chunks.map(async (chunkText, i): Promise<ChunkProcessResult> => {
-    const chunkIndex = startIndex + i
+  const promises = chunks.map(
+    async (chunkText, i): Promise<ChunkProcessResult> => {
+      const chunkIndex = startIndex + i
 
-    try {
-      // Insert chunk into database
-      const result = insertChunk.run(speechId, chunkText, chunkIndex)
-      const chunkId = result.lastInsertRowid as number
+      try {
+        // Insert chunk into database
+        const result = insertChunk.run(speechId, chunkText, chunkIndex)
+        const chunkId = result.lastInsertRowid as number
 
-      // Generate embedding
-      const embedding = await generateEmbedding(chunkText)
+        // Generate embedding
+        const embedding = await generateEmbedding(chunkText)
 
-      // Store embedding
-      const embeddingResult = insertEmbedding.run(JSON.stringify(embedding))
-      const embeddingId = embeddingResult.lastInsertRowid as number
+        // Store embedding
+        const embeddingResult = insertEmbedding.run(JSON.stringify(embedding))
+        const embeddingId = embeddingResult.lastInsertRowid as number
 
-      // Update chunk with embedding ID
-      updateChunkWithEmbeddingId.run(embeddingId, chunkId)
+        // Update chunk with embedding ID
+        updateChunkWithEmbeddingId.run(embeddingId, chunkId)
 
-      return { success: true, chunkIndex, chunkId }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error(`   ❌ Error processing chunk ${chunkIndex}:`, errorMessage)
-      return { success: false, chunkIndex, error: errorMessage }
+        return { success: true, chunkIndex, chunkId }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
+        console.error(
+          `   ❌ Error processing chunk ${chunkIndex}:`,
+          errorMessage
+        )
+        return { success: false, chunkIndex, error: errorMessage }
+      }
     }
-  })
+  )
 
   return Promise.all(promises)
 }
@@ -219,12 +225,12 @@ async function processSpeeches(
 ): Promise<void> {
   console.log('📝 Processing speeches (starting with most recent years)...')
 
-  // Get speeches to process, prioritizing recent years and excluding already processed ones
+  // Get speeches to process for USA, prioritizing recent years and excluding already processed ones
   let query = `
     SELECT s.id, s.country_name, s.speaker, s.year, s.session, s.text 
     FROM speeches s
     LEFT JOIN speech_chunks c ON s.id = c.speech_id
-    WHERE c.speech_id IS NULL
+    WHERE c.speech_id IS NULL AND s.country_code = 'USA'
     ORDER BY s.year DESC, s.session DESC, s.id ASC
   `
   if (limit) {
@@ -332,7 +338,8 @@ async function processSpeeches(
       // Small delay between speeches
       await new Promise((resolve) => setTimeout(resolve, 50))
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
       console.error(`❌ Error processing speech ${speechId}:`, errorMessage)
       continue
     }
@@ -372,11 +379,13 @@ function verifySetup(db: Database.Database): void {
 
     // Check for any chunks without embeddings
     const missingEmbeddings = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) as count 
         FROM speech_chunks c 
         WHERE c.embedding_id IS NULL
-      `)
+      `
+      )
       .get() as { count: number }
 
     if (missingEmbeddings.count > 0) {
@@ -389,19 +398,21 @@ function verifySetup(db: Database.Database): void {
 
     // Sample a few chunks to verify data integrity
     const sampleChunks = db
-      .prepare(`
+      .prepare(
+        `
         SELECT c.id, c.chunk_text, c.chunk_index, s.country_name, s.year
         FROM speech_chunks c
         JOIN speeches s ON c.speech_id = s.id
         LIMIT 3
-      `)
+      `
+      )
       .all() as Array<{
-        id: number
-        chunk_text: string
-        chunk_index: number
-        country_name: string
-        year: number
-      }>
+      id: number
+      chunk_text: string
+      chunk_index: number
+      country_name: string
+      year: number
+    }>
 
     console.log('\n📋 Sample chunks:')
     sampleChunks.forEach((chunk, i) => {
