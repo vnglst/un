@@ -173,60 +173,6 @@ async function semanticSearch(
 }
 
 /**
- * Search for similar chunks to a given chunk
- */
-async function findSimilarChunks(
-  db: Database.Database,
-  chunkId: number,
-  limit: number = 5
-): Promise<SearchResult[]> {
-  // Get the embedding for the given chunk
-  const chunk = db
-    .prepare(`
-      SELECT embedding_id FROM speech_chunks WHERE id = ?
-    `)
-    .get(chunkId) as { embedding_id: number } | undefined
-
-  if (!chunk || !chunk.embedding_id) {
-    throw new Error(`Chunk ${chunkId} not found or has no embedding`)
-  }
-
-  const chunkEmbedding = db
-    .prepare(`
-      SELECT embedding FROM speech_embeddings WHERE rowid = ?
-    `)
-    .get(chunk.embedding_id) as { embedding: string } | undefined
-
-  if (!chunkEmbedding) {
-    throw new Error(`Chunk ${chunkId} not found`)
-  }
-
-  // Find similar chunks
-  const results = db
-    .prepare(`
-      SELECT 
-        c.id as chunk_id,
-        c.chunk_text,
-        c.chunk_index,
-        s.id as speech_id,
-        s.country_name as country,
-        s.speaker,
-        s.year,
-        s.session,
-        vec_distance_cosine(e.embedding, ?) as distance
-      FROM speech_chunks c
-      JOIN speech_embeddings e ON c.embedding_id = e.rowid
-      JOIN speeches s ON c.speech_id = s.id
-      WHERE c.id != ?
-      ORDER BY distance ASC
-      LIMIT ?
-    `)
-    .all(chunkEmbedding.embedding, chunkId, limit) as SearchResult[]
-
-  return results
-}
-
-/**
  * Get context for a search result (surrounding chunks from the same speech)
  */
 function getChunkContext(
@@ -235,12 +181,14 @@ function getChunkContext(
   contextSize: number = 1
 ): ChunkContext | null {
   const chunk = db
-    .prepare(`
+    .prepare(
+      `
       SELECT c.*, s.country_name, s.speaker, s.year, s.session
       FROM speech_chunks c
       JOIN speeches s ON c.speech_id = s.id
       WHERE c.id = ?
-    `)
+    `
+    )
     .get(chunkId) as ChunkContext['mainChunk'] | undefined
 
   if (!chunk) {
@@ -249,13 +197,15 @@ function getChunkContext(
 
   // Get surrounding chunks from the same speech
   const contextChunks = db
-    .prepare(`
+    .prepare(
+      `
       SELECT id, chunk_text, chunk_index
       FROM speech_chunks
       WHERE speech_id = ? 
         AND chunk_index BETWEEN ? AND ?
       ORDER BY chunk_index ASC
-    `)
+    `
+    )
     .all(
       chunk.speech_id,
       chunk.chunk_index - contextSize,
@@ -353,16 +303,21 @@ function getSearchStats(db: Database.Database): SearchStats {
 
   try {
     // Total chunks and embeddings
-    stats.totalChunks = (db
-      .prepare('SELECT COUNT(*) as count FROM speech_chunks')
-      .get() as { count: number }).count
-    stats.totalEmbeddings = (db
-      .prepare('SELECT COUNT(*) as count FROM speech_embeddings')
-      .get() as { count: number }).count
+    stats.totalChunks = (
+      db.prepare('SELECT COUNT(*) as count FROM speech_chunks').get() as {
+        count: number
+      }
+    ).count
+    stats.totalEmbeddings = (
+      db.prepare('SELECT COUNT(*) as count FROM speech_embeddings').get() as {
+        count: number
+      }
+    ).count
 
     // Chunks per speech statistics
     const chunkStats = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           AVG(chunk_count) as avg_chunks,
           MIN(chunk_count) as min_chunks,
@@ -372,12 +327,13 @@ function getSearchStats(db: Database.Database): SearchStats {
           FROM speech_chunks
           GROUP BY speech_id
         )
-      `)
+      `
+      )
       .get() as {
-        avg_chunks: number
-        min_chunks: number
-        max_chunks: number
-      }
+      avg_chunks: number
+      min_chunks: number
+      max_chunks: number
+    }
 
     stats.avgChunksPerSpeech = Math.round(chunkStats.avg_chunks * 100) / 100
     stats.minChunksPerSpeech = chunkStats.min_chunks
@@ -385,7 +341,8 @@ function getSearchStats(db: Database.Database): SearchStats {
 
     // Coverage by country
     stats.countryCoverage = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           s.country_name as country,
           COUNT(DISTINCT s.id) as speeches,
@@ -395,12 +352,14 @@ function getSearchStats(db: Database.Database): SearchStats {
         GROUP BY s.country_name
         ORDER BY chunks DESC
         LIMIT 10
-      `)
+      `
+      )
       .all() as SearchStats['countryCoverage']
 
     // Coverage by year
     stats.yearCoverage = db
-      .prepare(`
+      .prepare(
+        `
         SELECT 
           s.year,
           COUNT(DISTINCT s.id) as speeches,
@@ -410,7 +369,8 @@ function getSearchStats(db: Database.Database): SearchStats {
         GROUP BY s.year
         ORDER BY s.year DESC
         LIMIT 10
-      `)
+      `
+      )
       .all() as SearchStats['yearCoverage']
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -422,14 +382,10 @@ function getSearchStats(db: Database.Database): SearchStats {
 
 export {
   initDatabase,
-  generateQueryEmbedding,
   semanticSearch,
-  findSimilarChunks,
   getChunkContext,
   advancedSearch,
   getSearchStats,
   type SearchResult,
-  type ChunkContext,
   type SearchFilters,
-  type SearchStats,
 }

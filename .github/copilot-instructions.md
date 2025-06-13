@@ -34,11 +34,17 @@ The `npm run check` command runs:
 3. Only consider changes complete when `npm run check` passes without errors
 
 4. **Always check online documentation** when working with key technologies to ensure you're using the most up-to-date APIs and best practices:
+
    - React Router v7: Check the official React Router documentation for the latest APIs
    - Tailwind CSS v4: Verify class names and utilities against the current Tailwind documentation
    - TypeScript: Reference the latest TypeScript documentation for type definitions and features
    - D3.js: Consult D3 documentation for correct API usage and examples
    - Better-sqlite3: Check the library documentation for proper database operations
+
+5. **Coding Guidelines**
+   - Follow the project's coding style (indentation, naming conventions, etc.)
+   - Don't use comments to clarify code.
+   - Don't use barrel files (index.ts) to re-export components or utilities
 
 ## Project Structure
 

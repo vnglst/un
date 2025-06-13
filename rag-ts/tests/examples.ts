@@ -11,8 +11,8 @@ import {
   semanticSearch,
   advancedSearch,
   getSearchStats,
-} from '../runtime/vector-search.js'
-import { ragQuery, compareperspectives } from '../runtime/rag-pipeline.js'
+} from '../runtime/vector-search.ts'
+import { ragQuery, compareperspectives } from '../runtime/rag-pipeline.ts'
 
 // Load environment variables
 config()

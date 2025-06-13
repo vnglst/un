@@ -6,11 +6,11 @@ import {
   useNavigation,
   Link,
 } from 'react-router'
-import PageLayout from '../components/page-layout'
-import { Button } from '../components/ui/button'
-import { Card } from '../components/ui/card'
-import { Input } from '../components/ui/input'
-import { Select } from '../components/ui/select'
+import PageLayout from '~/components/page-layout'
+import { Button } from '~/components/ui/button'
+import { Card } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
+import { Select } from '~/components/ui/select'
 import { logger, timeAsyncOperation } from '~/lib/logger'
 
 interface RAGResponse {

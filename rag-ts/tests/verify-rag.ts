@@ -10,8 +10,8 @@ import { config } from 'dotenv'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { load } from 'sqlite-vec'
-import { semanticSearch, getSearchStats } from '../runtime/vector-search.js'
-import { ragQuery } from '../runtime/rag-pipeline.js'
+import { semanticSearch, getSearchStats } from '../runtime/vector-search.ts'
+import { ragQuery } from '../runtime/rag-pipeline.ts'
 
 // Load environment variables
 config()

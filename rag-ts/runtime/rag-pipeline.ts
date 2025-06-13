@@ -15,7 +15,7 @@ import {
   advancedSearch,
   type SearchResult,
   type SearchFilters,
-} from './vector-search.js'
+} from './vector-search.ts'
 
 // Load environment variables
 config()
@@ -289,7 +289,8 @@ async function compareperspectives(
         })
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
       console.error(`Error getting perspective for ${country}:`, errorMessage)
     }
   }
@@ -314,7 +315,8 @@ async function compareperspectives(
         })
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
       console.error(`Error getting perspective for ${speaker}:`, errorMessage)
     }
   }
@@ -387,7 +389,8 @@ async function startChatInterface(): Promise<void> {
         console.log(`\n⏱️  Query completed in ${duration}ms`)
         console.log('─'.repeat(80))
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
         console.error('❌ Error processing question:', errorMessage)
       }
     }
@@ -481,10 +484,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error)
 }
 
-export { 
-  generateAnswer, 
-  ragQuery, 
-  compareperspectives, 
+export {
+  generateAnswer,
+  ragQuery,
+  compareperspectives,
   startChatInterface,
   type GenerateAnswerOptions,
   type AnswerResult,
