@@ -22,6 +22,8 @@ const openai = new OpenAI({
 const DB_PATH = join(process.cwd(), 'data', 'un_speeches.db')
 const CHUNK_SIZE = 2000 // characters per chunk
 const OVERLAP_SIZE = 200 // overlap between chunks
+const BATCH_SIZE = 100 // number of chunks to process in parallel
+const RATE_LIMIT_DELAY = 10 // delay between batches in ms
 
 /**
  * Initialize database connection with sqlite-vec extension
@@ -145,6 +147,48 @@ async function generateEmbedding(text) {
 }
 
 /**
+ * Process a batch of chunks in parallel
+ */
+async function processBatchOfChunks(
+  chunks,
+  speechId,
+  insertChunk,
+  insertEmbedding,
+  updateChunkWithEmbeddingId,
+  startIndex = 0
+) {
+  const promises = chunks.map(async (chunkText, i) => {
+    const chunkIndex = startIndex + i
+
+    try {
+      // Insert chunk into database
+      const result = insertChunk.run(speechId, chunkText, chunkIndex)
+      const chunkId = result.lastInsertRowid
+
+      // Generate embedding
+      const embedding = await generateEmbedding(chunkText)
+
+      // Store embedding
+      const embeddingResult = insertEmbedding.run(JSON.stringify(embedding))
+      const embeddingId = embeddingResult.lastInsertRowid
+
+      // Update chunk with embedding ID
+      updateChunkWithEmbeddingId.run(embeddingId, chunkId)
+
+      return { success: true, chunkIndex, chunkId }
+    } catch (error) {
+      console.error(
+        `   ❌ Error processing chunk ${chunkIndex}:`,
+        error.message
+      )
+      return { success: false, chunkIndex, error: error.message }
+    }
+  })
+
+  return Promise.all(promises)
+}
+
+/**
  * Process speeches and create chunks with embeddings
  */
 async function processSpeeches(db, limit = null) {
@@ -213,35 +257,57 @@ async function processSpeeches(db, limit = null) {
       const chunks = chunkText(text)
       console.log(`   Split into ${chunks.length} chunks`)
 
-      // Process each chunk
-      for (let i = 0; i < chunks.length; i++) {
-        const chunkText = chunks[i]
+      // Process chunks in parallel batches
+      let processedChunks = 0
+      let successfulChunks = 0
 
-        // Insert chunk into database
-        const result = insertChunk.run(speechId, chunkText, i)
-        const chunkId = result.lastInsertRowid
+      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+        const batch = chunks.slice(i, i + BATCH_SIZE)
+        console.log(
+          `   Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(chunks.length / BATCH_SIZE)} (${batch.length} chunks)...`
+        )
 
-        // Generate and store embedding
-        const embedding = await generateEmbedding(chunkText)
-        const embeddingResult = insertEmbedding.run(JSON.stringify(embedding))
-        const embeddingId = embeddingResult.lastInsertRowid
+        const results = await processBatchOfChunks(
+          batch,
+          speechId,
+          insertChunk,
+          insertEmbedding,
+          updateChunkWithEmbeddingId,
+          i
+        )
 
-        // Update chunk with embedding ID
-        updateChunkWithEmbeddingId.run(embeddingId, chunkId)
+        // Count successful/failed chunks
+        const batchSuccessful = results.filter((r) => r.success).length
+        const batchFailed = results.filter((r) => !r.success).length
 
-        totalChunks++
+        processedChunks += results.length
+        successfulChunks += batchSuccessful
 
-        // Show progress
-        if (totalChunks % 10 === 0) {
-          console.log(`   Processed ${totalChunks} chunks...`)
+        if (batchFailed > 0) {
+          console.log(
+            `   ⚠️  Batch completed with ${batchSuccessful} successful, ${batchFailed} failed`
+          )
+        } else {
+          console.log(
+            `   ✅ Batch completed successfully (${batchSuccessful} chunks)`
+          )
+        }
+
+        totalChunks += batchSuccessful
+
+        // Add delay between batches to respect rate limits
+        if (i + BATCH_SIZE < chunks.length) {
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY))
         }
       }
 
       processedCount++
-      console.log(`✅ Completed speech ${speechId} (${chunks.length} chunks)`)
+      console.log(
+        `✅ Completed speech ${speechId} (${successfulChunks}/${chunks.length} chunks successful)`
+      )
 
-      // Small delay to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // Small delay between speeches
+      await new Promise((resolve) => setTimeout(resolve, 50))
     } catch (error) {
       console.error(`❌ Error processing speech ${speechId}:`, error.message)
       continue
@@ -377,6 +443,7 @@ export {
   createTables,
   chunkText,
   generateEmbedding,
+  processBatchOfChunks,
   processSpeeches,
   verifySetup,
 }
