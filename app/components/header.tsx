@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router'
-import { Globe, Search, Menu, X } from 'lucide-react'
+import { Globe, Search, Menu, X, MessageSquare } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Header() {
@@ -68,6 +68,10 @@ export default function Header() {
               <Globe className="h-4 w-4" />
               <span>Globe</span>
             </Link>
+            <Link to="/rag" className={getNavLinkClass('/rag')}>
+              <MessageSquare className="h-4 w-4" />
+              <span>RAG Chat</span>
+            </Link>
           </nav>
 
           {/* Mobile menu button */}
@@ -103,6 +107,14 @@ export default function Header() {
               >
                 <Globe className="h-4 w-4" />
                 <span>Globe</span>
+              </Link>
+              <Link
+                to="/rag"
+                className={getMobileNavLinkClass('/rag')}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>RAG Chat</span>
               </Link>
             </nav>
           </div>
