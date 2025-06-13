@@ -127,8 +127,10 @@ export async function action({
 
     try {
       // Dynamic import to avoid loading RAG modules if not needed
-      const { initDatabase } = await import('../../rag-ts/vector-search.ts')
-      const { ragQuery } = await import('../../rag-ts/rag-pipeline.ts')
+      const { initDatabase } = await import(
+        '../../rag-ts/runtime/vector-search.ts'
+      )
+      const { ragQuery } = await import('../../rag-ts/runtime/rag-pipeline.ts')
 
       const db = await initDatabase()
 

@@ -11,8 +11,8 @@ import {
   semanticSearch,
   advancedSearch,
   getSearchStats,
-} from './vector-search.js'
-import { ragQuery, compareperspectives } from './rag-pipeline.js'
+} from '../runtime/vector-search.js'
+import { ragQuery, compareperspectives } from '../runtime/rag-pipeline.js'
 
 // Load environment variables
 config()
@@ -139,20 +139,24 @@ async function runExamples(): Promise<void> {
 
     // Get a sample chunk first
     const sampleChunk = db
-      .prepare(`
+      .prepare(
+        `
         SELECT c.id, c.chunk_text, s.country_name as country, s.year, s.speaker
         FROM speech_chunks c
         JOIN speeches s ON c.speech_id = s.id
         WHERE c.chunk_text LIKE '%peace%'
         LIMIT 1
-      `)
-      .get() as {
-        id: number
-        chunk_text: string
-        country: string
-        year: number
-        speaker: string
-      } | undefined
+      `
+      )
+      .get() as
+      | {
+          id: number
+          chunk_text: string
+          country: string
+          year: number
+          speaker: string
+        }
+      | undefined
 
     if (sampleChunk) {
       console.log(

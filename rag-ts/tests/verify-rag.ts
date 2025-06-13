@@ -10,8 +10,8 @@ import { config } from 'dotenv'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { load } from 'sqlite-vec'
-import { semanticSearch, getSearchStats } from './vector-search.js'
-import { ragQuery } from './rag-pipeline.js'
+import { semanticSearch, getSearchStats } from '../runtime/vector-search.js'
+import { ragQuery } from '../runtime/rag-pipeline.js'
 
 // Load environment variables
 config()
@@ -93,10 +93,12 @@ function verifyDatabaseStructure(db: Database.Database): VerificationResult {
   try {
     // Check if main tables exist
     const tables = db
-      .prepare(`
+      .prepare(
+        `
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name IN ('speeches', 'speech_chunks', 'speech_embeddings')
-      `)
+      `
+      )
       .all() as Array<{ name: string }>
 
     const tableNames = tables.map((t) => t.name)
@@ -112,7 +114,9 @@ function verifyDatabaseStructure(db: Database.Database): VerificationResult {
     console.log('✅ All required tables exist')
 
     // Check speech_chunks structure
-    const chunkColumns = db.prepare(`PRAGMA table_info(speech_chunks)`).all() as Array<{
+    const chunkColumns = db
+      .prepare(`PRAGMA table_info(speech_chunks)`)
+      .all() as Array<{
       name: string
     }>
     const expectedChunkCols = [
@@ -135,10 +139,12 @@ function verifyDatabaseStructure(db: Database.Database): VerificationResult {
 
     // Check speech_embeddings is a virtual table
     const embedTableInfo = db
-      .prepare(`
+      .prepare(
+        `
         SELECT sql FROM sqlite_master 
         WHERE type='table' AND name='speech_embeddings'
-      `)
+      `
+      )
       .get() as { sql?: string } | undefined
 
     if (!embedTableInfo?.sql?.includes('VIRTUAL TABLE')) {
@@ -207,9 +213,11 @@ function verifyEmbeddings(db: Database.Database): EmbeddingVerificationResult {
 
     // Sample a few embeddings to check format
     const sampleEmbeddings = db
-      .prepare(`
+      .prepare(
+        `
         SELECT rowid, embedding FROM speech_embeddings LIMIT 3
-      `)
+      `
+      )
       .all() as Array<{ rowid: number; embedding: string }>
 
     let validEmbeddings = 0
@@ -218,18 +226,21 @@ function verifyEmbeddings(db: Database.Database): EmbeddingVerificationResult {
         // For sqlite-vec, embeddings should be stored as binary or in a specific format
         // We'll check if we can query against them
         const testQuery = db
-          .prepare(`
+          .prepare(
+            `
             SELECT vec_distance_cosine(embedding, embedding) as self_distance 
             FROM speech_embeddings 
             WHERE rowid = ?
-          `)
+          `
+          )
           .get(sample.rowid) as { self_distance: number } | undefined
 
         if (testQuery && testQuery.self_distance !== null) {
           validEmbeddings++
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
         results.errors.push(
           `Invalid embedding format for chunk ${sample.rowid}: ${errorMessage}`
         )
@@ -247,20 +258,24 @@ function verifyEmbeddings(db: Database.Database): EmbeddingVerificationResult {
 
     // Check data consistency
     const orphanedEmbeddings = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) as count
         FROM speech_embeddings e
         LEFT JOIN speech_chunks c ON e.rowid = c.embedding_id
         WHERE c.embedding_id IS NULL
-      `)
+      `
+      )
       .get() as { count: number }
 
     const orphanedChunks = db
-      .prepare(`
+      .prepare(
+        `
         SELECT COUNT(*) as count
         FROM speech_chunks c
         WHERE c.embedding_id IS NULL
-      `)
+      `
+      )
       .get() as { count: number }
 
     if (orphanedEmbeddings.count > 0) {
@@ -289,7 +304,9 @@ function verifyEmbeddings(db: Database.Database): EmbeddingVerificationResult {
 /**
  * Test vector search functionality
  */
-async function testVectorSearch(db: Database.Database): Promise<VectorSearchResult> {
+async function testVectorSearch(
+  db: Database.Database
+): Promise<VectorSearchResult> {
   console.log('🔍 Testing vector search functionality...')
 
   const results: VectorSearchResult = {
@@ -489,11 +506,11 @@ async function runFullVerification(): Promise<AllResults> {
       allResults.endToEnd = await testEndToEndRAG(db)
     } else {
       console.log('⏭️  Skipping end-to-end test due to previous failures')
-      allResults.endToEnd = { 
+      allResults.endToEnd = {
         ragWorks: false,
         answerGenerated: false,
         sourcesProvided: false,
-        errors: ['Skipped due to previous failures'] 
+        errors: ['Skipped due to previous failures'],
       }
     }
   } finally {

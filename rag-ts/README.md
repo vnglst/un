@@ -11,6 +11,28 @@ This RAG pipeline provides semantic search and question-answering capabilities f
 3. **Vector Search**: Using sqlite-vec for fast semantic similarity search
 4. **Generation**: Combining retrieved context with OpenAI completions for answers
 
+## Project Structure
+
+The RAG pipeline is organized into three main modules:
+
+### 📁 `setup/` - Database Preparation (Run Once)
+
+- `setup-vector-db.ts` - Creates speech chunks and generates embeddings
+- Contains all setup logic for preparing the vector database
+
+### 📁 `runtime/` - Core RAG Functionality (Used by Web App)
+
+- `vector-search.ts` - Semantic search utilities
+- `rag-pipeline.ts` - Complete RAG pipeline with answer generation
+- Contains the main functionality used by the web application
+
+### 📁 `tests/` - Testing & Verification (Development)
+
+- `verify-rag.ts` - Comprehensive system verification
+- `examples.ts` - Usage examples and demonstrations
+- `debug-test.ts` - Basic database connectivity tests
+- `test-sqlite-vec.ts` - sqlite-vec extension testing
+
 ## Prerequisites
 
 1. **Node.js 23.6+** with TypeScript erasable types support
@@ -66,14 +88,30 @@ npm run rag:chat -- query "What do countries say about climate change?"
 npm run rag:chat -- compare "nuclear weapons" "United States" "Russia" "China"
 ```
 
+## Usage in Web Application
+
+Import the runtime module in your web app:
+
+```typescript
+import { ragQuery, semanticSearch, initDatabase } from './rag-ts/runtime'
+
+// Initialize database connection
+const db = initDatabase()
+
+// Perform semantic search
+const results = await semanticSearch(db, 'climate change', { limit: 5 })
+
+// Full RAG query with answer generation
+const response = await ragQuery('What do countries say about climate change?')
+```
+
 ## Architecture
 
 ### Core Components
 
-1. **setup-vector-db.ts** - Sets up vector database with chunking and embeddings
-2. **vector-search.ts** - Provides semantic search functionality
-3. **rag-pipeline.ts** - Complete RAG pipeline with answer generation
-4. **verify-rag.ts** - Verification and testing utilities
+1. **Setup Phase** (`setup/`) - Database preparation and embedding generation
+2. **Runtime Phase** (`runtime/`) - Live query processing and answer generation
+3. **Testing Phase** (`tests/`) - Verification and development utilities
 
 ### Database Schema
 
