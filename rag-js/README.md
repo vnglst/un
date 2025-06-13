@@ -7,7 +7,7 @@ A robust Retrieval-Augmented Generation (RAG) system for UN General Assembly spe
 This RAG pipeline provides semantic search and question-answering capabilities for UN speeches by:
 
 1. **Chunking**: Splitting speeches into ~2000 character segments with overlap
-2. **Embedding**: Generating OpenAI embeddings for each chunk  
+2. **Embedding**: Generating OpenAI embeddings for each chunk
 3. **Vector Search**: Using sqlite-vec for fast semantic similarity search
 4. **Generation**: Combining retrieved context with OpenAI completions for answers
 
@@ -103,15 +103,20 @@ CREATE VIRTUAL TABLE speech_embeddings USING vec0(
 import { semanticSearch, advancedSearch } from './vector-search.js'
 
 // Basic semantic search
-const results = await semanticSearch(db, "climate change", 5)
+const results = await semanticSearch(db, 'climate change', 5)
 
 // Advanced search with filters
-const results = await advancedSearch(db, "nuclear weapons", {
-  country: "United States",
-  year: 2020,
-  minYear: 2015,
-  maxYear: 2023
-}, 10)
+const results = await advancedSearch(
+  db,
+  'nuclear weapons',
+  {
+    country: 'United States',
+    year: 2020,
+    minYear: 2015,
+    maxYear: 2023,
+  },
+  10
+)
 ```
 
 ### RAG Pipeline
@@ -120,13 +125,17 @@ const results = await advancedSearch(db, "nuclear weapons", {
 import { ragQuery, comparePerspectives } from './rag-pipeline.js'
 
 // Ask a question
-const result = await ragQuery(db, "What is the position on climate change?")
+const result = await ragQuery(db, 'What is the position on climate change?')
 console.log(result.answer)
 console.log(result.sources)
 
 // Compare perspectives
-const comparison = await comparePerspectives(db, "nuclear disarmament", 
-  ["United States", "Russia"], ["António Guterres"])
+const comparison = await comparePerspectives(
+  db,
+  'nuclear disarmament',
+  ['United States', 'Russia'],
+  ['António Guterres']
+)
 ```
 
 ## Text Chunking Strategy
@@ -146,16 +155,19 @@ const comparison = await comparePerspectives(db, "nuclear disarmament",
 ## Performance Considerations
 
 ### Embedding Generation
+
 - Uses OpenAI's `text-embedding-3-small` (1536 dimensions)
 - Processes with rate limiting to avoid API limits
 - Caches embeddings to avoid regeneration
 
 ### Search Optimization
+
 - Indexed foreign keys for fast joins
 - Vector index managed by sqlite-vec
 - Efficient similarity computation in SQLite
 
 ### Resource Usage
+
 - ~1MB per 1000 embeddings in storage
 - API cost: ~$0.02 per 1M tokens for embeddings
 - Query time: <100ms for typical searches
@@ -163,6 +175,7 @@ const comparison = await comparePerspectives(db, "nuclear disarmament",
 ## Usage Examples
 
 ### Interactive Chat
+
 ```bash
 $ node rag-js/rag-pipeline.js
 
@@ -181,19 +194,24 @@ World leaders have expressed both excitement and caution about artificial intell
 ```
 
 ### Programmatic Usage
+
 ```javascript
 import { initDatabase } from './rag-js/vector-search.js'
 import { ragQuery } from './rag-js/rag-pipeline.js'
 
 const db = initDatabase()
 
-const result = await ragQuery(db, "What are the main concerns about climate change?", {
-  searchLimit: 8,
-  filters: { minYear: 2020 }
-})
+const result = await ragQuery(
+  db,
+  'What are the main concerns about climate change?',
+  {
+    searchLimit: 8,
+    filters: { minYear: 2020 },
+  }
+)
 
-console.log("Answer:", result.answer)
-result.sources.forEach(source => {
+console.log('Answer:', result.answer)
+result.sources.forEach((source) => {
   console.log(`- ${source.country} (${source.year}): ${source.preview}`)
 })
 
@@ -219,6 +237,7 @@ node rag-js/verify-rag.js stats
 ## Troubleshooting
 
 ### sqlite-vec Extension Issues
+
 ```bash
 # Check if extension is loadable
 node -e "const db = require('better-sqlite3')(':memory:'); db.loadExtension('vec0')"
@@ -228,6 +247,7 @@ npm install sqlite-vec
 ```
 
 ### OpenAI API Issues
+
 ```bash
 # Verify API key
 node -e "console.log(process.env.OPENAI_API_KEY ? 'API key set' : 'API key missing')"
@@ -241,6 +261,7 @@ import('openai').then(({OpenAI}) => {
 ```
 
 ### Memory Issues
+
 - Process speeches in batches if running out of memory
 - Use `LIMIT` parameter in setup script for large datasets
 - Consider using a server with more RAM for large-scale processing
@@ -261,11 +282,13 @@ RAG_COMPLETION_MODEL=gpt-4o              # OpenAI completion model
 ## Performance Benchmarks
 
 ### Setup Phase (1000 speeches):
+
 - Chunking: ~10 seconds
 - Embedding generation: ~2-5 minutes (depending on API rate limits)
 - Database insertion: ~5 seconds
 
 ### Query Phase:
+
 - Vector search: 10-50ms
 - Answer generation: 1-3 seconds
 - Total query time: 1-4 seconds
@@ -273,10 +296,12 @@ RAG_COMPLETION_MODEL=gpt-4o              # OpenAI completion model
 ## Cost Estimation
 
 ### One-time Setup (10,000 speeches):
+
 - Embedding generation: ~$5-15 (varies by speech length)
 - Storage: ~10MB database size increase
 
 ### Ongoing Usage:
+
 - Query embedding: ~$0.0001 per query
 - Answer generation: ~$0.01-0.05 per query (varies by context length)
 

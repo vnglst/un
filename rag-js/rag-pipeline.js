@@ -7,13 +7,18 @@
 
 import { OpenAI } from 'openai'
 import { config } from 'dotenv'
-import { initDatabase, semanticSearch, getChunkContext, advancedSearch } from './vector-search.js'
+import {
+  initDatabase,
+  semanticSearch,
+  getChunkContext,
+  advancedSearch,
+} from './vector-search.js'
 
 // Load environment variables
 config()
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 })
 
 /**
@@ -24,17 +29,19 @@ async function generateAnswer(question, contexts, options = {}) {
     model = 'gpt-4o',
     temperature = 0.1,
     maxTokens = 1000,
-    includeMetadata = true
+    includeMetadata = true,
   } = options
 
   // Prepare context information
-  const contextText = contexts.map((ctx, i) => {
-    const metadata = includeMetadata 
-      ? `[Source ${i + 1}: ${ctx.country}, ${ctx.year}, ${ctx.speaker}]`
-      : `[Source ${i + 1}]`
-    
-    return `${metadata}\n${ctx.chunk_text}`
-  }).join('\n\n')
+  const contextText = contexts
+    .map((ctx, i) => {
+      const metadata = includeMetadata
+        ? `[Source ${i + 1}: ${ctx.country}, ${ctx.year}, ${ctx.speaker}]`
+        : `[Source ${i + 1}]`
+
+      return `${metadata}\n${ctx.chunk_text}`
+    })
+    .join('\n\n')
 
   const systemPrompt = `You are an expert analyst of UN General Assembly speeches. Your task is to answer questions based ONLY on the provided speech excerpts. 
 
@@ -59,16 +66,16 @@ Please provide a comprehensive answer based on the provided context.`
       model,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt },
       ],
       temperature,
-      max_tokens: maxTokens
+      max_tokens: maxTokens,
     })
 
     return {
       answer: response.choices[0].message.content,
       usage: response.usage,
-      model: response.model
+      model: response.model,
     }
   } catch (error) {
     console.error('Error generating answer:', error.message)
@@ -84,25 +91,31 @@ async function ragQuery(db, question, options = {}) {
     searchLimit = 5,
     includeContext = true,
     filters = {},
-    searchThreshold = null
+    searchThreshold = null,
   } = options
 
   try {
     console.log(`🔍 Searching for: "${question}"`)
-    
+
     // Perform semantic search
     let searchResults
     if (Object.keys(filters).length > 0) {
       searchResults = await advancedSearch(db, question, filters, searchLimit)
     } else {
-      searchResults = await semanticSearch(db, question, searchLimit, searchThreshold)
+      searchResults = await semanticSearch(
+        db,
+        question,
+        searchLimit,
+        searchThreshold
+      )
     }
 
     if (searchResults.length === 0) {
       return {
-        answer: "I couldn't find any relevant information in the UN speeches database to answer your question.",
+        answer:
+          "I couldn't find any relevant information in the UN speeches database to answer your question.",
         sources: [],
-        searchResults: []
+        searchResults: [],
       }
     }
 
@@ -111,11 +124,13 @@ async function ragQuery(db, question, options = {}) {
     // Optionally enhance with context
     let contexts = searchResults
     if (includeContext) {
-      contexts = searchResults.map(result => {
+      contexts = searchResults.map((result) => {
         const contextInfo = getChunkContext(db, result.chunk_id, 1)
         return {
           ...result,
-          enhanced_text: contextInfo ? contextInfo.fullContext : result.chunk_text
+          enhanced_text: contextInfo
+            ? contextInfo.fullContext
+            : result.chunk_text,
         }
       })
     }
@@ -134,7 +149,7 @@ async function ragQuery(db, question, options = {}) {
       year: result.year,
       session: result.session,
       distance: Math.round(result.distance * 1000) / 1000,
-      preview: result.chunk_text.slice(0, 200) + '...'
+      preview: result.chunk_text.slice(0, 200) + '...',
     }))
 
     return {
@@ -146,10 +161,9 @@ async function ragQuery(db, question, options = {}) {
         model: answerResult.model,
         usage: answerResult.usage,
         search_count: searchResults.length,
-        filters_applied: Object.keys(filters)
-      }
+        filters_applied: Object.keys(filters),
+      },
     }
-
   } catch (error) {
     console.error('Error in RAG query:', error.message)
     throw error
@@ -159,13 +173,19 @@ async function ragQuery(db, question, options = {}) {
 /**
  * Compare perspectives from different countries/speakers
  */
-async function compareperspectives(db, topic, countries = [], speakers = [], options = {}) {
+async function compareperspectives(
+  db,
+  topic,
+  countries = [],
+  speakers = [],
+  options = {}
+) {
   const { searchLimit = 3 } = options
-  
+
   console.log(`🔍 Comparing perspectives on: "${topic}"`)
-  
+
   const perspectives = []
-  
+
   // Search for each country
   for (const country of countries) {
     try {
@@ -176,20 +196,20 @@ async function compareperspectives(db, topic, countries = [], speakers = [], opt
           results,
           { includeMetadata: false }
         )
-        
+
         perspectives.push({
           type: 'country',
           entity: country,
           perspective: answerResult.answer,
           sources: results.length,
-          sample_years: [...new Set(results.map(r => r.year))].sort()
+          sample_years: [...new Set(results.map((r) => r.year))].sort(),
         })
       }
     } catch (error) {
       console.error(`Error getting perspective for ${country}:`, error.message)
     }
   }
-  
+
   // Search for each speaker
   for (const speaker of speakers) {
     try {
@@ -200,24 +220,24 @@ async function compareperspectives(db, topic, countries = [], speakers = [], opt
           results,
           { includeMetadata: false }
         )
-        
+
         perspectives.push({
           type: 'speaker',
           entity: speaker,
           perspective: answerResult.answer,
           sources: results.length,
-          sample_years: [...new Set(results.map(r => r.year))].sort()
+          sample_years: [...new Set(results.map((r) => r.year))].sort(),
         })
       }
     } catch (error) {
       console.error(`Error getting perspective for ${speaker}:`, error.message)
     }
   }
-  
+
   return {
     topic,
     perspectives,
-    summary: `Found ${perspectives.length} perspectives on "${topic}"`
+    summary: `Found ${perspectives.length} perspectives on "${topic}"`,
   }
 }
 
@@ -234,12 +254,12 @@ async function startChatInterface() {
   }
 
   const db = initDatabase()
-  
+
   // Import readline for interactive input
   const { createInterface } = await import('readline')
   const rl = createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   })
 
   const askQuestion = (prompt) => {
@@ -251,7 +271,7 @@ async function startChatInterface() {
   try {
     while (true) {
       const question = await askQuestion('\n❓ Your question: ')
-      
+
       if (question.toLowerCase().trim() === 'exit') {
         console.log('👋 Goodbye!')
         break
@@ -268,16 +288,19 @@ async function startChatInterface() {
 
         console.log('\n📝 Answer:')
         console.log(result.answer)
-        
+
         console.log('\n📚 Sources:')
-        result.sources.forEach(source => {
-          console.log(`   ${source.index}. ${source.country}, ${source.year} (${source.speaker})`)
-          console.log(`      Distance: ${source.distance}, Preview: ${source.preview}`)
+        result.sources.forEach((source) => {
+          console.log(
+            `   ${source.index}. ${source.country}, ${source.year} (${source.speaker})`
+          )
+          console.log(
+            `      Distance: ${source.distance}, Preview: ${source.preview}`
+          )
         })
-        
+
         console.log(`\n⏱️  Query completed in ${duration}ms`)
         console.log('─'.repeat(80))
-
       } catch (error) {
         console.error('❌ Error processing question:', error.message)
       }
@@ -293,7 +316,7 @@ async function startChatInterface() {
  */
 async function main() {
   const args = process.argv.slice(2)
-  
+
   if (args.length === 0) {
     // Start interactive chat
     await startChatInterface()
@@ -301,7 +324,7 @@ async function main() {
   }
 
   const command = args[0]
-  
+
   if (command === 'query') {
     const question = args.slice(1).join(' ')
     if (!question) {
@@ -312,48 +335,58 @@ async function main() {
     const db = initDatabase()
     try {
       const result = await ragQuery(db, question)
-      
+
       console.log('Question:', result.question)
       console.log('\nAnswer:')
       console.log(result.answer)
-      
+
       console.log('\nSources:')
-      result.sources.forEach(source => {
-        console.log(`${source.index}. ${source.country}, ${source.year} (${source.speaker}) - Distance: ${source.distance}`)
+      result.sources.forEach((source) => {
+        console.log(
+          `${source.index}. ${source.country}, ${source.year} (${source.speaker}) - Distance: ${source.distance}`
+        )
       })
-      
     } finally {
       db.close()
     }
   } else if (command === 'compare') {
     const topic = args[1]
     const countries = args.slice(2)
-    
+
     if (!topic || countries.length === 0) {
-      console.error('Usage: node rag-pipeline.js compare "topic" country1 country2 ...')
+      console.error(
+        'Usage: node rag-pipeline.js compare "topic" country1 country2 ...'
+      )
       process.exit(1)
     }
 
     const db = initDatabase()
     try {
       const result = await compareperspectives(db, topic, countries)
-      
+
       console.log(`Topic: ${result.topic}`)
       console.log(`\n${result.summary}`)
-      
-      result.perspectives.forEach(p => {
-        console.log(`\n--- ${p.entity} (${p.sources} sources, years: ${p.sample_years.join(', ')}) ---`)
+
+      result.perspectives.forEach((p) => {
+        console.log(
+          `\n--- ${p.entity} (${p.sources} sources, years: ${p.sample_years.join(', ')}) ---`
+        )
         console.log(p.perspective)
       })
-      
     } finally {
       db.close()
     }
   } else {
     console.log('Available commands:')
-    console.log('  node rag-pipeline.js                     # Start interactive chat')
-    console.log('  node rag-pipeline.js query "question"    # Ask a single question')
-    console.log('  node rag-pipeline.js compare "topic" country1 country2  # Compare perspectives')
+    console.log(
+      '  node rag-pipeline.js                     # Start interactive chat'
+    )
+    console.log(
+      '  node rag-pipeline.js query "question"    # Ask a single question'
+    )
+    console.log(
+      '  node rag-pipeline.js compare "topic" country1 country2  # Compare perspectives'
+    )
   }
 }
 

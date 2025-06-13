@@ -10,7 +10,11 @@ import { config } from 'dotenv'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { load } from 'sqlite-vec'
-import { semanticSearch, getSearchStats, findSimilarChunks } from './vector-search.js'
+import {
+  semanticSearch,
+  getSearchStats,
+  findSimilarChunks,
+} from './vector-search.js'
 import { ragQuery } from './rag-pipeline.js'
 
 // Load environment variables
@@ -27,7 +31,7 @@ function initDatabase() {
   }
 
   const db = new Database(DB_PATH, { readonly: true })
-  
+
   try {
     // Load sqlite-vec extension
     load(db)
@@ -44,23 +48,27 @@ function initDatabase() {
  */
 function verifyDatabaseStructure(db) {
   console.log('🔍 Verifying database structure...')
-  
+
   const results = {
     tablesExist: false,
     correctStructure: false,
-    errors: []
+    errors: [],
   }
 
   try {
     // Check if main tables exist
-    const tables = db.prepare(`
+    const tables = db
+      .prepare(
+        `
       SELECT name FROM sqlite_master 
       WHERE type='table' AND name IN ('speeches', 'speech_chunks', 'speech_embeddings')
-    `).all()
+    `
+      )
+      .all()
 
-    const tableNames = tables.map(t => t.name)
+    const tableNames = tables.map((t) => t.name)
     const requiredTables = ['speeches', 'speech_chunks', 'speech_embeddings']
-    const missingTables = requiredTables.filter(t => !tableNames.includes(t))
+    const missingTables = requiredTables.filter((t) => !tableNames.includes(t))
 
     if (missingTables.length > 0) {
       results.errors.push(`Missing tables: ${missingTables.join(', ')}`)
@@ -72,22 +80,38 @@ function verifyDatabaseStructure(db) {
 
     // Check speech_chunks structure
     const chunkColumns = db.prepare(`PRAGMA table_info(speech_chunks)`).all()
-    const expectedChunkCols = ['id', 'speech_id', 'chunk_text', 'chunk_index', 'created_at']
-    const actualChunkCols = chunkColumns.map(c => c.name)
-    
-    const missingChunkCols = expectedChunkCols.filter(c => !actualChunkCols.includes(c))
+    const expectedChunkCols = [
+      'id',
+      'speech_id',
+      'chunk_text',
+      'chunk_index',
+      'created_at',
+    ]
+    const actualChunkCols = chunkColumns.map((c) => c.name)
+
+    const missingChunkCols = expectedChunkCols.filter(
+      (c) => !actualChunkCols.includes(c)
+    )
     if (missingChunkCols.length > 0) {
-      results.errors.push(`Missing columns in speech_chunks: ${missingChunkCols.join(', ')}`)
+      results.errors.push(
+        `Missing columns in speech_chunks: ${missingChunkCols.join(', ')}`
+      )
     }
 
     // Check speech_embeddings is a virtual table
-    const embedTableInfo = db.prepare(`
+    const embedTableInfo = db
+      .prepare(
+        `
       SELECT sql FROM sqlite_master 
       WHERE type='table' AND name='speech_embeddings'
-    `).get()
+    `
+      )
+      .get()
 
     if (!embedTableInfo?.sql?.includes('VIRTUAL TABLE')) {
-      results.errors.push('speech_embeddings is not a virtual table (sqlite-vec)')
+      results.errors.push(
+        'speech_embeddings is not a virtual table (sqlite-vec)'
+      )
     }
 
     if (results.errors.length === 0) {
@@ -95,9 +119,8 @@ function verifyDatabaseStructure(db) {
       console.log('✅ Database structure is correct')
     } else {
       console.log('❌ Database structure issues found')
-      results.errors.forEach(error => console.log(`   - ${error}`))
+      results.errors.forEach((error) => console.log(`   - ${error}`))
     }
-
   } catch (error) {
     results.errors.push(`Database structure check failed: ${error.message}`)
     console.error('❌ Error verifying database structure:', error.message)
@@ -111,18 +134,20 @@ function verifyDatabaseStructure(db) {
  */
 function verifyEmbeddings(db) {
   console.log('🔍 Verifying embeddings...')
-  
+
   const results = {
     embeddingsExist: false,
     correctFormat: false,
     consistentData: false,
     stats: {},
-    errors: []
+    errors: [],
   }
 
   try {
     // Check if embeddings exist
-    const embeddingCount = db.prepare('SELECT COUNT(*) as count FROM speech_embeddings').get()
+    const embeddingCount = db
+      .prepare('SELECT COUNT(*) as count FROM speech_embeddings')
+      .get()
     if (embeddingCount.count === 0) {
       results.errors.push('No embeddings found in speech_embeddings table')
       return results
@@ -133,36 +158,50 @@ function verifyEmbeddings(db) {
     console.log(`✅ Found ${embeddingCount.count} embeddings`)
 
     // Check chunk count matches embedding count
-    const chunkCount = db.prepare('SELECT COUNT(*) as count FROM speech_chunks').get()
+    const chunkCount = db
+      .prepare('SELECT COUNT(*) as count FROM speech_chunks')
+      .get()
     results.stats.totalChunks = chunkCount.count
-    
+
     if (chunkCount.count !== embeddingCount.count) {
-      results.errors.push(`Mismatch: ${chunkCount.count} chunks vs ${embeddingCount.count} embeddings`)
+      results.errors.push(
+        `Mismatch: ${chunkCount.count} chunks vs ${embeddingCount.count} embeddings`
+      )
     } else {
       console.log('✅ Chunk count matches embedding count')
     }
 
     // Sample a few embeddings to check format
-    const sampleEmbeddings = db.prepare(`
+    const sampleEmbeddings = db
+      .prepare(
+        `
       SELECT rowid, embedding FROM speech_embeddings LIMIT 3
-    `).all()
+    `
+      )
+      .all()
 
     let validEmbeddings = 0
     for (const sample of sampleEmbeddings) {
       try {
         // For sqlite-vec, embeddings should be stored as binary or in a specific format
         // We'll check if we can query against them
-        const testQuery = db.prepare(`
+        const testQuery = db
+          .prepare(
+            `
           SELECT vec_distance_cosine(embedding, embedding) as self_distance 
           FROM speech_embeddings 
           WHERE rowid = ?
-        `).get(sample.rowid)
-        
+        `
+          )
+          .get(sample.rowid)
+
         if (testQuery && testQuery.self_distance !== null) {
           validEmbeddings++
         }
       } catch (error) {
-        results.errors.push(`Invalid embedding format for chunk ${sample.rowid}: ${error.message}`)
+        results.errors.push(
+          `Invalid embedding format for chunk ${sample.rowid}: ${error.message}`
+        )
       }
     }
 
@@ -170,25 +209,37 @@ function verifyEmbeddings(db) {
       results.correctFormat = true
       console.log('✅ Embedding format is correct')
     } else {
-      console.log(`❌ ${sampleEmbeddings.length - validEmbeddings} embeddings have invalid format`)
+      console.log(
+        `❌ ${sampleEmbeddings.length - validEmbeddings} embeddings have invalid format`
+      )
     }
 
     // Check data consistency
-    const orphanedEmbeddings = db.prepare(`
+    const orphanedEmbeddings = db
+      .prepare(
+        `
       SELECT COUNT(*) as count
       FROM speech_embeddings e
       LEFT JOIN speech_chunks c ON e.rowid = c.embedding_id
       WHERE c.embedding_id IS NULL
-    `).get()
+    `
+      )
+      .get()
 
-    const orphanedChunks = db.prepare(`
+    const orphanedChunks = db
+      .prepare(
+        `
       SELECT COUNT(*) as count
       FROM speech_chunks c
       WHERE c.embedding_id IS NULL
-    `).get()
+    `
+      )
+      .get()
 
     if (orphanedEmbeddings.count > 0) {
-      results.errors.push(`${orphanedEmbeddings.count} orphaned embeddings (no matching chunks)`)
+      results.errors.push(
+        `${orphanedEmbeddings.count} orphaned embeddings (no matching chunks)`
+      )
     }
 
     if (orphanedChunks.count > 0) {
@@ -199,7 +250,6 @@ function verifyEmbeddings(db) {
       results.consistentData = true
       console.log('✅ Data consistency verified')
     }
-
   } catch (error) {
     results.errors.push(`Embedding verification failed: ${error.message}`)
     console.error('❌ Error verifying embeddings:', error.message)
@@ -213,48 +263,64 @@ function verifyEmbeddings(db) {
  */
 async function testVectorSearch(db) {
   console.log('🔍 Testing vector search functionality...')
-  
+
   const results = {
     searchWorks: false,
     resultsReturned: false,
     relevantResults: false,
-    errors: []
+    errors: [],
   }
 
   try {
     // Test basic semantic search
-    const testQuery = "climate change and global warming"
+    const testQuery = 'climate change and global warming'
     const searchResults = await semanticSearch(db, testQuery, 5)
-    
+
     results.searchWorks = true
     console.log('✅ Vector search function executes without errors')
 
     if (searchResults.length > 0) {
       results.resultsReturned = true
       console.log(`✅ Search returned ${searchResults.length} results`)
-      
+
       // Check if results have required fields
       const firstResult = searchResults[0]
-      const requiredFields = ['chunk_id', 'chunk_text', 'speech_id', 'country', 'speaker', 'year', 'distance']
-      const missingFields = requiredFields.filter(field => !(field in firstResult))
-      
+      const requiredFields = [
+        'chunk_id',
+        'chunk_text',
+        'speech_id',
+        'country',
+        'speaker',
+        'year',
+        'distance',
+      ]
+      const missingFields = requiredFields.filter(
+        (field) => !(field in firstResult)
+      )
+
       if (missingFields.length > 0) {
-        results.errors.push(`Search results missing fields: ${missingFields.join(', ')}`)
+        results.errors.push(
+          `Search results missing fields: ${missingFields.join(', ')}`
+        )
       } else {
         console.log('✅ Search results have all required fields')
       }
 
       // Check if distances make sense (should be between 0 and 2 for cosine distance)
-      const validDistances = searchResults.every(r => r.distance >= 0 && r.distance <= 2)
+      const validDistances = searchResults.every(
+        (r) => r.distance >= 0 && r.distance <= 2
+      )
       if (validDistances) {
         console.log('✅ Distance scores are in valid range')
       } else {
-        results.errors.push('Some distance scores are outside valid range (0-2)')
+        results.errors.push(
+          'Some distance scores are outside valid range (0-2)'
+        )
       }
 
       // Check if results are sorted by distance
-      const sortedByDistance = searchResults.every((r, i) => 
-        i === 0 || r.distance >= searchResults[i - 1].distance
+      const sortedByDistance = searchResults.every(
+        (r, i) => i === 0 || r.distance >= searchResults[i - 1].distance
       )
       if (sortedByDistance) {
         console.log('✅ Results are properly sorted by distance')
@@ -266,14 +332,14 @@ async function testVectorSearch(db) {
       // Show sample results
       console.log('\n📋 Sample search results:')
       searchResults.slice(0, 3).forEach((result, i) => {
-        console.log(`   ${i + 1}. ${result.country}, ${result.year} (distance: ${result.distance.toFixed(4)})`)
+        console.log(
+          `   ${i + 1}. ${result.country}, ${result.year} (distance: ${result.distance.toFixed(4)})`
+        )
         console.log(`      "${result.chunk_text.slice(0, 100)}..."`)
       })
-
     } else {
       results.errors.push('Search returned no results')
     }
-
   } catch (error) {
     results.errors.push(`Vector search test failed: ${error.message}`)
     console.error('❌ Error testing vector search:', error.message)
@@ -287,12 +353,12 @@ async function testVectorSearch(db) {
  */
 async function testEndToEndRAG(db) {
   console.log('🔍 Testing end-to-end RAG pipeline...')
-  
+
   const results = {
     ragWorks: false,
     answerGenerated: false,
     sourcesProvided: false,
-    errors: []
+    errors: [],
   }
 
   if (!process.env.OPENAI_API_KEY) {
@@ -301,11 +367,11 @@ async function testEndToEndRAG(db) {
   }
 
   try {
-    const testQuestion = "What do countries say about climate change?"
+    const testQuestion = 'What do countries say about climate change?'
     console.log(`Testing with question: "${testQuestion}"`)
-    
+
     const ragResult = await ragQuery(db, testQuestion, { searchLimit: 3 })
-    
+
     results.ragWorks = true
     console.log('✅ RAG pipeline executes without errors')
 
@@ -320,14 +386,18 @@ async function testEndToEndRAG(db) {
     if (ragResult.sources && ragResult.sources.length > 0) {
       results.sourcesProvided = true
       console.log(`✅ ${ragResult.sources.length} sources provided`)
-      
+
       // Verify source structure
       const firstSource = ragResult.sources[0]
       const requiredSourceFields = ['country', 'speaker', 'year', 'distance']
-      const missingSourceFields = requiredSourceFields.filter(field => !(field in firstSource))
-      
+      const missingSourceFields = requiredSourceFields.filter(
+        (field) => !(field in firstSource)
+      )
+
       if (missingSourceFields.length > 0) {
-        results.errors.push(`Sources missing fields: ${missingSourceFields.join(', ')}`)
+        results.errors.push(
+          `Sources missing fields: ${missingSourceFields.join(', ')}`
+        )
       }
     } else {
       results.errors.push('No sources provided')
@@ -337,16 +407,19 @@ async function testEndToEndRAG(db) {
     if (ragResult.answer) {
       console.log('\n📝 Sample RAG output:')
       console.log(`Q: ${ragResult.question}`)
-      console.log(`A: ${ragResult.answer.slice(0, 300)}${ragResult.answer.length > 300 ? '...' : ''}`)
-      
+      console.log(
+        `A: ${ragResult.answer.slice(0, 300)}${ragResult.answer.length > 300 ? '...' : ''}`
+      )
+
       if (ragResult.sources && ragResult.sources.length > 0) {
         console.log('\n📚 Sources:')
-        ragResult.sources.slice(0, 2).forEach(source => {
-          console.log(`   - ${source.country}, ${source.year} (${source.speaker})`)
+        ragResult.sources.slice(0, 2).forEach((source) => {
+          console.log(
+            `   - ${source.country}, ${source.year} (${source.speaker})`
+          )
         })
       }
     }
-
   } catch (error) {
     results.errors.push(`End-to-end RAG test failed: ${error.message}`)
     console.error('❌ Error testing RAG pipeline:', error.message)
@@ -378,15 +451,16 @@ async function runFullVerification() {
     console.log()
 
     // 4. Test end-to-end RAG (only if previous tests pass)
-    if (allResults.structure.correctStructure && 
-        allResults.embeddings.embeddingsExist && 
-        allResults.vectorSearch.searchWorks) {
+    if (
+      allResults.structure.correctStructure &&
+      allResults.embeddings.embeddingsExist &&
+      allResults.vectorSearch.searchWorks
+    ) {
       allResults.endToEnd = await testEndToEndRAG(db)
     } else {
       console.log('⏭️  Skipping end-to-end test due to previous failures')
       allResults.endToEnd = { errors: ['Skipped due to previous failures'] }
     }
-
   } finally {
     db.close()
   }
@@ -400,7 +474,7 @@ async function runFullVerification() {
     { name: 'Database Structure', result: allResults.structure },
     { name: 'Embeddings', result: allResults.embeddings },
     { name: 'Vector Search', result: allResults.vectorSearch },
-    { name: 'End-to-End RAG', result: allResults.endToEnd }
+    { name: 'End-to-End RAG', result: allResults.endToEnd },
   ]
 
   let overallSuccess = true
@@ -408,10 +482,10 @@ async function runFullVerification() {
     const hasErrors = section.result.errors && section.result.errors.length > 0
     const status = hasErrors ? '❌ FAIL' : '✅ PASS'
     console.log(`${status} ${section.name}`)
-    
+
     if (hasErrors) {
       overallSuccess = false
-      section.result.errors.forEach(error => {
+      section.result.errors.forEach((error) => {
         console.log(`   - ${error}`)
       })
     }
@@ -421,7 +495,9 @@ async function runFullVerification() {
   if (overallSuccess) {
     console.log('🎉 All verifications passed! RAG pipeline is ready to use.')
   } else {
-    console.log('⚠️  Some verifications failed. Please address the issues above.')
+    console.log(
+      '⚠️  Some verifications failed. Please address the issues above.'
+    )
   }
 
   return allResults
@@ -434,31 +510,44 @@ async function showStats() {
   console.log('📊 RAG Pipeline Statistics\n')
 
   const db = initDatabase()
-  
+
   try {
     const stats = getSearchStats(db)
-    
+
     console.log('📈 Overview:')
-    console.log(`   Total Chunks: ${stats.totalChunks?.toLocaleString() || 'N/A'}`)
-    console.log(`   Total Embeddings: ${stats.totalEmbeddings?.toLocaleString() || 'N/A'}`)
-    console.log(`   Avg Chunks per Speech: ${stats.avgChunksPerSpeech || 'N/A'}`)
-    console.log(`   Min Chunks per Speech: ${stats.minChunksPerSpeech || 'N/A'}`)
-    console.log(`   Max Chunks per Speech: ${stats.maxChunksPerSpeech || 'N/A'}`)
-    
+    console.log(
+      `   Total Chunks: ${stats.totalChunks?.toLocaleString() || 'N/A'}`
+    )
+    console.log(
+      `   Total Embeddings: ${stats.totalEmbeddings?.toLocaleString() || 'N/A'}`
+    )
+    console.log(
+      `   Avg Chunks per Speech: ${stats.avgChunksPerSpeech || 'N/A'}`
+    )
+    console.log(
+      `   Min Chunks per Speech: ${stats.minChunksPerSpeech || 'N/A'}`
+    )
+    console.log(
+      `   Max Chunks per Speech: ${stats.maxChunksPerSpeech || 'N/A'}`
+    )
+
     if (stats.countryCoverage) {
       console.log('\n🌍 Top Countries by Chunk Count:')
       stats.countryCoverage.slice(0, 10).forEach((country, i) => {
-        console.log(`   ${i + 1}. ${country.country}: ${country.chunks} chunks (${country.speeches} speeches)`)
-      })
-    }
-    
-    if (stats.yearCoverage) {
-      console.log('\n📅 Recent Years Coverage:')
-      stats.yearCoverage.slice(0, 10).forEach((year, i) => {
-        console.log(`   ${i + 1}. ${year.year}: ${year.chunks} chunks (${year.speeches} speeches)`)
+        console.log(
+          `   ${i + 1}. ${country.country}: ${country.chunks} chunks (${country.speeches} speeches)`
+        )
       })
     }
 
+    if (stats.yearCoverage) {
+      console.log('\n📅 Recent Years Coverage:')
+      stats.yearCoverage.slice(0, 10).forEach((year, i) => {
+        console.log(
+          `   ${i + 1}. ${year.year}: ${year.chunks} chunks (${year.speeches} speeches)`
+        )
+      })
+    }
   } finally {
     db.close()
   }
@@ -476,35 +565,35 @@ async function main() {
       case undefined:
         await runFullVerification()
         break
-        
+
       case 'stats':
         await showStats()
         break
-        
+
       case 'structure':
         const db = initDatabase()
         verifyDatabaseStructure(db)
         db.close()
         break
-        
+
       case 'embeddings':
         const db2 = initDatabase()
         verifyEmbeddings(db2)
         db2.close()
         break
-        
+
       case 'search':
         const db3 = initDatabase()
         await testVectorSearch(db3)
         db3.close()
         break
-        
+
       case 'rag':
         const db4 = initDatabase()
         await testEndToEndRAG(db4)
         db4.close()
         break
-        
+
       default:
         console.log('Usage: node verify-rag.js [command]')
         console.log('')
@@ -527,11 +616,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error)
 }
 
-export { 
-  verifyDatabaseStructure, 
-  verifyEmbeddings, 
-  testVectorSearch, 
-  testEndToEndRAG, 
+export {
+  verifyDatabaseStructure,
+  verifyEmbeddings,
+  testVectorSearch,
+  testEndToEndRAG,
   runFullVerification,
-  showStats
+  showStats,
 }

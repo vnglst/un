@@ -11,33 +11,44 @@ console.log('Testing basic database functionality...')
 try {
   const db = new Database(DB_PATH)
   console.log('✅ Database connected')
-  
+
   // Check basic tables
-  const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()
-  console.log('✅ Found tables:', tables.map(t => t.name))
-  
+  const tables = db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+    .all()
+  console.log(
+    '✅ Found tables:',
+    tables.map((t) => t.name)
+  )
+
   // Test loading sqlite-vec
   try {
     load(db)
     console.log('✅ sqlite-vec loaded')
-    
+
     const version = db.prepare('SELECT vec_version()').get()
     console.log('✅ sqlite-vec version:', version['vec_version()'])
   } catch (error) {
     console.error('❌ sqlite-vec failed:', error.message)
   }
-  
+
   // Check speeches table
   const speechCount = db.prepare('SELECT COUNT(*) as count FROM speeches').get()
   console.log(`✅ Speeches count: ${speechCount.count}`)
-  
+
   // Check if our tables exist
-  const ourTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('speech_chunks', 'speech_embeddings')").all()
-  console.log('Our tables:', ourTables.map(t => t.name))
-  
+  const ourTables = db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('speech_chunks', 'speech_embeddings')"
+    )
+    .all()
+  console.log(
+    'Our tables:',
+    ourTables.map((t) => t.name)
+  )
+
   db.close()
   console.log('✅ Test completed successfully')
-  
 } catch (error) {
   console.error('❌ Test failed:', error.message)
   process.exit(1)

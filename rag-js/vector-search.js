@@ -111,17 +111,25 @@ async function semanticSearch(db, query, limit = 5, threshold = null) {
  */
 async function findSimilarChunks(db, chunkId, limit = 5) {
   // Get the embedding for the given chunk
-  const chunk = db.prepare(`
+  const chunk = db
+    .prepare(
+      `
     SELECT embedding_id FROM speech_chunks WHERE id = ?
-  `).get(chunkId)
+  `
+    )
+    .get(chunkId)
 
   if (!chunk || !chunk.embedding_id) {
     throw new Error(`Chunk ${chunkId} not found or has no embedding`)
   }
 
-  const chunkEmbedding = db.prepare(`
+  const chunkEmbedding = db
+    .prepare(
+      `
     SELECT embedding FROM speech_embeddings WHERE rowid = ?
-  `).get(chunk.embedding_id)
+  `
+    )
+    .get(chunk.embedding_id)
 
   if (!chunkEmbedding) {
     throw new Error(`Chunk ${chunkId} not found`)
