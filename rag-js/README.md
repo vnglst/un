@@ -84,15 +84,18 @@ CREATE TABLE speech_chunks (
   speech_id INTEGER NOT NULL,
   chunk_text TEXT NOT NULL,
   chunk_index INTEGER NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (speech_id) REFERENCES speeches(rowid)
+  embedding_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Vector embeddings table (sqlite-vec virtual table)
 CREATE VIRTUAL TABLE speech_embeddings USING vec0(
-  chunk_id INTEGER PRIMARY KEY,
   embedding FLOAT[1536]
 );
+
+-- Note: Foreign key constraints are disabled during setup for performance
+-- The speech_chunks.embedding_id links to speech_embeddings.rowid
+-- The speech_chunks.speech_id links to speeches.id
 ```
 
 ## API Reference
@@ -122,7 +125,7 @@ const results = await advancedSearch(
 ### RAG Pipeline
 
 ```javascript
-import { ragQuery, comparePerspectives } from './rag-pipeline.js'
+import { ragQuery, compareperspectives } from './rag-pipeline.js'
 
 // Ask a question
 const result = await ragQuery(db, 'What is the position on climate change?')
@@ -130,7 +133,7 @@ console.log(result.answer)
 console.log(result.sources)
 
 // Compare perspectives
-const comparison = await comparePerspectives(
+const comparison = await compareperspectives(
   db,
   'nuclear disarmament',
   ['United States', 'Russia'],
