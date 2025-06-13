@@ -21,8 +21,8 @@ This RAG pipeline provides semantic search and question-answering capabilities f
 ## Installation
 
 ```bash
-# Install dependencies
-npm install openai sqlite-vec
+# Install all dependencies (from project root)
+npm install
 
 # Set up environment variables
 echo "OPENAI_API_KEY=your_api_key_here" > .env
@@ -37,33 +37,33 @@ npm run db:setup
 
 ```bash
 # Create embeddings for all speeches (this will take time and cost API credits)
-node rag-js/setup-vector-db.js
+npm run rag:setup
 
-# Or limit to first 100 speeches for testing
-node rag-js/setup-vector-db.js 100
+# Or limit to first 50 speeches for testing
+npm run rag:setup-test
 ```
 
 ### 2. Verify the setup
 
 ```bash
 # Run comprehensive verification
-node rag-js/verify-rag.js
+npm run rag:verify
 
 # Check statistics
-node rag-js/verify-rag.js stats
+npm run rag:stats
 ```
 
 ### 3. Start using the RAG pipeline
 
 ```bash
 # Interactive chat interface
-node rag-js/rag-pipeline.js
+npm run rag:chat
 
-# Single query
-node rag-js/rag-pipeline.js query "What do countries say about climate change?"
+# Single query (note: arguments after -- are passed to the script)
+npm run rag:chat -- query "What do countries say about climate change?"
 
 # Compare perspectives
-node rag-js/rag-pipeline.js compare "nuclear weapons" "United States" "Russia" "China"
+npm run rag:chat -- compare "nuclear weapons" "United States" "Russia" "China"
 ```
 
 ## Architecture
@@ -177,7 +177,7 @@ const comparison = await comparePerspectives(
 ### Interactive Chat
 
 ```bash
-$ node rag-js/rag-pipeline.js
+$ npm run rag:chat
 
 🚀 Starting UN Speeches RAG Chat Interface
 Ask questions about UN speeches. Type "exit" to quit.
@@ -222,16 +222,16 @@ db.close()
 
 ```bash
 # Full verification suite
-node rag-js/verify-rag.js verify
+npm run rag:verify
 
-# Individual checks
-node rag-js/verify-rag.js structure    # Database structure
-node rag-js/verify-rag.js embeddings  # Embedding integrity
-node rag-js/verify-rag.js search      # Vector search functionality
-node rag-js/verify-rag.js rag         # End-to-end RAG pipeline
+# Statistics and detailed analysis
+npm run rag:stats
 
-# Statistics
-node rag-js/verify-rag.js stats
+# Note: For detailed component verification, you can run the script directly:
+# node rag-js/verify-rag.js structure    # Database structure
+# node rag-js/verify-rag.js embeddings  # Embedding integrity
+# node rag-js/verify-rag.js search      # Vector search functionality
+# node rag-js/verify-rag.js rag         # End-to-end RAG pipeline
 ```
 
 ## Troubleshooting
@@ -310,7 +310,7 @@ RAG_COMPLETION_MODEL=gpt-4o              # OpenAI completion model
 1. Follow the existing code style and structure
 2. Add tests for new functionality
 3. Update documentation for API changes
-4. Verify all tests pass with `node rag-js/verify-rag.js`
+4. Verify all tests pass with `npm run rag:verify`
 
 ## License
 

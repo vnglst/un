@@ -141,9 +141,9 @@ async function runExamples() {
     const sampleChunk = db
       .prepare(
         `
-      SELECT c.id, c.chunk_text, s.country, s.year, s.speaker
+      SELECT c.id, c.chunk_text, s.country_name as country, s.year, s.speaker
       FROM speech_chunks c
-      JOIN speeches s ON c.speech_id = s.rowid
+      JOIN speeches s ON c.speech_id = s.id
       WHERE c.chunk_text LIKE '%peace%'
       LIMIT 1
     `
