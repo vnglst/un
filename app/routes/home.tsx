@@ -1,4 +1,10 @@
-import { useLoaderData, useNavigate, useSearchParams, Form } from 'react-router'
+import {
+  useLoaderData,
+  useNavigate,
+  useSearchParams,
+  Form,
+  Link,
+} from 'react-router'
 import {
   searchSpeeches,
   searchSpeechesWithHighlights,
@@ -16,6 +22,7 @@ import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
+import { ServiceCard, InfoBlock } from '~/components/ui/cards'
 import { Search as SearchIcon, Filter, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -202,30 +209,142 @@ export default function Home() {
     currentFilters.year ||
     currentFilters.session
 
+  // Get unique countries count
+  const uniqueCountries = new Set(countries.map((c) => c.country_code))
+  const memberStatesCount = uniqueCountries.size
+
   return (
-    <PageLayout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-medium text-black mb-2">Speeches</h1>
+    <PageLayout className="space-y-0 py-0">
+      {/* Breadcrumb Navigation */}
+      <div className="py-4">
+        <div className="flex items-center text-sm text-gray-600">
+          <Link to="/" className="hover:text-[#009edb] transition-colors">
+            HOME
+          </Link>
+          <span className="mx-2">&gt;</span>
+          <Link to="/about" className="hover:text-[#009edb] transition-colors">
+            SERVICES
+          </Link>
+          <span className="mx-2">&gt;</span>
+          <span className="text-gray-900 font-medium">
+            UN SPEECHES BROWSING
+          </span>
+        </div>
       </div>
 
-      {/* Search Form */}
-      <div className="border border-gray-200 rounded p-6 mb-8">
-        <div className="flex items-center justify-between mb-4">
+      {/* Hero Section */}
+      <div className="py-12">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          UN SPEECHES BROWSING
+        </h1>
+        <p className="text-lg text-gray-700 mb-6 max-w-4xl">
+          Browse speeches from {memberStatesCount} member states of the United
+          Nations General Assembly. Our comprehensive database provides access
+          to diplomatic discourse, policy positions, and international
+          perspectives on global challenges.
+        </p>
+      </div>
+
+      {/* Three-Column Service Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        {/* By Year */}
+        <ServiceCard
+          title="Browse by Year"
+          description={`Explore speeches chronologically from ${Math.min(...years)} to ${Math.max(...years)}. Analyze how diplomatic discourse has evolved over decades of international relations.`}
+          icon={<span className="text-gray-600 font-bold text-sm">📅</span>}
+        >
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500">Recent Years:</div>
+            <div className="flex flex-wrap gap-2">
+              {years.slice(-6).map((year) => (
+                <Link
+                  key={year}
+                  to={`/year/${year}`}
+                  className="px-3 py-1 text-xs bg-[#009edb] text-white rounded hover:bg-[#009edb]/90 transition-colors"
+                >
+                  {year}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </ServiceCard>
+
+        {/* By Country */}
+        <ServiceCard
+          title="Browse by Country"
+          description={`Access speeches from all ${memberStatesCount} member states. Understand diverse national perspectives on international issues and global governance.`}
+          icon={<span className="text-gray-600 font-bold text-sm">🌍</span>}
+        >
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500">Featured Countries:</div>
+            <div className="flex flex-wrap gap-2">
+              {countries.slice(0, 4).map((country) => (
+                <Link
+                  key={country.country_code}
+                  to={`/country/${country.country_code}`}
+                  className="px-3 py-1 text-xs bg-[#009edb] text-white rounded hover:bg-[#009edb]/90 transition-colors"
+                  title={country.country_name}
+                >
+                  {country.country_code}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </ServiceCard>
+
+        {/* By Topic */}
+        <ServiceCard
+          title="Search by Topic"
+          description="Find speeches covering climate change, peacekeeping, development, human rights, and other critical global issues through our advanced search capabilities."
+          icon={<span className="text-gray-600 font-bold text-sm">💬</span>}
+        >
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500">Popular Topics:</div>
+            <div className="flex flex-wrap gap-2">
+              {['Climate', 'Peace', 'Development', 'Human Rights'].map(
+                (topic) => (
+                  <button
+                    key={topic}
+                    onClick={() => {
+                      setSearchQuery(topic)
+                      const params = new URLSearchParams()
+                      params.set('q', topic)
+                      navigate(`/?${params.toString()}`)
+                    }}
+                    className="px-3 py-1 text-xs bg-[#009edb] text-white rounded hover:bg-[#009edb]/90 transition-colors"
+                  >
+                    {topic}
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+        </ServiceCard>
+      </div>
+
+      {/* Search Interface */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-16">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Search UN Speeches
+          </h2>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
+            className="text-[#009edb] hover:bg-[#009edb]/10"
           >
             <Filter className="h-4 w-4 mr-2" />
-            {showFilters ? 'Hide' : 'Show'} Filters
+            {showFilters ? 'Hide' : 'Show'} Advanced Filters
           </Button>
         </div>
-        <Form onSubmit={handleSearch} className="space-y-4">
+
+        <Form onSubmit={handleSearch} className="space-y-6">
           {/* Main search input with suggestions */}
           <div className="relative">
             <Input
               type="text"
-              placeholder="Search speeches, speakers, or countries..."
+              placeholder="Search speeches, speakers, countries, or topics..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value)
@@ -233,18 +352,18 @@ export default function Home() {
               }}
               onFocus={() => setShowSuggestions(searchQuery.length >= 2)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 h-12 text-lg"
             />
 
             {/* Search suggestions dropdown */}
             {showSuggestions && suggestions && suggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-sm">
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
                     type="button"
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-4 py-2 text-gray-900 hover:bg-gray-50 first:rounded-t last:rounded-b"
+                    className="w-full text-left px-4 py-3 text-gray-900 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
                   >
                     {suggestion}
                   </button>
@@ -255,9 +374,9 @@ export default function Home() {
 
           {/* Search mode selector */}
           {searchQuery.trim() && (
-            <div className="flex items-center space-x-4 text-sm">
-              <span className="text-gray-600">Search mode:</span>
-              <div className="flex space-x-2">
+            <div className="flex items-center space-x-4 text-sm bg-gray-50 p-4 rounded-lg">
+              <span className="text-gray-700 font-medium">Search mode:</span>
+              <div className="flex space-x-4">
                 {[
                   {
                     value: 'phrase',
@@ -277,7 +396,7 @@ export default function Home() {
                 ].map((mode) => (
                   <label
                     key={mode.value}
-                    className="flex items-center space-x-1 cursor-pointer"
+                    className="flex items-center space-x-2 cursor-pointer"
                   >
                     <input
                       type="radio"
@@ -289,9 +408,9 @@ export default function Home() {
                           e.target.value as 'exact' | 'phrase' | 'fuzzy'
                         )
                       }
-                      className="text-black focus:ring-black"
+                      className="text-[#009edb] focus:ring-[#009edb]"
                     />
-                    <span className="text-gray-600" title={mode.description}>
+                    <span className="text-gray-700" title={mode.description}>
                       {mode.label}
                     </span>
                   </label>
@@ -302,7 +421,7 @@ export default function Home() {
 
           {/* Advanced filters */}
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200 bg-gray-50 p-6 rounded-lg">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Country
@@ -310,7 +429,7 @@ export default function Home() {
                 <select
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="w-full h-9 rounded border border-gray-300 bg-white text-gray-900 px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009edb] focus:border-transparent"
                 >
                   <option value="">All countries</option>
                   {countries.map((country) => (
@@ -331,7 +450,7 @@ export default function Home() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full h-9 rounded border border-gray-300 bg-white text-gray-900 px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009edb] focus:border-transparent"
                 >
                   <option value="">All years</option>
                   {years.map((year) => (
@@ -349,7 +468,7 @@ export default function Home() {
                 <select
                   value={selectedSession}
                   onChange={(e) => setSelectedSession(e.target.value)}
-                  className="w-full h-9 rounded border border-gray-300 bg-white text-gray-900 px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009edb] focus:border-transparent"
                 >
                   <option value="">All sessions</option>
                   {sessions.map((session) => (
@@ -364,47 +483,49 @@ export default function Home() {
 
           {/* Action buttons */}
           <div className="flex items-center justify-between pt-4">
-            <div className="flex space-x-2">
-              <Button type="submit" variant="primary">
+            <div className="flex space-x-3">
+              <Button
+                type="submit"
+                className="bg-[#009edb] hover:bg-[#009edb]/90 text-white px-6 py-2"
+              >
                 <SearchIcon className="h-4 w-4 mr-2" />
-                Search
+                Search Speeches
               </Button>
               {hasActiveFilters && (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={clearFilters}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Clear
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    {showFilters ? 'Hide' : 'Show'} Filters
-                  </Button>
-                </>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear All
+                </Button>
               )}
             </div>
           </div>
         </Form>
       </div>
 
-      {/* Results */}
-      <div className="mb-6">
-        <p className="text-gray-600 text-sm">
-          {pagination.total} {pagination.total === 1 ? 'result' : 'results'}
-        </p>
+      {/* Results Section */}
+      {hasActiveFilters && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Search Results
+              </h2>
+              <p className="text-gray-600">
+                {pagination.total}{' '}
+                {pagination.total === 1 ? 'result' : 'results'} found
+              </p>
+            </div>
+          </div>
 
-        {/* Active filters display */}
-        {hasActiveFilters && (
-          <div className="flex flex-wrap gap-2 mt-3">
+          {/* Active filters display */}
+          <div className="flex flex-wrap gap-2 mb-6">
             {currentFilters.search && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-black text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
                 {currentFilters.searchMode === 'exact' && 'Exact: '}
                 {currentFilters.searchMode === 'fuzzy' && 'Any words: '}
                 {currentFilters.searchMode === 'phrase' && 'Text: '}"
@@ -412,7 +533,7 @@ export default function Home() {
               </span>
             )}
             {currentFilters.country && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-black text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
                 Country:{' '}
                 {countries.find(
                   (c) => c.country_code === currentFilters.country
@@ -420,52 +541,116 @@ export default function Home() {
               </span>
             )}
             {currentFilters.year && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-black text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
                 Year: {currentFilters.year}
               </span>
             )}
             {currentFilters.session && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-black text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
                 Session: {currentFilters.session}
               </span>
             )}
           </div>
-        )}
-      </div>
 
-      {speeches.length === 0 ? (
-        <div className="text-center py-12">
-          <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg mb-2">
-            {hasActiveFilters
-              ? 'No speeches match your search criteria'
-              : 'No speeches found'}
-          </p>
-          <p className="text-gray-500">
-            {hasActiveFilters
-              ? 'Try adjusting your filters or search terms'
-              : 'Something went wrong loading the speeches'}
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-            {speeches.map((speech: HighlightedSpeech) => (
-              <SpeechCard
-                key={speech.id}
-                speech={speech}
-                highlighted={!!currentFilters.search}
+          {speeches.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+              <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg mb-2">
+                No speeches match your search criteria
+              </p>
+              <p className="text-gray-500">
+                Try adjusting your filters or search terms
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                {speeches.map((speech: HighlightedSpeech) => (
+                  <SpeechCard
+                    key={speech.id}
+                    speech={speech}
+                    highlighted={!!currentFilters.search}
+                  />
+                ))}
+              </div>
+
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={handlePageChange}
               />
-            ))}
-          </div>
-
-          <Pagination
-            currentPage={pagination.page}
-            totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
-          />
-        </>
+            </>
+          )}
+        </div>
       )}
+
+      {/* Large Featured Content Block */}
+      <div className="bg-gradient-to-r from-[#009edb] to-[#009edb]/90 rounded-lg p-12 text-white mb-16">
+        <div className="max-w-4xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div>
+              <div className="flex items-center mb-4">
+                <span className="text-white/90 text-sm font-medium">01</span>
+                <span className="ml-4 text-white/90">
+                  Comprehensive Collection
+                </span>
+              </div>
+              <div className="flex items-center mb-4">
+                <span className="text-white/90 text-sm font-medium">02</span>
+                <span className="ml-4 text-white/90">Advanced Search</span>
+              </div>
+              <div className="flex items-center mb-6">
+                <span className="text-white/90 text-sm font-medium">03</span>
+                <span className="ml-4 text-white/90">Diplomatic Insights</span>
+              </div>
+
+              <p className="text-sm text-white/80 mb-6 italic">
+                Engineered for Diplomacy. Built for Research.
+              </p>
+
+              <h3 className="text-2xl font-bold mb-4">
+                ALL SPEECHES ARE SOURCED FROM OFFICIAL UN GENERAL ASSEMBLY
+                RECORDS
+              </h3>
+
+              <div className="flex items-center justify-between">
+                <span className="text-white/90 text-sm">
+                  UN Documentation Center
+                </span>
+                <span className="text-white/90 text-sm">2024</span>
+              </div>
+            </div>
+
+            <div className="lg:pl-8">
+              <div className="bg-white/10 rounded-lg p-6 backdrop-blur-sm">
+                <h4 className="text-lg font-bold mb-4">Quick Statistics</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-white/90">Total Speeches:</span>
+                    <span className="font-bold">
+                      {pagination.total?.toLocaleString() || 'Loading...'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/90">Member States:</span>
+                    <span className="font-bold">{memberStatesCount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/90">Years Covered:</span>
+                    <span className="font-bold">
+                      {Math.min(...years)} - {Math.max(...years)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/90">Sessions:</span>
+                    <span className="font-bold">{sessions.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </PageLayout>
   )
 }

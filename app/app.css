@@ -3,17 +3,19 @@
 :root {
   --color-primary: #009edb;
   --color-primary-hover: #0087c4;
+  --color-beige: #f5f5dc;
+  --color-warm-beige: #faf7f0;
 }
 
 html,
 body {
-  background-color: #ffffff;
-  color: #000000;
+  background-color: #faf7f0;
+  color: #1f2937;
 }
 
 mark {
-  background-color: #f0f0f0;
-  color: #000000;
+  background-color: #fef3c7;
+  color: #92400e;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
 }

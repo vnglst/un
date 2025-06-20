@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router'
-import { Globe, Search, Menu, X, MessageSquare } from 'lucide-react'
+import { Globe, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Header() {
@@ -18,12 +18,9 @@ export default function Header() {
   }
 
   const getNavLinkClass = (path: string) => {
-    const baseClass =
-      'flex items-center space-x-1 text-sm drop-shadow-sm transition-all duration-200'
-    const activeClass =
-      'text-white font-medium bg-white/20 px-3 py-2 rounded-lg backdrop-blur-sm'
-    const hoverClass =
-      'text-white/90 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg'
+    const baseClass = 'text-sm font-medium transition-colors duration-200'
+    const activeClass = 'text-[#009edb] border-b-2 border-[#009edb] pb-1'
+    const hoverClass = 'text-gray-700 hover:text-[#009edb]'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -32,9 +29,9 @@ export default function Header() {
 
   const getMobileNavLinkClass = (path: string) => {
     const baseClass =
-      'flex items-center space-x-2 px-4 py-3 text-sm transition-all duration-200'
-    const activeClass = 'text-white font-medium bg-white/20 backdrop-blur-sm'
-    const hoverClass = 'text-white/90 hover:text-white hover:bg-white/10'
+      'block px-4 py-3 text-sm font-medium transition-colors duration-200'
+    const activeClass = 'text-[#009edb] bg-[#009edb]/10'
+    const hoverClass = 'text-gray-700 hover:text-[#009edb] hover:bg-gray-50'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -42,42 +39,36 @@ export default function Header() {
   }
 
   return (
-    <header className="border-b border-[#009edb]/30 bg-gradient-to-r from-[#009edb] to-[#009edb]/95 shadow-lg relative overflow-hidden">
-      {/* Glossy overlay effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/5 pointer-events-none"></div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <header className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo and title */}
           <div className="flex items-center space-x-3">
-            <Globe className="h-6 w-6 text-white drop-shadow-sm" />
-            <Link
-              to="/"
-              className="text-lg font-medium text-white drop-shadow-sm"
-            >
-              UN Speeches
-            </Link>
+            <div className="flex items-center space-x-2">
+              <Globe className="h-8 w-8 text-[#009edb]" />
+              <Link
+                to="/"
+                className="text-2xl font-bold text-gray-900 tracking-tight"
+              >
+                UN SPEECHES
+              </Link>
+            </div>
           </div>
 
           {/* Desktop navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex items-center space-x-8">
             <Link to="/" className={getNavLinkClass('/')}>
-              <Search className="h-4 w-4" />
-              <span>Browse</span>
+              Browse
             </Link>
             <Link to="/globe" className={getNavLinkClass('/globe')}>
-              <Globe className="h-4 w-4" />
-              <span>Globe</span>
-            </Link>
-            <Link to="/rag" className={getNavLinkClass('/rag')}>
-              <MessageSquare className="h-4 w-4" />
-              <span>RAG Chat</span>
+              Globe
             </Link>
           </nav>
 
           {/* Mobile menu button */}
           <button
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-8 h-8 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+            className="md:hidden flex items-center justify-center w-8 h-8 text-gray-600 hover:text-[#009edb] transition-colors duration-200"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? (
@@ -90,31 +81,21 @@ export default function Header() {
 
         {/* Mobile navigation */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-white/20 bg-black/10 backdrop-blur-sm">
-            <nav className="py-4 space-y-1">
+          <div className="md:hidden border-t border-gray-200 bg-gray-50">
+            <nav className="py-2">
               <Link
                 to="/"
                 className={getMobileNavLinkClass('/')}
                 onClick={() => setIsMenuOpen(false)}
               >
-                <Search className="h-4 w-4" />
-                <span>Browse</span>
+                Browse
               </Link>
               <Link
                 to="/globe"
                 className={getMobileNavLinkClass('/globe')}
                 onClick={() => setIsMenuOpen(false)}
               >
-                <Globe className="h-4 w-4" />
-                <span>Globe</span>
-              </Link>
-              <Link
-                to="/rag"
-                className={getMobileNavLinkClass('/rag')}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span>RAG Chat</span>
+                Globe
               </Link>
             </nav>
           </div>

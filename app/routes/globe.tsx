@@ -2,6 +2,7 @@ import { useLoaderData, Link } from 'react-router'
 import { getCountrySpeechCounts, type CountrySpeechCount } from '~/lib/database'
 import { logger, timeAsyncOperation } from '~/lib/logger'
 import PageLayout from '~/components/page-layout'
+import { InfoBlock } from '~/components/ui/cards'
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import * as topojson from 'topojson-client'
@@ -307,44 +308,125 @@ export default function Globe() {
 
   return (
     <PageLayout maxWidth="default" className="w-full">
-      <div className="mb-8">
-        <h1 className="text-3xl font-medium text-black mb-2">Globe</h1>
+      {/* Breadcrumb Navigation */}
+      <div className="py-4">
+        <div className="flex items-center text-sm text-gray-600">
+          <Link to="/" className="hover:text-[#009edb] transition-colors">
+            HOME
+          </Link>
+          <span className="mx-2">&gt;</span>
+          <span className="text-gray-900 font-medium">GLOBE</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Hero Section */}
+      <div className="py-8 mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          Interactive Globe
+        </h1>
+        <p className="text-lg text-gray-700 max-w-4xl">
+          Explore UN speeches by country through our interactive globe
+          visualization. Countries are colored by the number of speeches, with
+          darker shades representing more diplomatic activity.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
         {/* Globe */}
         <div className="lg:col-span-2">
-          <div className="relative w-full h-[600px] bg-gray-50 rounded border border-gray-300 overflow-hidden">
-            <div ref={globeRef} className="w-full h-full relative z-10" />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="relative w-full h-[600px] bg-gray-50 rounded-lg overflow-hidden">
+              <div ref={globeRef} className="w-full h-full relative z-10" />
+            </div>
+            <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+              <span>
+                Drag to rotate • Scroll to zoom • Click countries to explore
+              </span>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-gray-400 rounded"></div>
+                  <span>No speeches</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-800 rounded"></div>
+                  <span>Most speeches</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mt-3">
-            Drag to rotate, scroll to zoom, click countries to view speeches.
-          </p>
         </div>
 
         {/* Top Speaking Countries */}
         <div>
-          <div className="border border-gray-200 rounded">
-            <div className="p-4">
-              <div className="space-y-2">
-                {countryCounts.slice(0, 10).map((country, index) => (
-                  <Link
-                    key={country.country_code}
-                    to={`/country/${country.country_code}`}
-                    className="flex items-center justify-between p-3 rounded border border-gray-200 hover:border-gray-300 transition-colors"
-                  >
-                    <div>
-                      <span className="text-sm font-medium text-black">
-                        {index + 1}.{' '}
-                        {country.country_name || country.country_code}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-600">
-                      {country.speech_count} speeches
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              Most Active Countries
+            </h3>
+            <div className="space-y-3">
+              {countryCounts.slice(0, 10).map((country, index) => (
+                <Link
+                  key={country.country_code}
+                  to={`/country/${country.country_code}`}
+                  className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-[#009edb] hover:shadow-sm transition-all group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-sm font-bold text-[#009edb] w-6">
+                      {index + 1}
                     </span>
-                  </Link>
-                ))}
-              </div>
+                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#009edb] transition-colors">
+                      {country.country_name || country.country_code}
+                    </span>
+                  </div>
+                  <span className="text-sm text-gray-600 font-medium">
+                    {country.speech_count.toLocaleString()}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <Link
+                to="/"
+                className="text-sm text-[#009edb] hover:text-[#009edb]/80 transition-colors font-medium"
+              >
+                View all countries →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Information Section */}
+      <div className="bg-gradient-to-r from-[#009edb] to-[#009edb]/90 rounded-lg p-12 text-white">
+        <div className="max-w-4xl">
+          <h2 className="text-3xl font-bold mb-6">About This Visualization</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-xl font-bold mb-4">Data Representation</h3>
+              <p className="text-white/90 mb-4">
+                The interactive globe visualizes the distribution of UN General
+                Assembly speeches across member states. Color intensity reflects
+                diplomatic activity, helping identify the most engaged nations
+                in international discourse.
+              </p>
+              <ul className="space-y-2 text-white/80 text-sm">
+                <li>• Real-time country data from our database</li>
+                <li>• Color-coded by speech frequency</li>
+                <li>• Interactive navigation and exploration</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold mb-4">Usage Instructions</h3>
+              <p className="text-white/90 mb-4">
+                Navigate the globe using intuitive controls to explore different
+                regions and discover patterns in international diplomatic
+                engagement.
+              </p>
+              <ul className="space-y-2 text-white/80 text-sm">
+                <li>• Drag to rotate the globe freely</li>
+                <li>• Scroll to zoom in and out</li>
+                <li>• Click countries to view their speeches</li>
+                <li>• Hover for detailed information</li>
+              </ul>
             </div>
           </div>
         </div>
