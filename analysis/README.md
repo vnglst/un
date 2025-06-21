@@ -28,7 +28,7 @@ npm run analysis:similarities -- --year 2023 --threshold 0.7 --batch-size 50
 ## Command Line Options
 
 - `--year <year>`: Calculate similarities only for specific year
-- `--force`: Force recalculation of existing similarities  
+- `--force`: Force recalculation of existing similarities
 - `--batch-size <size>`: Number of speeches to process per batch (default: 100)
 - `--threshold <value>`: Minimum similarity to store (default: 0.5)
 - `--help`: Show help message
@@ -36,6 +36,7 @@ npm run analysis:similarities -- --year 2023 --threshold 0.7 --batch-size 50
 ## Web Interface
 
 Visit `/analysis` on the website to explore the interactive similarity matrix with:
+
 - Dynamic year filtering
 - Adjustable similarity thresholds
 - Interactive D3.js visualization
@@ -61,16 +62,6 @@ CREATE TABLE speech_similarities (
 - **Efficient**: Uses batch processing and database transactions
 - **Fast**: Typical processing ~192 speeches in under 10 seconds
 - **Storage**: Only stores similarities above threshold to optimize space
-
-## Legacy Files (Deprecated)
-
-The following files are from the original prototype and are kept for reference:
-
-- **`speech-similarity-matrix-2024.ts`** - Original analysis script for 40 selected countries
-- **`speech-similarity-2024.json`** - Static similarity data from the prototype
-- **`speech-similarity-matrix-2024.html`** - Standalone HTML visualization
-
-These files are no longer used by the main application but can serve as examples or for comparison purposes.
 
 ## Migration
 
