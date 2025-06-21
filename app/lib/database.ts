@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { join } from 'path'
 import { existsSync, statSync } from 'fs'
+import { load } from 'sqlite-vec'
 import { logger, timeOperation, type LogContext } from './logger'
 
 // =============================================================================
@@ -37,6 +38,11 @@ function initializeDatabase(): Database.Database {
 
   // Create database connection
   const database = new Database(dbPath, { readonly: true })
+
+  // Load sqlite-vec extension for vector operations
+  load(database)
+  logger.info('sqlite-vec extension loaded')
+
   logger.info('Database connection established')
 
   return database
@@ -894,7 +900,9 @@ export function getSimilarityAnalysis(
 
     speechQuery += ` ORDER BY COALESCE(s.country_name, s.country_code), s.year DESC`
 
-    const allSpeeches = db.prepare(speechQuery).all(...params) as SpeechMetadata[]
+    const allSpeeches = db
+      .prepare(speechQuery)
+      .all(...params) as SpeechMetadata[]
 
     // Limit to 2 speeches per country to avoid performance issues
     const speechesByCountry = new Map<string, SpeechMetadata[]>()
@@ -1072,7 +1080,7 @@ export function getSimilarityComparison(
       throw new Error('Similarity data not found for these speeches')
     }
 
-    // Get chunk similarities if available
+    // Get chunk similarities using sqlite-vec real-time calculation
     let chunkSimilarities: Array<{
       chunk1_text: string
       chunk2_text: string
@@ -1084,23 +1092,29 @@ export function getSimilarityComparison(
     let totalChunks = 0
 
     try {
+      // Real-time chunk similarity calculation using sqlite-vec
       const chunkSimilarityQuery = `
         SELECT 
-          cs.chunk1_text,
-          cs.chunk2_text,
-          cs.similarity,
-          cs.chunk1_position,
-          cs.chunk2_position
-        FROM chunk_similarities cs
-        WHERE (cs.speech1_id = ? AND cs.speech2_id = ?) OR (cs.speech1_id = ? AND cs.speech2_id = ?)
-        AND cs.similarity >= 0.3
-        ORDER BY cs.similarity DESC
-        LIMIT 100
+          c1.chunk_text as chunk1_text,
+          c2.chunk_text as chunk2_text,
+          (1 - vec_distance_cosine(e1.embedding, e2.embedding)) as similarity,
+          c1.chunk_index as chunk1_position,
+          c2.chunk_index as chunk2_position
+        FROM speech_chunks c1
+        JOIN speech_embeddings e1 ON c1.embedding_id = e1.rowid
+        JOIN speech_chunks c2 ON c2.speech_id = ?
+        JOIN speech_embeddings e2 ON c2.embedding_id = e2.rowid
+        WHERE c1.speech_id = ?
+          AND c1.embedding_id IS NOT NULL 
+          AND c2.embedding_id IS NOT NULL
+          AND (1 - vec_distance_cosine(e1.embedding, e2.embedding)) >= 0.3
+        ORDER BY similarity DESC
+        LIMIT 50
       `
 
       chunkSimilarities = db
         .prepare(chunkSimilarityQuery)
-        .all(speech1Id, speech2Id, speech2Id, speech1Id) as Array<{
+        .all(speech2Id, speech1Id) as Array<{
         chunk1_text: string
         chunk2_text: string
         similarity: number
@@ -1108,24 +1122,36 @@ export function getSimilarityComparison(
         chunk2_position: number
       }>
 
+      // Get total number of chunk pairs (for display purposes)
       const totalChunksQuery = `
-        SELECT COUNT(*) as total
-        FROM chunk_similarities cs
-        WHERE (cs.speech1_id = ? AND cs.speech2_id = ?) OR (cs.speech1_id = ? AND cs.speech2_id = ?)
+        SELECT 
+          COUNT(*) as total
+        FROM speech_chunks c1
+        JOIN speech_chunks c2 ON c2.speech_id = ?
+        WHERE c1.speech_id = ?
+          AND c1.embedding_id IS NOT NULL 
+          AND c2.embedding_id IS NOT NULL
       `
 
       const totalResult = db
         .prepare(totalChunksQuery)
-        .get(speech1Id, speech2Id, speech2Id, speech1Id) as
-        | { total: number }
-        | undefined
+        .get(speech2Id, speech1Id) as { total: number } | undefined
 
       totalChunks = totalResult?.total || 0
-    } catch {
-      // chunk_similarities table doesn't exist, return empty array
+
+      logger.info('Calculated chunk similarities using sqlite-vec', {
+        ...context,
+        chunkSimilaritiesCount: chunkSimilarities.length,
+        totalChunks,
+      })
+    } catch (error) {
+      // If speech_chunks or speech_embeddings tables don't exist, return empty array
       logger.info(
-        'chunk_similarities table not found, returning empty chunk data',
-        context
+        'speech_chunks/speech_embeddings tables not found or error calculating similarities',
+        {
+          ...context,
+          error: error instanceof Error ? error.message : String(error),
+        }
       )
     }
 
