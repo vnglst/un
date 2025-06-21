@@ -66,7 +66,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       })
     }
 
-    // Get speeches with similarities, filtered by countries if provided
+    // Get speeches for the selected countries and year (without similarity filtering)
     let speechQuery = `
       SELECT DISTINCT
         s.id,
@@ -76,14 +76,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
         s.year || '-01-01' as date,
         s.year
       FROM speeches s
-      WHERE EXISTS (
-        SELECT 1 FROM speech_similarities ss 
-        WHERE (ss.speech1_id = s.id OR ss.speech2_id = s.id)
-        AND ss.similarity >= ?
-      )
+      WHERE 1=1
     `
 
-    const params: (number | string)[] = [threshold]
+    const params: (number | string)[] = []
 
     if (year && year !== 'all') {
       speechQuery += ` AND s.year = ?`
@@ -106,7 +102,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return Response.json({ speeches: [], similarities: [] })
     }
 
-    // Get similarities for these speeches
+    // Get similarities for these speeches (apply threshold here, not in speech selection)
     const speechIds = speeches.map((s) => s.id)
     const placeholders = speechIds.map(() => '?').join(',')
 
@@ -144,7 +140,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         idToIndex.set(speech.id, index)
       })
 
-      // Fill the matrix
+      // Fill the matrix with similarity data (only for pairs above threshold)
       similarities.forEach(({ speech1_id, speech2_id, similarity }) => {
         const index1 = idToIndex.get(speech1_id)
         const index2 = idToIndex.get(speech2_id)
