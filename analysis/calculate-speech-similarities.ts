@@ -15,9 +15,17 @@ function openDatabase(): Database.Database {
   const dbPath = join(process.cwd(), 'data', 'un_speeches.db')
   const db = new Database(dbPath, { readonly: false })
 
-  // Load sqlite-vec extension
-  load(db)
-  console.log('✅ sqlite-vec extension loaded')
+  // Load sqlite-vec extension with error handling
+  try {
+    load(db)
+    console.log('✅ sqlite-vec extension loaded')
+  } catch (error) {
+    console.warn(
+      '⚠️  Failed to load sqlite-vec extension:',
+      error instanceof Error ? error.message : String(error)
+    )
+    console.warn('⚠️  Vector similarity calculations will not be available')
+  }
 
   return db
 }

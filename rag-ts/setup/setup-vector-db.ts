@@ -70,7 +70,10 @@ function initDatabase(): Database.Database {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('❌ Failed to load sqlite-vec extension:', errorMessage)
     console.error(
-      'Please ensure sqlite-vec and sqlite-vec-darwin-x64 are properly installed'
+      'This script requires sqlite-vec to be available. Please ensure it is properly installed.'
+    )
+    console.error(
+      'If running in a container, make sure the correct platform-specific binaries are available.'
     )
     throw error
   }

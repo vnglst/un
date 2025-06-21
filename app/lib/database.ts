@@ -8,6 +8,16 @@ import { logger, timeOperation, type LogContext } from './logger'
 // DATABASE CONFIGURATION & INITIALIZATION
 // =============================================================================
 
+// Track sqlite-vec availability
+let isVectorSearchAvailable = false
+
+/**
+ * Check if vector search functionality is available
+ */
+export function isVectorSearchEnabled(): boolean {
+  return isVectorSearchAvailable
+}
+
 /**
  * Initialize database connection with proper error handling and logging
  */
@@ -39,9 +49,18 @@ function initializeDatabase(): Database.Database {
   // Create database connection
   const database = new Database(dbPath, { readonly: true })
 
-  // Load sqlite-vec extension for vector operations
-  load(database)
-  logger.info('sqlite-vec extension loaded')
+  // Load sqlite-vec extension for vector operations (with error handling)
+  try {
+    load(database)
+    isVectorSearchAvailable = true
+    logger.info('sqlite-vec extension loaded successfully')
+  } catch (error) {
+    isVectorSearchAvailable = false
+    logger.warn('Failed to load sqlite-vec extension', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    logger.warn('Vector search functionality will be disabled')
+  }
 
   logger.info('Database connection established')
 
@@ -1091,26 +1110,28 @@ export function getSimilarityComparison(
 
     let totalChunks = 0
 
-    try {
-      // Real-time chunk similarity calculation using sqlite-vec
-      // Get the best match for each chunk from speech1
-      const chunkSimilarityQuery = `
-        WITH chunk_similarities AS (
-          SELECT 
-            c1.chunk_text as chunk1_text,
-            c2.chunk_text as chunk2_text,
-            (1 - vec_distance_cosine(e1.embedding, e2.embedding)) as similarity,
-            c1.chunk_index as chunk1_position,
-            c2.chunk_index as chunk2_position,
-            ROW_NUMBER() OVER (
-              PARTITION BY c1.chunk_index 
-              ORDER BY (1 - vec_distance_cosine(e1.embedding, e2.embedding)) DESC
-            ) as rn
-          FROM speech_chunks c1
-          JOIN speech_embeddings e1 ON c1.embedding_id = e1.rowid
-          JOIN speech_chunks c2 ON c2.speech_id = ?
-          JOIN speech_embeddings e2 ON c2.embedding_id = e2.rowid
-          WHERE c1.speech_id = ?
+    // Only try to calculate chunk similarities if sqlite-vec is available
+    if (isVectorSearchAvailable) {
+      try {
+        // Real-time chunk similarity calculation using sqlite-vec
+        // Get the best match for each chunk from speech1
+        const chunkSimilarityQuery = `
+          WITH chunk_similarities AS (
+            SELECT 
+              c1.chunk_text as chunk1_text,
+              c2.chunk_text as chunk2_text,
+              (1 - vec_distance_cosine(e1.embedding, e2.embedding)) as similarity,
+              c1.chunk_index as chunk1_position,
+              c2.chunk_index as chunk2_position,
+              ROW_NUMBER() OVER (
+                PARTITION BY c1.chunk_index 
+                ORDER BY (1 - vec_distance_cosine(e1.embedding, e2.embedding)) DESC
+              ) as rn
+            FROM speech_chunks c1
+            JOIN speech_embeddings e1 ON c1.embedding_id = e1.rowid
+            JOIN speech_chunks c2 ON c2.speech_id = ?
+            JOIN speech_embeddings e2 ON c2.embedding_id = e2.rowid
+            WHERE c1.speech_id = ?
             AND c1.embedding_id IS NOT NULL 
             AND c2.embedding_id IS NOT NULL
             AND (1 - vec_distance_cosine(e1.embedding, e2.embedding)) >= 0.1
@@ -1126,44 +1147,50 @@ export function getSimilarityComparison(
         ORDER BY chunk1_position ASC
       `
 
-      chunkSimilarities = db
-        .prepare(chunkSimilarityQuery)
-        .all(speech2Id, speech1Id) as Array<{
-        chunk1_text: string
-        chunk2_text: string
-        similarity: number
-        chunk1_position: number
-        chunk2_position: number
-      }>
+        chunkSimilarities = db
+          .prepare(chunkSimilarityQuery)
+          .all(speech2Id, speech1Id) as Array<{
+          chunk1_text: string
+          chunk2_text: string
+          similarity: number
+          chunk1_position: number
+          chunk2_position: number
+        }>
 
-      // Get total number of chunks from speech1 (for display purposes)
-      const totalChunksQuery = `
-        SELECT 
-          COUNT(*) as total
-        FROM speech_chunks c1
-        WHERE c1.speech_id = ?
-          AND c1.embedding_id IS NOT NULL
-      `
+        // Get total number of chunks from speech1 (for display purposes)
+        const totalChunksQuery = `
+          SELECT 
+            COUNT(*) as total
+          FROM speech_chunks c1
+          WHERE c1.speech_id = ?
+            AND c1.embedding_id IS NOT NULL
+        `
 
-      const totalResult = db.prepare(totalChunksQuery).get(speech1Id) as
-        | { total: number }
-        | undefined
+        const totalResult = db.prepare(totalChunksQuery).get(speech1Id) as
+          | { total: number }
+          | undefined
 
-      totalChunks = totalResult?.total || 0
+        totalChunks = totalResult?.total || 0
 
-      logger.info('Calculated best chunk matches using sqlite-vec', {
-        ...context,
-        chunkSimilaritiesCount: chunkSimilarities.length,
-        totalChunks,
-      })
-    } catch (error) {
-      // If speech_chunks or speech_embeddings tables don't exist, return empty array
-      logger.info(
-        'speech_chunks/speech_embeddings tables not found or error calculating similarities',
-        {
+        logger.info('Calculated best chunk matches using sqlite-vec', {
           ...context,
-          error: error instanceof Error ? error.message : String(error),
-        }
+          chunkSimilaritiesCount: chunkSimilarities.length,
+          totalChunks,
+        })
+      } catch (error) {
+        // If speech_chunks or speech_embeddings tables don't exist, return empty array
+        logger.info(
+          'speech_chunks/speech_embeddings tables not found or error calculating similarities',
+          {
+            ...context,
+            error: error instanceof Error ? error.message : String(error),
+          }
+        )
+      }
+    } else {
+      logger.info(
+        'Vector search not available, skipping chunk similarities',
+        context
       )
     }
 
