@@ -1093,23 +1093,37 @@ export function getSimilarityComparison(
 
     try {
       // Real-time chunk similarity calculation using sqlite-vec
+      // Get the best match for each chunk from speech1
       const chunkSimilarityQuery = `
+        WITH chunk_similarities AS (
+          SELECT 
+            c1.chunk_text as chunk1_text,
+            c2.chunk_text as chunk2_text,
+            (1 - vec_distance_cosine(e1.embedding, e2.embedding)) as similarity,
+            c1.chunk_index as chunk1_position,
+            c2.chunk_index as chunk2_position,
+            ROW_NUMBER() OVER (
+              PARTITION BY c1.chunk_index 
+              ORDER BY (1 - vec_distance_cosine(e1.embedding, e2.embedding)) DESC
+            ) as rn
+          FROM speech_chunks c1
+          JOIN speech_embeddings e1 ON c1.embedding_id = e1.rowid
+          JOIN speech_chunks c2 ON c2.speech_id = ?
+          JOIN speech_embeddings e2 ON c2.embedding_id = e2.rowid
+          WHERE c1.speech_id = ?
+            AND c1.embedding_id IS NOT NULL 
+            AND c2.embedding_id IS NOT NULL
+            AND (1 - vec_distance_cosine(e1.embedding, e2.embedding)) >= 0.3
+        )
         SELECT 
-          c1.chunk_text as chunk1_text,
-          c2.chunk_text as chunk2_text,
-          (1 - vec_distance_cosine(e1.embedding, e2.embedding)) as similarity,
-          c1.chunk_index as chunk1_position,
-          c2.chunk_index as chunk2_position
-        FROM speech_chunks c1
-        JOIN speech_embeddings e1 ON c1.embedding_id = e1.rowid
-        JOIN speech_chunks c2 ON c2.speech_id = ?
-        JOIN speech_embeddings e2 ON c2.embedding_id = e2.rowid
-        WHERE c1.speech_id = ?
-          AND c1.embedding_id IS NOT NULL 
-          AND c2.embedding_id IS NOT NULL
-          AND (1 - vec_distance_cosine(e1.embedding, e2.embedding)) >= 0.3
-        ORDER BY similarity DESC
-        LIMIT 50
+          chunk1_text,
+          chunk2_text,
+          similarity,
+          chunk1_position,
+          chunk2_position
+        FROM chunk_similarities
+        WHERE rn = 1
+        ORDER BY chunk1_position ASC
       `
 
       chunkSimilarities = db
@@ -1122,24 +1136,22 @@ export function getSimilarityComparison(
         chunk2_position: number
       }>
 
-      // Get total number of chunk pairs (for display purposes)
+      // Get total number of chunks from speech1 (for display purposes)
       const totalChunksQuery = `
         SELECT 
           COUNT(*) as total
         FROM speech_chunks c1
-        JOIN speech_chunks c2 ON c2.speech_id = ?
         WHERE c1.speech_id = ?
-          AND c1.embedding_id IS NOT NULL 
-          AND c2.embedding_id IS NOT NULL
+          AND c1.embedding_id IS NOT NULL
       `
 
-      const totalResult = db
-        .prepare(totalChunksQuery)
-        .get(speech2Id, speech1Id) as { total: number } | undefined
+      const totalResult = db.prepare(totalChunksQuery).get(speech1Id) as
+        | { total: number }
+        | undefined
 
       totalChunks = totalResult?.total || 0
 
-      logger.info('Calculated chunk similarities using sqlite-vec', {
+      logger.info('Calculated best chunk matches using sqlite-vec', {
         ...context,
         chunkSimilaritiesCount: chunkSimilarities.length,
         totalChunks,

@@ -45,18 +45,15 @@ export async function loader({ params }: LoaderFunctionArgs) {
 export default function SimilarityComparison() {
   const data = useLoaderData<SimilarityComparison>()
 
-  // Sort chunks by similarity score descending
-  const sortedChunks = [...data.chunk_similarities].sort(
-    (a, b) => b.similarity - a.similarity
-  )
+  // Database already returns best matches sorted by chunk1_position, no need for additional processing
+  const chunkMatches = data.chunk_similarities
 
-  // Get color based on similarity score
+  // Get color based on similarity score - more subtle colors for better readability
   const getSimilarityColor = (similarity: number) => {
-    if (similarity >= 0.8) return 'text-green-700 bg-green-50 border-green-200'
-    if (similarity >= 0.6) return 'text-blue-700 bg-blue-50 border-blue-200'
-    if (similarity >= 0.4)
-      return 'text-yellow-700 bg-yellow-50 border-yellow-200'
-    return 'text-gray-700 bg-gray-50 border-gray-200'
+    if (similarity >= 0.8) return 'text-emerald-700 bg-emerald-50'
+    if (similarity >= 0.6) return 'text-blue-700 bg-blue-50'
+    if (similarity >= 0.4) return 'text-amber-700 bg-amber-50'
+    return 'text-gray-600 bg-gray-100'
   }
 
   const formatSimilarity = (similarity: number) => {
@@ -174,111 +171,138 @@ export default function SimilarityComparison() {
 
       {/* Chunk Analysis */}
       <div className="mb-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Detailed Chunk Analysis
-          </h2>
-          <div className="text-sm text-gray-600">
-            Showing {sortedChunks.length} of {data.total_chunks} chunks with
-            similarities above threshold
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Side-by-Side Speech Comparison
+            </h2>
+            <p className="text-sm text-gray-600">
+              Reading {chunkMatches.length} sections from {data.speech1.country}{' '}
+              alongside their best matches from {data.speech2.country}
+            </p>
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-600">{data.speech1.country}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-gray-600">{data.speech2.country}</span>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          {sortedChunks.slice(0, 20).map((chunk, index) => (
-            <Card key={index} className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Chunk Pair #{index + 1}
-                </h3>
-                <div
-                  className={`px-3 py-1 rounded-full text-sm font-medium border ${getSimilarityColor(chunk.similarity)}`}
-                >
-                  {formatSimilarity(chunk.similarity)}
+        <div className="space-y-8">
+          {chunkMatches.slice(0, 50).map((match, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+            >
+              {/* Header with position and similarity */}
+              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <div className="text-sm font-medium text-gray-600">
+                  Section {match.chunk1_position + 1}
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2 flex items-center justify-between">
-                    <span>{data.speech1.country}</span>
-                    <span className="text-xs text-gray-500">
-                      Position {chunk.chunk1_position}
-                    </span>
-                  </h4>
-                  <div className="p-4 bg-gray-50 rounded-lg border text-sm text-gray-700 leading-relaxed">
-                    {chunk.chunk1_text}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2 flex items-center justify-between">
-                    <span>{data.speech2.country}</span>
-                    <span className="text-xs text-gray-500">
-                      Position {chunk.chunk2_position}
-                    </span>
-                  </h4>
-                  <div className="p-4 bg-gray-50 rounded-lg border text-sm text-gray-700 leading-relaxed">
-                    {chunk.chunk2_text}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">Similarity</span>
+                  <div
+                    className={`px-2 py-1 rounded text-xs font-medium ${getSimilarityColor(match.similarity)}`}
+                  >
+                    {formatSimilarity(match.similarity)}
                   </div>
                 </div>
               </div>
-            </Card>
+
+              {/* Side-by-side content */}
+              <div className="grid grid-cols-1 lg:grid-cols-2">
+                <div className="p-6 border-r border-gray-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <h4 className="font-semibold text-gray-900">
+                      {data.speech1.country}
+                    </h4>
+                  </div>
+                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                    {match.chunk1_text}
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <h4 className="font-semibold text-gray-900">
+                      {data.speech2.country}
+                    </h4>
+                    <span className="text-xs text-gray-500 ml-auto">
+                      Best match: Position {match.chunk2_position + 1}
+                    </span>
+                  </div>
+                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                    {match.chunk2_text}
+                  </div>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
-        {sortedChunks.length > 20 && (
+        {chunkMatches.length > 50 && (
           <div className="text-center mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-gray-600">
-              Showing top 20 most similar chunks. There are{' '}
-              {sortedChunks.length - 20} more chunk pairs available.
+              Showing first 50 chunks from {data.speech1.country}. There are{' '}
+              {chunkMatches.length - 50} more chunks available.
             </p>
           </div>
         )}
       </div>
 
       {/* Information Section */}
-      <InfoBlock title="Understanding Similarity Scores">
+      <InfoBlock title="Understanding This Comparison">
         <div className="space-y-4">
           <p className="text-gray-700">
-            Speech similarity is calculated by comparing semantic embeddings of
-            text chunks. Each speech is divided into smaller segments, and each
-            segment is compared to segments from the other speech to find the
-            most similar passages.
+            This chronological comparison shows both speeches side-by-side,
+            section by section, in the order they were delivered. This allows
+            you to see how the narrative flow and argumentation develops in
+            parallel between the two countries.
           </p>
 
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">
-              Score Interpretation:
-            </h3>
-            <ul className="text-gray-700 space-y-1">
-              <li>
-                <span className="inline-block w-3 h-3 bg-green-200 rounded mr-2"></span>
-                <strong>80-100%:</strong> Very high similarity - likely
-                discussing the same topics with similar language
+            <h3 className="font-semibold text-gray-900 mb-2">Reading Guide:</h3>
+            <ul className="text-gray-700 space-y-2">
+              <li className="flex items-start gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                <span>
+                  <strong>Left column:</strong> {data.speech1.country}'s speech
+                  sections in chronological order
+                </span>
               </li>
-              <li>
-                <span className="inline-block w-3 h-3 bg-blue-200 rounded mr-2"></span>
-                <strong>60-79%:</strong> High similarity - related topics or
-                similar diplomatic positions
+              <li className="flex items-start gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                <span>
+                  <strong>Right column:</strong> {data.speech2.country}'s speech
+                  sections in chronological order
+                </span>
               </li>
-              <li>
-                <span className="inline-block w-3 h-3 bg-yellow-200 rounded mr-2"></span>
-                <strong>40-59%:</strong> Moderate similarity - some overlapping
-                themes or concepts
-              </li>
-              <li>
-                <span className="inline-block w-3 h-3 bg-gray-200 rounded mr-2"></span>
-                <strong>Below 40%:</strong> Low similarity - different topics or
-                positions
+              <li className="flex items-start gap-2">
+                <span className="inline-block w-3 h-3 bg-emerald-50 rounded mt-1.5 flex-shrink-0"></span>
+                <span>
+                  <strong>Similarity scores:</strong> Show how semantically
+                  similar each pair of sections are, even though they appear at
+                  the same position in their respective speeches
+                </span>
               </li>
             </ul>
           </div>
 
           <p className="text-gray-700">
-            The chunk analysis shows specific passages where the two speeches
-            align most closely, helping you understand exactly which topics or
-            diplomatic positions are shared between countries.
+            Notice how different countries structure their arguments: some may
+            address economic issues first, others might start with security
+            concerns, etc. The similarity scores help identify when both
+            countries happen to discuss similar topics at the same point in
+            their speeches.
           </p>
         </div>
       </InfoBlock>
