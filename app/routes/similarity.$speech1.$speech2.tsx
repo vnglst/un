@@ -9,6 +9,7 @@ import {
   getSimilarityComparison,
   type SimilarityComparison,
 } from '~/lib/database'
+import { highlightOverlappingText } from '~/lib/utils'
 
 export function meta({ data }: { data: SimilarityComparison }) {
   if (!data) {
@@ -196,57 +197,68 @@ export default function SimilarityComparison() {
         </div>
 
         <div className="space-y-8">
-          {chunkMatches.slice(0, 50).map((match, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-lg border border-gray-200 overflow-hidden"
-            >
-              {/* Header with position and similarity */}
-              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <div className="text-sm font-medium text-gray-600">
-                  Section {match.chunk1_position + 1}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-500">Similarity</span>
-                  <div
-                    className={`px-2 py-1 rounded text-xs font-medium ${getSimilarityColor(match.similarity)}`}
-                  >
-                    {formatSimilarity(match.similarity)}
-                  </div>
-                </div>
-              </div>
+          {chunkMatches.slice(0, 50).map((match, index) => {
+            // Get previous chunk text for overlap detection
+            const previousChunkText =
+              index > 0 ? chunkMatches[index - 1].chunk1_text : null
+            const highlightedText = highlightOverlappingText(
+              match.chunk1_text,
+              previousChunkText
+            )
 
-              {/* Side-by-side content */}
-              <div className="grid grid-cols-1 lg:grid-cols-2">
-                <div className="p-6 border-r border-gray-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <h4 className="font-semibold text-gray-900">
-                      {data.speech1.country}
-                    </h4>
+            return (
+              <div
+                key={index}
+                className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+              >
+                {/* Header with position and similarity */}
+                <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                  <div className="text-sm font-medium text-gray-600">
+                    Section {match.chunk1_position + 1}
                   </div>
-                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                    {match.chunk1_text}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-500">Similarity</span>
+                    <div
+                      className={`px-2 py-1 rounded text-xs font-medium ${getSimilarityColor(match.similarity)}`}
+                    >
+                      {formatSimilarity(match.similarity)}
+                    </div>
                   </div>
                 </div>
 
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <h4 className="font-semibold text-gray-900">
-                      {data.speech2.country}
-                    </h4>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      Best match: Position {match.chunk2_position + 1}
-                    </span>
+                {/* Side-by-side content */}
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                  <div className="p-6 border-r border-gray-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <h4 className="font-semibold text-gray-900">
+                        {data.speech1.country}
+                      </h4>
+                    </div>
+                    <div
+                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: highlightedText }}
+                    />
                   </div>
-                  <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                    {match.chunk2_text}
+
+                  <div className="p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <h4 className="font-semibold text-gray-900">
+                        {data.speech2.country}
+                      </h4>
+                      <span className="text-xs text-gray-500 ml-auto">
+                        Best match: Position {match.chunk2_position + 1}
+                      </span>
+                    </div>
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                      {match.chunk2_text}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {chunkMatches.length > 50 && (
