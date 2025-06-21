@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import * as d3 from 'd3'
+import { Link } from 'react-router'
 import PageLayout from '../components/page-layout'
 import { Button } from '../components/ui/button'
 import { Select } from '../components/ui/select'
 import { Input } from '../components/ui/input'
+import { InfoBlock } from '../components/ui/cards'
 
 export function meta() {
   return [
@@ -256,17 +258,36 @@ export default function Analysis() {
   }, [data, initializeVisualization]) // Re-render when data changes
 
   return (
-    <PageLayout>
-      <div className="container mx-auto max-w-7xl bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-4xl font-bold text-center text-gray-800 mb-3">
-          🌍 UN General Assembly Speech Analysis
-        </h1>
-        <div className="text-center text-gray-600 mb-8 text-lg">
-          Interactive Speech Similarity Matrix
+    <PageLayout maxWidth="wide">
+      {/* Breadcrumb Navigation */}
+      <div className="py-4">
+        <div className="flex items-center text-sm text-gray-600">
+          <Link to="/" className="hover:text-[#009edb] transition-colors">
+            HOME
+          </Link>
+          <span className="mx-2">&gt;</span>
+          <span className="text-gray-900 font-medium">ANALYSIS</span>
         </div>
+      </div>
 
-        {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+      {/* Hero Section */}
+      <div className="py-12">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          Speech Similarity Analysis
+        </h1>
+        <p className="text-lg text-gray-700 mb-6 max-w-4xl">
+          Interactive semantic similarity matrix showing relationships between
+          UN General Assembly speeches. Explore how different countries'
+          diplomatic positions align on global issues.
+        </p>
+      </div>
+
+      {/* Controls Section */}
+      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">
+          Analysis Controls
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Year
@@ -325,9 +346,11 @@ export default function Analysis() {
         </div>
 
         {/* Display Controls */}
-        <div className="flex justify-center gap-6 mb-8 flex-wrap">
+        <div className="flex justify-start gap-6 pt-4 border-t border-gray-200 flex-wrap">
           <div className="flex items-center gap-2">
-            <label className="font-medium text-gray-700">View Threshold:</label>
+            <label className="text-sm font-medium text-gray-700">
+              View Threshold:
+            </label>
             <input
               type="range"
               min="0"
@@ -335,12 +358,16 @@ export default function Analysis() {
               step="0.01"
               value={viewThreshold}
               onChange={(e) => setViewThreshold(parseFloat(e.target.value))}
-              className="px-3 py-1 border border-gray-300 rounded text-sm"
+              className="w-24"
             />
-            <span className="text-sm">{viewThreshold.toFixed(2)}</span>
+            <span className="text-sm text-gray-600">
+              {viewThreshold.toFixed(2)}
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <label className="font-medium text-gray-700">Cell Size:</label>
+            <label className="text-sm font-medium text-gray-700">
+              Cell Size:
+            </label>
             <select
               value={cellSize}
               onChange={(e) => setCellSize(parseInt(e.target.value))}
@@ -353,70 +380,89 @@ export default function Analysis() {
             </select>
           </div>
         </div>
+      </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">Error: {error}</p>
+      {/* Status Messages */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800">Error: {error}</p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-800">Loading similarity data...</p>
+        </div>
+      )}
+
+      {/* Visualization Section */}
+      {data && (
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-900">
+              Similarity Matrix
+            </h2>
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <span>Low Similarity</span>
+              <div className="w-32 h-4 bg-gradient-to-r from-blue-50 to-blue-800 border border-gray-300 rounded"></div>
+              <span>High Similarity</span>
+            </div>
           </div>
-        )}
 
-        {isLoading && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800">Loading similarity data...</p>
-          </div>
-        )}
-
-        {data && (
-          <div className="flex justify-center overflow-auto border border-gray-300 rounded-lg bg-white mb-6">
+          <div className="flex justify-center overflow-auto border border-gray-200 rounded-lg bg-gray-50">
             <svg ref={svgRef} id="matrix"></svg>
           </div>
-        )}
 
-        {data && (
-          <>
-            <div className="flex justify-center items-center mb-4 gap-6">
-              <div className="flex items-center gap-3">
-                <span className="text-sm">Low Similarity</span>
-                <div className="w-48 h-5 bg-gradient-to-r from-blue-50 to-blue-800 border border-gray-300 rounded"></div>
-                <span className="text-sm">High Similarity</span>
+          {/* Statistics */}
+          <div className="flex justify-center gap-8 mt-6 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {data.speeches.length}
               </div>
+              <div className="text-sm text-gray-600">Total Speeches</div>
             </div>
-
-            <div className="flex justify-center gap-8 mt-6 text-sm text-gray-600">
-              <div className="text-center">
-                <div className="text-lg font-bold text-gray-800">
-                  {data.speeches.length}
-                </div>
-                <div>Total Speeches</div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">
+                {data.similarities.length}
               </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-gray-800">
-                  {data.similarities.length}
-                </div>
-                <div>Similarity Pairs</div>
-              </div>
+              <div className="text-sm text-gray-600">Similarity Pairs</div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
+      )}
 
-        <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">About This Analysis</h2>
-          <p className="text-gray-700 mb-4">
+      {/* Information Section */}
+      <InfoBlock title="About This Analysis">
+        <div className="space-y-4">
+          <p className="text-gray-700">
             This interactive matrix shows semantic similarities between UN
             General Assembly speeches. Each cell represents the similarity
             between two speeches, with darker blue indicating higher similarity.
             The similarity is calculated using cosine similarity between speech
-            embeddings.
+            embeddings generated by advanced language models.
           </p>
-          <p className="text-gray-700">
-            <strong>How to use:</strong> Adjust the year, minimum similarity
-            threshold, and maximum number of speeches using the controls above.
-            Use the view threshold slider to filter which similarities are
-            displayed, and adjust cell size for better visibility. Hover over
-            cells to see detailed comparisons between speeches.
-          </p>
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">How to use:</h3>
+            <ul className="text-gray-700 space-y-1 list-disc list-inside">
+              <li>
+                Adjust the year, minimum similarity threshold, and maximum
+                number of speeches using the controls above
+              </li>
+              <li>
+                Use the view threshold slider to filter which similarities are
+                displayed in the matrix
+              </li>
+              <li>
+                Adjust cell size for better visibility depending on your screen
+                size
+              </li>
+              <li>
+                Hover over cells to see detailed comparisons between speeches
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
+      </InfoBlock>
 
       <div
         ref={tooltipRef}
