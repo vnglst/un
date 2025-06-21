@@ -60,6 +60,9 @@ export default function Header() {
             <Link to="/" className={getNavLinkClass('/')}>
               Browse
             </Link>
+            <Link to="/analysis" className={getNavLinkClass('/analysis')}>
+              Analysis
+            </Link>
             <Link to="/globe" className={getNavLinkClass('/globe')}>
               Globe
             </Link>
@@ -92,6 +95,13 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Browse
+              </Link>
+              <Link
+                to="/analysis"
+                className={getMobileNavLinkClass('/analysis')}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Analysis
               </Link>
               <Link
                 to="/globe"

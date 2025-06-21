@@ -29,10 +29,6 @@
     "rag:stats": "node rag-ts/tests/verify-rag.ts stats",
     "rag:chat": "node rag-ts/runtime/rag-pipeline.ts",
     "rag:examples": "node rag-ts/tests/examples.ts",
-    "analysis:climate": "node analysis/run-climate-analysis.ts",
-    "analysis:country-clusters": "node analysis/run-country-clusters.ts",
-    "analysis:country-clusters-viz": "node analysis/country-clustering-visualization.ts",
-    "analysis:country-clusters-evolution": "node analysis/country-clustering-evolution-viz.ts",
     "analysis:speech-similarity": "node --experimental-strip-types analysis/speech-similarity-matrix-2024.ts"
   },
   "keywords": [],
