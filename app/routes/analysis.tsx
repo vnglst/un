@@ -1,10 +1,23 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import * as d3 from 'd3'
-import { Link, useSearchParams } from 'react-router'
+import {
+  Link,
+  useSearchParams,
+  useLoaderData,
+  useNavigation,
+  type LoaderFunctionArgs,
+} from 'react-router'
 import PageLayout from '../components/page-layout'
 import { Button } from '../components/ui/button'
 import { Select } from '../components/ui/select'
 import { InfoBlock } from '../components/ui/cards'
+import {
+  getSimilarityAnalysis,
+  getSimilarityCountries,
+  type SimilarityData,
+  type SpeechMetadata,
+} from '~/lib/database'
+import { logger, timeAsyncOperation } from '~/lib/logger'
 
 export function meta() {
   return [
@@ -17,23 +30,12 @@ export function meta() {
   ]
 }
 
-interface SpeechMetadata {
-  id: number
-  country: string
-  speaker: string
-  post: string
-  date: string
-  year: number
-}
-
-interface SimilarityData {
-  speeches: SpeechMetadata[]
-  similarities: Array<{
-    speech1_id: number
-    speech2_id: number
-    similarity: number
-  }>
-  matrix?: number[][]
+type LoaderData = {
+  data: SimilarityData
+  availableCountries: string[]
+  selectedCountries: string[]
+  selectedYear: number | null
+  threshold: number
 }
 
 // Default countries list - defined outside component to avoid re-renders
@@ -72,56 +74,107 @@ const DEFAULT_COUNTRIES = [
   'Poland',
 ]
 
+export async function loader({
+  request,
+}: LoaderFunctionArgs): Promise<LoaderData> {
+  const url = new URL(request.url)
+
+  logger.requestStart('GET', url.pathname, {
+    searchParams: Object.fromEntries(url.searchParams),
+  })
+
+  return timeAsyncOperation('analysis-loader', async () => {
+    const threshold = 0.3 // Fixed threshold
+    const selectedYear = url.searchParams.get('year')
+    const yearNum =
+      selectedYear && selectedYear !== 'all' ? parseInt(selectedYear, 10) : null
+
+    const selectedCountriesParam = url.searchParams.get('countries')
+    const selectedCountries = selectedCountriesParam
+      ? selectedCountriesParam.split(',').filter(Boolean)
+      : DEFAULT_COUNTRIES
+
+    logger.info('Analysis loader params', {
+      selectedYear,
+      yearNum,
+      selectedCountries: selectedCountries.length,
+      threshold,
+    })
+
+    // Get similarity data with matrix
+    const data = getSimilarityAnalysis(
+      selectedCountries,
+      yearNum || undefined,
+      threshold,
+      true
+    )
+
+    // Get available countries (exclude already selected ones)
+    const allAvailableCountries = getSimilarityCountries(
+      yearNum || undefined,
+      threshold
+    )
+    const availableCountries = allAvailableCountries.filter(
+      (country) => !selectedCountries.includes(country)
+    )
+
+    logger.info('Analysis loader completed', {
+      speechCount: data.speeches.length,
+      similarityCount: data.similarities.length,
+      availableCountriesCount: availableCountries.length,
+    })
+
+    return {
+      data,
+      availableCountries,
+      selectedCountries,
+      selectedYear: yearNum,
+      threshold,
+    }
+  })
+}
+
 export default function Analysis() {
+  const {
+    data,
+    availableCountries: initialAvailableCountries,
+    selectedCountries: initialSelectedCountries,
+    selectedYear: initialSelectedYear,
+  } = useLoaderData<LoaderData>()
+
+  const navigation = useNavigation()
+  const isLoading = navigation.state === 'loading'
+
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [data, setData] = useState<SimilarityData | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   // URL-based state management
   const [searchParams, setSearchParams] = useSearchParams()
-  const [isInitialized, setIsInitialized] = useState(false)
 
-  // Fixed thresholds (no longer user-configurable)
-  const threshold = 0.3 // Lower threshold to include more similarities
-
-  // Get state from URL or use defaults
-  const selectedYear = searchParams.get('year') || '2024'
+  // Get state from URL or use loader defaults
+  const selectedYear =
+    searchParams.get('year') ||
+    (initialSelectedYear ? initialSelectedYear.toString() : '2024')
   const selectedCountriesParam = searchParams.get('countries')
 
   // Use useMemo to prevent selectedCountries from changing on every render
   const selectedCountries = useMemo(() => {
     return selectedCountriesParam
       ? selectedCountriesParam.split(',').filter(Boolean)
-      : DEFAULT_COUNTRIES
-  }, [selectedCountriesParam])
+      : initialSelectedCountries
+  }, [selectedCountriesParam, initialSelectedCountries])
 
-  const [availableCountries, setAvailableCountries] = useState<string[]>([])
+  const [availableCountries, setAvailableCountries] = useState<string[]>(
+    initialAvailableCountries
+  )
   const [countryToAdd, setCountryToAdd] = useState<string>('')
 
   const cellSize = 28
 
-  // Initialize URL params on first load if they're missing
+  // Update available countries when loader data changes
   useEffect(() => {
-    if (!isInitialized) {
-      const needsInit =
-        !searchParams.has('year') || !searchParams.has('countries')
-
-      if (needsInit) {
-        const newParams = new URLSearchParams(searchParams)
-        if (!newParams.has('year')) {
-          newParams.set('year', '2024')
-        }
-        if (!newParams.has('countries')) {
-          newParams.set('countries', DEFAULT_COUNTRIES.join(','))
-        }
-        setSearchParams(newParams, { replace: true })
-      }
-
-      setIsInitialized(true)
-    }
-  }, [searchParams, setSearchParams, isInitialized])
+    setAvailableCountries(initialAvailableCountries)
+  }, [initialAvailableCountries])
 
   // Helper function to update URL params
   const updateSearchParams = useCallback(
@@ -159,74 +212,6 @@ export default function Analysis() {
     [updateSearchParams]
   )
 
-  const loadData = useCallback(async () => {
-    if (!isInitialized) return
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const params = new URLSearchParams({
-        format: 'matrix',
-        threshold: threshold.toString(),
-        countries: selectedCountries.join(','),
-      })
-
-      if (selectedYear && selectedYear !== 'all') {
-        params.set('year', selectedYear)
-      }
-
-      const response = await fetch(`/api/similarities?${params}`)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result: SimilarityData = await response.json()
-
-      if ('error' in result) {
-        throw new Error(result.error as string)
-      }
-
-      setData(result)
-      console.log('Loaded similarity data:', result.speeches.length, 'speeches')
-    } catch (err) {
-      console.error('Error loading data:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load data')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [selectedYear, selectedCountries, isInitialized])
-
-  const loadAvailableCountries = useCallback(async () => {
-    if (!isInitialized) return
-
-    try {
-      const params = new URLSearchParams({
-        format: 'countries',
-      })
-
-      if (selectedYear && selectedYear !== 'all') {
-        params.set('year', selectedYear)
-      }
-
-      const response = await fetch(`/api/similarities?${params}`)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-      if (result.countries) {
-        setAvailableCountries(
-          result.countries.filter(
-            (country: string) => !selectedCountries.includes(country)
-          )
-        )
-      }
-    } catch (err) {
-      console.error('Error loading available countries:', err)
-    }
-  }, [selectedYear, selectedCountries, isInitialized])
-
   const addCountry = (country: string) => {
     if (country && !selectedCountries.includes(country)) {
       setSelectedCountries([...selectedCountries, country])
@@ -241,14 +226,6 @@ export default function Analysis() {
       setAvailableCountries([...availableCountries, country].sort())
     }
   }
-
-  useEffect(() => {
-    loadData()
-  }, [loadData]) // Reload when controls change
-
-  useEffect(() => {
-    loadAvailableCountries()
-  }, [loadAvailableCountries]) // Load available countries when year or selected countries change
 
   const initializeVisualization = useCallback(
     (speeches: SpeechMetadata[], matrix: number[][]) => {
@@ -535,12 +512,6 @@ export default function Analysis() {
       </div>
 
       {/* Status Messages */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800">Error: {error}</p>
-        </div>
-      )}
-
       {isLoading && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-blue-800">Loading similarity data...</p>

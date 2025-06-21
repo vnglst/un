@@ -783,6 +783,205 @@ export function searchSpeechesWithHighlights(
 // SIMILARITY FUNCTIONS
 // =============================================================================
 
+export interface SpeechMetadata {
+  id: number
+  country: string
+  speaker: string
+  post: string
+  date: string
+  year: number
+}
+
+export interface SimilarityData {
+  speeches: SpeechMetadata[]
+  similarities: Array<{
+    speech1_id: number
+    speech2_id: number
+    similarity: number
+  }>
+  matrix?: number[][]
+}
+
+/**
+ * Get available countries for similarity analysis
+ */
+export function getSimilarityCountries(
+  year?: number,
+  threshold: number = 0.3
+): string[] {
+  const context: LogContext = {
+    year,
+    threshold,
+    operation: 'getSimilarityCountries',
+  }
+
+  return timeOperation('getSimilarityCountries', () => {
+    let countryQuery = `
+      SELECT DISTINCT COALESCE(s.country_name, s.country_code) as country
+      FROM speeches s
+      WHERE EXISTS (
+        SELECT 1 FROM speech_similarities ss 
+        WHERE (ss.speech1_id = s.id OR ss.speech2_id = s.id)
+        AND ss.similarity >= ?
+      )
+    `
+    const countryParams: (number | string)[] = [threshold]
+
+    if (year) {
+      countryQuery += ' AND s.year = ?'
+      countryParams.push(year)
+    }
+
+    countryQuery += ' ORDER BY country'
+
+    const results = db.prepare(countryQuery).all(...countryParams) as {
+      country: string
+    }[]
+
+    logger.info('Retrieved similarity countries', {
+      ...context,
+      count: results.length,
+    })
+
+    return results.map((r) => r.country)
+  })
+}
+
+/**
+ * Get similarity analysis data for specified countries and year
+ */
+export function getSimilarityAnalysis(
+  countries: string[],
+  year?: number,
+  threshold: number = 0.3,
+  includeMatrix: boolean = false
+): SimilarityData {
+  const context: LogContext = {
+    countries,
+    year,
+    threshold,
+    includeMatrix,
+    operation: 'getSimilarityAnalysis',
+  }
+
+  return timeOperation('getSimilarityAnalysis', () => {
+    // Get speeches for the selected countries and year - limit to 2 per country to avoid performance issues
+    let speechQuery = `
+      SELECT DISTINCT
+        s.id,
+        COALESCE(s.country_name, s.country_code) as country,
+        s.speaker,
+        s.post,
+        s.year || '-01-01' as date,
+        s.year
+      FROM speeches s
+      WHERE 1=1
+    `
+
+    const params: (number | string)[] = []
+
+    if (year) {
+      speechQuery += ` AND s.year = ?`
+      params.push(year)
+    }
+
+    // Filter by countries if provided
+    if (countries.length > 0) {
+      const countryPlaceholders = countries.map(() => '?').join(',')
+      speechQuery += ` AND COALESCE(s.country_name, s.country_code) IN (${countryPlaceholders})`
+      params.push(...countries)
+    }
+
+    speechQuery += ` ORDER BY COALESCE(s.country_name, s.country_code), s.year DESC`
+
+    const allSpeeches = db.prepare(speechQuery).all(...params) as SpeechMetadata[]
+
+    // Limit to 2 speeches per country to avoid performance issues
+    const speechesByCountry = new Map<string, SpeechMetadata[]>()
+    for (const speech of allSpeeches) {
+      if (!speechesByCountry.has(speech.country)) {
+        speechesByCountry.set(speech.country, [])
+      }
+      const countrySpeeches = speechesByCountry.get(speech.country)!
+      if (countrySpeeches.length < 2) {
+        countrySpeeches.push(speech)
+      }
+    }
+
+    const speeches = Array.from(speechesByCountry.values()).flat()
+
+    if (speeches.length === 0) {
+      logger.info('No speeches found for similarity analysis', context)
+      return { speeches: [], similarities: [] }
+    }
+
+    // Get similarities for these speeches
+    const speechIds = speeches.map((s) => s.id)
+    const placeholders = speechIds.map(() => '?').join(',')
+
+    const similarityQuery = `
+      SELECT speech1_id, speech2_id, similarity
+      FROM speech_similarities
+      WHERE speech1_id IN (${placeholders})
+        AND speech2_id IN (${placeholders})
+        AND similarity >= ?
+      ORDER BY similarity DESC
+    `
+
+    const similarities = db
+      .prepare(similarityQuery)
+      .all(...speechIds, ...speechIds, threshold) as Array<{
+      speech1_id: number
+      speech2_id: number
+      similarity: number
+    }>
+
+    const result: SimilarityData = {
+      speeches,
+      similarities,
+    }
+
+    // If matrix format is requested, convert to matrix
+    if (includeMatrix) {
+      const matrix: number[][] = Array(speeches.length)
+        .fill(null)
+        .map(() => Array(speeches.length).fill(0))
+
+      // Create speech ID to index mapping
+      const idToIndex = new Map<number, number>()
+      speeches.forEach((speech, index) => {
+        idToIndex.set(speech.id, index)
+      })
+
+      // Fill the matrix with similarity data
+      similarities.forEach(({ speech1_id, speech2_id, similarity }) => {
+        const index1 = idToIndex.get(speech1_id)
+        const index2 = idToIndex.get(speech2_id)
+
+        if (index1 !== undefined && index2 !== undefined) {
+          matrix[index1][index2] = similarity
+          matrix[index2][index1] = similarity // Symmetric matrix
+        }
+      })
+
+      // Set diagonal to 1 (self-similarity)
+      for (let i = 0; i < speeches.length; i++) {
+        matrix[i][i] = 1
+      }
+
+      result.matrix = matrix
+    }
+
+    logger.info('Retrieved similarity analysis', {
+      ...context,
+      speechCount: speeches.length,
+      similarityCount: similarities.length,
+    })
+
+    return result
+  })
+}
+
 export interface SimilarityComparison {
   speech1: {
     id: number
