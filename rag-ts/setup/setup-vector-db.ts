@@ -228,12 +228,18 @@ async function processSpeeches(
 ): Promise<void> {
   console.log('📝 Processing speeches (starting with most recent years)...')
 
-  // Get speeches to process for USA, prioritizing recent years and excluding already processed ones
+  // Get speeches to process, prioritizing recent years and excluding fully processed ones
   let query = `
-    SELECT s.id, s.country_name, s.speaker, s.year, s.session, s.text 
+    SELECT DISTINCT s.id, s.country_name, s.speaker, s.year, s.session, s.text 
     FROM speeches s
     LEFT JOIN speech_chunks c ON s.id = c.speech_id
-    WHERE c.speech_id IS NULL AND s.country_code = 'USA'
+    WHERE (
+      c.speech_id IS NULL OR 
+      EXISTS (
+        SELECT 1 FROM speech_chunks sc 
+        WHERE sc.speech_id = s.id AND sc.embedding_id IS NULL
+      )
+    )
     ORDER BY s.year DESC, s.session DESC, s.id ASC
   `
   if (limit) {
@@ -287,56 +293,164 @@ async function processSpeeches(
     )
 
     try {
-      // Split text into chunks
-      const chunks = chunkText(text)
-      console.log(`   Split into ${chunks.length} chunks`)
+      // Check if this speech already has chunks
+      const existingChunks = db
+        .prepare(
+          'SELECT id, chunk_text, chunk_index, embedding_id FROM speech_chunks WHERE speech_id = ? ORDER BY chunk_index'
+        )
+        .all(speechId) as Array<{
+        id: number
+        chunk_text: string
+        chunk_index: number
+        embedding_id: number | null
+      }>
 
-      // Process chunks in parallel batches
-      let successfulChunks = 0
+      if (existingChunks.length > 0) {
+        // Speech has chunks, process only those missing embeddings
+        const chunksNeedingEmbeddings = existingChunks.filter(
+          (chunk) => chunk.embedding_id === null
+        )
 
-      for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-        const batch = chunks.slice(i, i + BATCH_SIZE)
+        if (chunksNeedingEmbeddings.length === 0) {
+          console.log(`   ✅ All chunks already have embeddings, skipping`)
+          continue
+        }
+
         console.log(
-          `   Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(chunks.length / BATCH_SIZE)} (${batch.length} chunks)...`
+          `   Found ${existingChunks.length} existing chunks, ${chunksNeedingEmbeddings.length} need embeddings`
         )
 
-        const results = await processBatchOfChunks(
-          batch,
-          speechId,
-          insertChunk,
-          insertEmbedding,
-          updateChunkWithEmbeddingId,
-          i
+        // Process chunks needing embeddings in batches
+        let successfulChunks = 0
+
+        for (let i = 0; i < chunksNeedingEmbeddings.length; i += BATCH_SIZE) {
+          const batch = chunksNeedingEmbeddings.slice(i, i + BATCH_SIZE)
+          console.log(
+            `   Processing embedding batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(chunksNeedingEmbeddings.length / BATCH_SIZE)} (${batch.length} chunks)...`
+          )
+
+          const promises = batch.map(
+            async (chunkData): Promise<ChunkProcessResult> => {
+              try {
+                // Generate embedding for existing chunk
+                const embedding = await generateEmbedding(chunkData.chunk_text)
+
+                // Store embedding
+                const embeddingResult = insertEmbedding.run(
+                  JSON.stringify(embedding)
+                )
+                const embeddingId = embeddingResult.lastInsertRowid as number
+
+                // Update chunk with embedding ID
+                updateChunkWithEmbeddingId.run(embeddingId, chunkData.id)
+
+                return {
+                  success: true,
+                  chunkIndex: chunkData.chunk_index,
+                  chunkId: chunkData.id,
+                }
+              } catch (error) {
+                const errorMessage =
+                  error instanceof Error ? error.message : String(error)
+                console.error(
+                  `   ❌ Error processing chunk ${chunkData.chunk_index}:`,
+                  errorMessage
+                )
+                return {
+                  success: false,
+                  chunkIndex: chunkData.chunk_index,
+                  error: errorMessage,
+                }
+              }
+            }
+          )
+
+          const results = await Promise.all(promises)
+
+          // Count successful/failed chunks
+          const batchSuccessful = results.filter((r) => r.success).length
+          const batchFailed = results.filter((r) => !r.success).length
+
+          successfulChunks += batchSuccessful
+
+          if (batchFailed > 0) {
+            console.log(
+              `   ⚠️  Batch completed with ${batchSuccessful} successful, ${batchFailed} failed`
+            )
+          } else {
+            console.log(
+              `   ✅ Batch completed successfully (${batchSuccessful} embeddings)`
+            )
+          }
+
+          totalChunks += batchSuccessful
+
+          // Add delay between batches to respect rate limits
+          if (i + BATCH_SIZE < chunksNeedingEmbeddings.length) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, RATE_LIMIT_DELAY)
+            )
+          }
+        }
+
+        processedCount++
+        console.log(
+          `✅ Completed speech ${speechId} embeddings (${successfulChunks}/${chunksNeedingEmbeddings.length} embeddings successful)`
         )
+      } else {
+        // Speech has no chunks, create chunks and embeddings from scratch
+        const chunks = chunkText(text)
+        console.log(`   Split into ${chunks.length} chunks`)
 
-        // Count successful/failed chunks
-        const batchSuccessful = results.filter((r) => r.success).length
-        const batchFailed = results.filter((r) => !r.success).length
+        // Process chunks in parallel batches
+        let successfulChunks = 0
 
-        successfulChunks += batchSuccessful
-
-        if (batchFailed > 0) {
+        for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+          const batch = chunks.slice(i, i + BATCH_SIZE)
           console.log(
-            `   ⚠️  Batch completed with ${batchSuccessful} successful, ${batchFailed} failed`
+            `   Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(chunks.length / BATCH_SIZE)} (${batch.length} chunks)...`
           )
-        } else {
-          console.log(
-            `   ✅ Batch completed successfully (${batchSuccessful} chunks)`
+
+          const results = await processBatchOfChunks(
+            batch,
+            speechId,
+            insertChunk,
+            insertEmbedding,
+            updateChunkWithEmbeddingId,
+            i
           )
+
+          // Count successful/failed chunks
+          const batchSuccessful = results.filter((r) => r.success).length
+          const batchFailed = results.filter((r) => !r.success).length
+
+          successfulChunks += batchSuccessful
+
+          if (batchFailed > 0) {
+            console.log(
+              `   ⚠️  Batch completed with ${batchSuccessful} successful, ${batchFailed} failed`
+            )
+          } else {
+            console.log(
+              `   ✅ Batch completed successfully (${batchSuccessful} chunks)`
+            )
+          }
+
+          totalChunks += batchSuccessful
+
+          // Add delay between batches to respect rate limits
+          if (i + BATCH_SIZE < chunks.length) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, RATE_LIMIT_DELAY)
+            )
+          }
         }
 
-        totalChunks += batchSuccessful
-
-        // Add delay between batches to respect rate limits
-        if (i + BATCH_SIZE < chunks.length) {
-          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY))
-        }
+        processedCount++
+        console.log(
+          `✅ Completed speech ${speechId} (${successfulChunks}/${chunks.length} chunks successful)`
+        )
       }
-
-      processedCount++
-      console.log(
-        `✅ Completed speech ${speechId} (${successfulChunks}/${chunks.length} chunks successful)`
-      )
 
       // Small delay between speeches
       await new Promise((resolve) => setTimeout(resolve, 50))
