@@ -299,6 +299,7 @@ export default function Analysis() {
         speeches.length * actualCellSize +
         responsiveMargin.left +
         responsiveMargin.right
+
       const height =
         speeches.length * actualCellSize +
         responsiveMargin.top +
@@ -336,7 +337,9 @@ export default function Analysis() {
         .attr('y', (d) => d.i * actualCellSize)
         .attr('width', actualCellSize)
         .attr('height', actualCellSize)
-        .attr('fill', (d) => colorScale(d.similarity))
+        .attr('fill', (d) =>
+          d.similarity === 1 ? primaryColor : colorScale(d.similarity)
+        )
         .style('cursor', 'pointer')
         .style('stroke', 'white')
         .style('stroke-width', '0.5')
@@ -344,14 +347,14 @@ export default function Analysis() {
           d3.select(this).style('stroke', '#333').style('stroke-width', '2')
 
           const tooltipHtml = `
-        <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
-        <br/>
-        <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
-        <em>${d.speech1.post}</em><br/>
-        <br/>
-        <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
-        <em>${d.speech2.post}</em>
-      `
+      <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
+      <br/>
+      <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
+      <em>${d.speech1.post}</em><br/>
+      <br/>
+      <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
+      <em>${d.speech2.post}</em>
+    `
 
           tooltip
             .html(tooltipHtml)
