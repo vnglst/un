@@ -29,7 +29,11 @@
     "rag:stats": "node rag-ts/tests/verify-rag.ts stats",
     "rag:chat": "node rag-ts/runtime/rag-pipeline.ts",
     "rag:examples": "node rag-ts/tests/examples.ts",
-    "analysis:climate": "node analysis/run-climate-analysis.ts"
+    "analysis:climate": "node analysis/run-climate-analysis.ts",
+    "analysis:country-clusters": "node analysis/run-country-clusters.ts",
+    "analysis:country-clusters-viz": "node analysis/country-clustering-visualization.ts",
+    "analysis:country-clusters-evolution": "node analysis/country-clustering-evolution-viz.ts",
+    "analysis:speech-similarity": "node --experimental-strip-types analysis/speech-similarity-matrix-2024.ts"
   },
   "keywords": [],
   "author": "",
@@ -62,6 +66,7 @@
     "tailwindcss": "^4.1.8",
     "topojson-client": "^3.1.0",
     "typescript": "^5.8.3",
+    "umap-js": "^1.4.0",
     "vite": "^6.3.5"
   },
   "devDependencies": {
