@@ -117,10 +117,6 @@ export default function SimilarityComparison() {
                 <strong>Position:</strong> {data.speech1.post}
               </p>
               <p>
-                <strong>Date:</strong>{' '}
-                {new Date(data.speech1.date).toLocaleDateString()}
-              </p>
-              <p>
                 <strong>Year:</strong> {data.speech1.year}
               </p>
             </div>
@@ -143,10 +139,6 @@ export default function SimilarityComparison() {
               </p>
               <p>
                 <strong>Position:</strong> {data.speech2.post}
-              </p>
-              <p>
-                <strong>Date:</strong>{' '}
-                {new Date(data.speech2.date).toLocaleDateString()}
               </p>
               <p>
                 <strong>Year:</strong> {data.speech2.year}
