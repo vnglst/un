@@ -1113,7 +1113,7 @@ export function getSimilarityComparison(
           WHERE c1.speech_id = ?
             AND c1.embedding_id IS NOT NULL 
             AND c2.embedding_id IS NOT NULL
-            AND (1 - vec_distance_cosine(e1.embedding, e2.embedding)) >= 0.3
+            AND (1 - vec_distance_cosine(e1.embedding, e2.embedding)) >= 0.1
         )
         SELECT 
           chunk1_text,

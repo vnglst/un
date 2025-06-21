@@ -84,7 +84,7 @@ export async function loader({
   })
 
   return timeAsyncOperation('analysis-loader', async () => {
-    const threshold = 0.3 // Fixed threshold
+    const threshold = 0.3
     const selectedYear = url.searchParams.get('year') || '2024'
     const yearNum =
       selectedYear && selectedYear !== 'all' ? parseInt(selectedYear, 10) : null
