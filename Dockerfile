@@ -1,5 +1,5 @@
-# Use Node.js LTS Alpine for smaller image size
-FROM node:22-alpine AS base
+# Use Node.js 23 Alpine for smaller image size
+FROM node:23-alpine AS base
 
 # Install dependencies needed for native modules
 RUN apk add --no-cache python3 make g++ sqlite
@@ -12,7 +12,8 @@ COPY package.json package-lock.json* ./
 
 # Install dependencies
 FROM base AS deps
-RUN npm ci --only=production
+# Set npm to use platform-appropriate binaries
+RUN npm ci --omit=dev
 
 # Build stage
 FROM base AS build
@@ -26,7 +27,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine AS runtime
+FROM node:23-alpine AS runtime
 
 # Install sqlite and curl for runtime (before switching to non-root user)
 RUN apk add --no-cache sqlite curl
