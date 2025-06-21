@@ -45,7 +45,7 @@ export default function Header() {
           {/* Logo and title */}
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
-              <Globe className="h-8 w-8 text-[#009edb]" />
+              <Globe className="h-8 w-8 text-gray-600" />
               <Link
                 to="/"
                 className="text-2xl font-bold text-gray-900 tracking-tight"
@@ -62,6 +62,9 @@ export default function Header() {
             </Link>
             <Link to="/globe" className={getNavLinkClass('/globe')}>
               Globe
+            </Link>
+            <Link to="/rag" className={getNavLinkClass('/rag')}>
+              AI Chat
             </Link>
           </nav>
 
@@ -96,6 +99,13 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Globe
+              </Link>
+              <Link
+                to="/rag"
+                className={getMobileNavLinkClass('/rag')}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                AI Chat
               </Link>
             </nav>
           </div>

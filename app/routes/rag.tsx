@@ -11,7 +11,16 @@ import { Button } from '~/components/ui/button'
 import { Card } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { Select } from '~/components/ui/select'
+import { ServiceCard } from '~/components/ui/cards'
 import { logger, timeAsyncOperation } from '~/lib/logger'
+import {
+  MessageSquare,
+  Brain,
+  Search,
+  Filter,
+  Send,
+  RotateCcw,
+} from 'lucide-react'
 
 interface RAGResponse {
   question: string
@@ -55,7 +64,7 @@ type ActionData = { success: true; result: RAGResponse } | { error: string }
 
 export function meta() {
   return [
-    { title: 'RAG Chat - UN Speeches' },
+    { title: 'AI Chat - UN Speeches' },
     {
       name: 'description',
       content:
@@ -100,50 +109,43 @@ export async function action({
   logger.requestStart('POST', url.pathname, {})
 
   return timeAsyncOperation('rag-action', async () => {
-    const formData = await request.formData()
-    const question = formData.get('question') as string
-    const country = formData.get('country') as string
-    const yearFrom = formData.get('yearFrom') as string
-    const yearTo = formData.get('yearTo') as string
-    const searchLimit = formData.get('searchLimit') as string
-
-    logger.info('RAG query received', {
-      questionLength: question?.length || 0,
-      country: country || 'all',
-      yearFrom: yearFrom || 'none',
-      yearTo: yearTo || 'none',
-      searchLimit: searchLimit || '5',
-    })
-
-    if (!question?.trim()) {
-      logger.warn('RAG query failed - missing question')
-      throw new Response('Question is required', { status: 400 })
-    }
-
-    if (!process.env.OPENAI_API_KEY) {
-      logger.warn('RAG query failed - OpenAI API key not configured')
-      throw new Response('OpenAI API key is not configured', { status: 500 })
-    }
-
     try {
-      // Dynamic import to avoid loading RAG modules if not needed
+      const { ragQuery } = await import('../../rag-ts/runtime/rag-pipeline.ts')
       const { initDatabase } = await import(
         '../../rag-ts/runtime/vector-search.ts'
       )
-      const { ragQuery } = await import('../../rag-ts/runtime/rag-pipeline.ts')
+
+      const formData = await request.formData()
+      const question = formData.get('question') as string
+      const country = formData.get('country') as string
+      const yearFrom = formData.get('yearFrom') as string
+      const yearTo = formData.get('yearTo') as string
+      const searchLimit = formData.get('searchLimit') as string
+
+      if (!question?.trim()) {
+        return { error: 'Question is required' }
+      }
+
+      logger.info('Processing RAG query', {
+        question:
+          question.substring(0, 100) + (question.length > 100 ? '...' : ''),
+        country: country !== 'all' ? country : undefined,
+        yearFrom,
+        yearTo,
+        searchLimit,
+      })
 
       const db = await initDatabase()
 
-      // Build filters
       const filters: Record<string, unknown> = {}
       if (country && country !== 'all') {
         filters.country = country
       }
       if (yearFrom) {
-        filters.year_from = parseInt(yearFrom)
+        filters.yearFrom = parseInt(yearFrom)
       }
       if (yearTo) {
-        filters.year_to = parseInt(yearTo)
+        filters.yearTo = parseInt(yearTo)
       }
 
       const options = {
@@ -198,49 +200,17 @@ export default function RAGPage() {
   const [searchLimit, setSearchLimit] = useState('5')
   const [showFilters, setShowFilters] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const lastProcessedActionData = useRef<ActionData | null>(null)
 
   const isLoading = navigation.state === 'submitting'
-
-  // Log component mount and RAG availability
-  useEffect(() => {
-    logger.info('RAG page loaded', {
-      ragAvailable,
-    })
-  }, [ragAvailable])
-
-  // Log filter changes
-  useEffect(() => {
-    if (showFilters) {
-      logger.info('RAG filters shown', {
-        country,
-        yearFrom,
-        yearTo,
-        searchLimit,
-      })
-    }
-  }, [showFilters, country, yearFrom, yearTo, searchLimit])
 
   // Scroll to bottom when new messages are added
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [conversation])
+  }, [conversation, isLoading])
 
-  // Handle successful response
+  // Handle new action data
   useEffect(() => {
-    if (actionData && 'success' in actionData && actionData.success) {
-      // Prevent processing the same actionData twice
-      if (lastProcessedActionData.current === actionData) {
-        return
-      }
-      lastProcessedActionData.current = actionData
-
-      logger.info('RAG response processed', {
-        answerLength: actionData.result.answer.length,
-        sourceCount: actionData.result.sources.length,
-        conversationLength: conversation.length + 2, // +2 for new user and assistant messages
-      })
-
+    if (actionData && 'success' in actionData && question.trim()) {
       const userMessage: ConversationMessage = {
         id: Date.now().toString(),
         type: 'user',
@@ -277,187 +247,240 @@ export default function RAGPage() {
   if (!ragAvailable) {
     return (
       <PageLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6">
-              RAG Chat - Configuration Required
-            </h1>
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-4">
-                RAG System Not Available
-              </h2>
-              <p className="text-gray-600 mb-4">
-                The RAG (Retrieval-Augmented Generation) system requires an
-                OpenAI API key to function.
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Setup Instructions:</h3>
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>
-                      Get an OpenAI API key from{' '}
-                      <a
-                        href="https://platform.openai.com/api-keys"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        OpenAI Platform
-                      </a>
-                    </li>
-                    <li>
-                      Create a{' '}
-                      <code className="bg-gray-100 px-1 rounded">.env</code>{' '}
-                      file in the project root
-                    </li>
-                    <li>
-                      Add:{' '}
-                      <code className="bg-gray-100 px-1 rounded">
-                        OPENAI_API_KEY=your_api_key_here
-                      </code>
-                    </li>
-                    <li>
-                      Run:{' '}
-                      <code className="bg-gray-100 px-1 rounded">
-                        npm run rag:setup
-                      </code>{' '}
-                      to initialize the vector database
-                    </li>
-                    <li>Restart the development server</li>
-                  </ol>
-                </div>
-              </div>
-            </Card>
+        <div className="py-4">
+          <div className="flex items-center text-sm text-gray-600">
+            <Link to="/" className="hover:text-[#009edb] transition-colors">
+              HOME
+            </Link>
+            <span className="mx-2">&gt;</span>
+            <span className="text-gray-900 font-medium">AI CHAT</span>
           </div>
+        </div>
+
+        <div className="py-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            AI Chat - Configuration Required
+          </h1>
+          <Card className="p-8">
+            <h2 className="text-2xl font-bold mb-4">
+              RAG System Not Available
+            </h2>
+            <p className="text-gray-600 mb-6">
+              The RAG (Retrieval-Augmented Generation) system requires an OpenAI
+              API key to function.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">Setup Instructions:</h3>
+                <ol className="list-decimal list-inside space-y-2 text-sm">
+                  <li>
+                    Get an OpenAI API key from{' '}
+                    <a
+                      href="https://platform.openai.com/api-keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#009edb] hover:underline"
+                    >
+                      OpenAI Platform
+                    </a>
+                  </li>
+                  <li>
+                    Add it to your environment variables as OPENAI_API_KEY
+                  </li>
+                  <li>Restart the development server</li>
+                </ol>
+              </div>
+            </div>
+          </Card>
         </div>
       </PageLayout>
     )
   }
 
   return (
-    <PageLayout>
-      <div className="space-y-6">
-        {/* Chat Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">RAG Chat</h1>
-          <p className="text-gray-600">
-            Ask questions about UN General Assembly speeches and get AI-powered
-            answers based on semantic search across the speech database.
-          </p>
+    <PageLayout className="space-y-0 py-0">
+      {/* Breadcrumb Navigation */}
+      <div className="py-4">
+        <div className="flex items-center text-sm text-gray-600">
+          <Link to="/" className="hover:text-[#009edb] transition-colors">
+            HOME
+          </Link>
+          <span className="mx-2">&gt;</span>
+          <span className="text-gray-900 font-medium">AI CHAT</span>
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <div className="py-12">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          AI-Powered UN Speeches Chat
+        </h1>
+        <p className="text-lg text-gray-700 mb-6 max-w-4xl">
+          Ask questions about UN General Assembly speeches and get AI-powered
+          answers based on semantic search across our comprehensive database.
+          Explore diplomatic discourse through intelligent conversation.
+        </p>
+      </div>
+
+      {/* Features Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <ServiceCard
+          title="Semantic Search"
+          description="Advanced AI-powered search that understands context and meaning, not just keywords."
+          icon={<Brain className="h-6 w-6 text-gray-600" />}
+        />
+
+        <ServiceCard
+          title="Intelligent Answers"
+          description="Get comprehensive answers backed by relevant UN speech excerpts and sources."
+          icon={<MessageSquare className="h-6 w-6 text-gray-600" />}
+        />
+
+        <ServiceCard
+          title="Filtered Search"
+          description="Narrow down results by country, year, or session to get more targeted insights."
+          icon={<Search className="h-6 w-6 text-gray-600" />}
+        />
+      </div>
+
+      {/* Chat Interface */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-12">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Chat Interface</h2>
+            {conversation.length > 0 && (
+              <Button
+                onClick={clearConversation}
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Clear Chat
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Messages Area */}
-        <div className="border border-gray-200 rounded p-6 space-y-4 min-h-[400px]">
+        <div className="p-6 min-h-[500px] max-h-[600px] overflow-y-auto bg-gray-50">
           {conversation.length === 0 ? (
-            <div className="text-center text-gray-500 py-12">
-              <div className="max-w-md mx-auto">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Welcome to RAG Chat
+            <div className="text-center py-16">
+              <div className="max-w-lg mx-auto">
+                <div className="w-16 h-16 bg-[#009edb] rounded-lg flex items-center justify-center mx-auto mb-6">
+                  <MessageSquare className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">
+                  Welcome to AI Chat
                 </h3>
-                <p className="mb-6">
-                  Start a conversation by asking a question about UN speeches.
+                <p className="text-gray-600 mb-8">
+                  Ask questions about UN General Assembly speeches and get
+                  intelligent answers powered by semantic search and AI
+                  analysis.
                 </p>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-700 mb-3">
-                    Example questions:
+                <div className="bg-white rounded-lg p-6 text-left shadow-sm border border-gray-200">
+                  <p className="text-sm font-semibold text-gray-900 mb-4">
+                    Try asking questions like:
                   </p>
-                  <ul className="text-sm space-y-2 text-gray-600">
-                    <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      "What did countries say about climate change?"
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      "How has the discussion on nuclear weapons evolved?"
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-blue-500 mr-2">•</span>
-                      "What are the main concerns about global security?"
-                    </li>
-                  </ul>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-[#009edb] rounded-full mt-2 flex-shrink-0"></div>
+                      <p className="text-sm text-gray-700">
+                        "What did countries say about climate change in recent
+                        years?"
+                      </p>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-[#009edb] rounded-full mt-2 flex-shrink-0"></div>
+                      <p className="text-sm text-gray-700">
+                        "How has the discussion on nuclear weapons evolved over
+                        time?"
+                      </p>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-[#009edb] rounded-full mt-2 flex-shrink-0"></div>
+                      <p className="text-sm text-gray-700">
+                        "What are the main concerns about global security
+                        mentioned by African countries?"
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
-            conversation.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+            <div className="space-y-6">
+              {conversation.map((message) => (
                 <div
-                  className={`max-w-[75%] rounded-xl px-4 py-3 ${
-                    message.type === 'user'
-                      ? 'bg-blue-600 text-white ml-4'
-                      : 'bg-gray-100 text-gray-900 mr-4'
-                  }`}
+                  key={message.id}
+                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="whitespace-pre-wrap leading-relaxed">
-                    {message.content}
-                  </div>
-
-                  {/* Show sources for assistant messages */}
-                  {message.type === 'assistant' && message.ragResponse && (
-                    <div className="mt-3 pt-3 border-t border-gray-300">
-                      <details className="text-sm">
-                        <summary className="cursor-pointer font-medium mb-2">
-                          Sources ({message.ragResponse.sources.length})
-                        </summary>
-                        <div className="space-y-2">
-                          {message.ragResponse.sources.map((source) => (
-                            <div
-                              key={source.chunk_id}
-                              className="bg-white p-2 rounded border"
-                            >
-                              <div className="font-medium text-xs mb-1 flex items-center justify-between">
-                                <span>
-                                  {source.country} ({source.year}) -{' '}
-                                  {source.speaker}
-                                </span>
-                                <Link
-                                  to={`/speech/${source.speech_id}`}
-                                  className="text-blue-600 hover:text-blue-800 hover:underline ml-2"
-                                  target="_blank"
-                                >
-                                  View Speech
-                                </Link>
-                              </div>
-                              <div className="text-xs text-gray-600 mb-2">
-                                {source.preview}
-                              </div>
-                              <div className="text-xs text-gray-500 flex items-center justify-between">
-                                <span>
-                                  Similarity: {(1 - source.distance).toFixed(3)}
-                                </span>
-                                <span className="text-gray-400">
-                                  Speech ID: {source.speech_id}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-2 text-xs text-gray-500">
-                          Model: {message.ragResponse.metadata.model} | Tokens:{' '}
-                          {message.ragResponse.metadata.usage?.total_tokens ||
-                            'N/A'}
-                        </div>
-                      </details>
+                  <div
+                    className={`max-w-[85%] rounded-lg px-6 py-4 ${
+                      message.type === 'user'
+                        ? 'bg-[#009edb] text-white'
+                        : 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                    }`}
+                  >
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {message.content}
                     </div>
-                  )}
 
-                  <div className="text-xs opacity-75 mt-2">
-                    {message.timestamp.toLocaleTimeString()}
+                    {/* Show sources for assistant messages */}
+                    {message.type === 'assistant' && message.ragResponse && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <p className="text-sm font-semibold text-gray-900 mb-3">
+                          Sources ({message.ragResponse.sources.length}):
+                        </p>
+                        <div className="space-y-2">
+                          {message.ragResponse.sources
+                            .slice(0, 3)
+                            .map((source) => (
+                              <Link
+                                key={source.speech_id}
+                                to={`/speech/${source.speech_id}`}
+                                className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                <div className="text-xs text-gray-600 mb-1">
+                                  {source.country} • {source.year} •{' '}
+                                  {source.speaker}
+                                </div>
+                                <div className="text-sm text-gray-800 line-clamp-2">
+                                  {source.preview}
+                                </div>
+                              </Link>
+                            ))}
+                        </div>
+
+                        {message.ragResponse.metadata && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="text-xs text-gray-500">
+                              Model: {message.ragResponse.metadata.model} •
+                              {message.ragResponse.metadata.usage &&
+                                ` Tokens: ${message.ragResponse.metadata.usage.total_tokens} • `}
+                              Search results:{' '}
+                              {message.ragResponse.metadata.search_count}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="text-xs opacity-75 mt-2">
+                      {message.timestamp.toLocaleTimeString()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
 
           {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 text-gray-900 rounded-lg p-3 max-w-[80%]">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-                  <span>Thinking...</span>
+            <div className="flex justify-start mt-6">
+              <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-[85%] shadow-sm">
+                <div className="flex items-center space-x-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#009edb] border-t-transparent"></div>
+                  <span className="text-gray-700">AI is thinking...</span>
                 </div>
               </div>
             </div>
@@ -467,16 +490,16 @@ export default function RAGPage() {
         </div>
 
         {/* Input Form */}
-        <div className="border border-gray-200 rounded p-4">
+        <div className="p-6 border-t border-gray-200 bg-white">
           <Form method="post" onSubmit={handleSubmit} className="space-y-4">
             {/* Question Input */}
-            <div className="flex space-x-2">
+            <div className="flex space-x-3">
               <Input
                 name="question"
                 placeholder="Ask a question about UN speeches..."
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                className="flex-1"
+                className="flex-1 h-12 text-base"
                 disabled={isLoading}
               />
               <Button
@@ -484,82 +507,91 @@ export default function RAGPage() {
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
                 disabled={isLoading}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
+                <Filter className="h-4 w-4 mr-2" />
                 Filters
               </Button>
-              <Button type="submit" disabled={isLoading || !question.trim()}>
-                {isLoading ? 'Asking...' : 'Ask'}
+              <Button
+                type="submit"
+                disabled={isLoading || !question.trim()}
+                className="bg-[#009edb] hover:bg-[#009edb]/90 text-white px-6"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Asking...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Ask
+                  </>
+                )}
               </Button>
             </div>
 
-            {/* Filters */}
+            {/* Advanced Filters */}
             {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 bg-gray-50 rounded-lg border border-gray-200">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Country
                   </label>
                   <Select
                     name="country"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
+                    className="w-full"
                   >
-                    <option value="all">All Countries</option>
-                    <option value="United States">United States</option>
-                    <option value="China">China</option>
-                    <option value="Russia">Russia</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="France">France</option>
-                    <option value="Germany">Germany</option>
-                    <option value="Japan">Japan</option>
-                    <option value="India">India</option>
-                    <option value="Brazil">Brazil</option>
+                    <option value="all">All countries</option>
+                    {/* Add more countries as needed */}
                   </Select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Year From
                   </label>
                   <Input
                     name="yearFrom"
                     type="number"
-                    min="1946"
-                    max="2023"
-                    placeholder="1946"
+                    placeholder="e.g., 2020"
                     value={yearFrom}
                     onChange={(e) => setYearFrom(e.target.value)}
+                    min="1946"
+                    max="2024"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Year To
                   </label>
                   <Input
                     name="yearTo"
                     type="number"
-                    min="1946"
-                    max="2024"
-                    placeholder="2024"
+                    placeholder="e.g., 2024"
                     value={yearTo}
                     onChange={(e) => setYearTo(e.target.value)}
+                    min="1946"
+                    max="2024"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Search Limit
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Search Results
                   </label>
                   <Select
                     name="searchLimit"
                     value={searchLimit}
                     onChange={(e) => setSearchLimit(e.target.value)}
                   >
-                    <option value="3">3 sources</option>
-                    <option value="5">5 sources</option>
-                    <option value="10">10 sources</option>
-                    <option value="15">15 sources</option>
+                    <option value="3">3 results</option>
+                    <option value="5">5 results</option>
+                    <option value="10">10 results</option>
+                    <option value="20">20 results</option>
                   </Select>
                 </div>
               </div>
@@ -567,25 +599,13 @@ export default function RAGPage() {
 
             {/* Error Display */}
             {actionData && 'error' in actionData && (
-              <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                {actionData.error}
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800 text-sm">
+                  {(actionData as { error: string }).error}
+                </p>
               </div>
             )}
           </Form>
-
-          {/* Clear Conversation */}
-          {conversation.length > 0 && (
-            <div className="mt-4 flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={clearConversation}
-                disabled={isLoading}
-              >
-                Clear Conversation
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </PageLayout>

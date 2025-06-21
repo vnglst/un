@@ -22,8 +22,15 @@ import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
-import { ServiceCard, InfoBlock } from '~/components/ui/cards'
-import { Search as SearchIcon, Filter, X } from 'lucide-react'
+import { ServiceCard } from '~/components/ui/cards'
+import {
+  Search as SearchIcon,
+  Filter,
+  X,
+  Calendar,
+  Globe,
+  MessageCircle,
+} from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 type LoaderData = {
@@ -218,17 +225,9 @@ export default function Home() {
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link to="/" className="hover:text-[#009edb] transition-colors">
-            HOME
-          </Link>
+          <span className="text-gray-900 font-medium">HOME</span>
           <span className="mx-2">&gt;</span>
-          <Link to="/about" className="hover:text-[#009edb] transition-colors">
-            SERVICES
-          </Link>
-          <span className="mx-2">&gt;</span>
-          <span className="text-gray-900 font-medium">
-            UN SPEECHES BROWSING
-          </span>
+          <span className="text-gray-900 font-medium">BROWSING</span>
         </div>
       </div>
 
@@ -251,7 +250,7 @@ export default function Home() {
         <ServiceCard
           title="Browse by Year"
           description={`Explore speeches chronologically from ${Math.min(...years)} to ${Math.max(...years)}. Analyze how diplomatic discourse has evolved over decades of international relations.`}
-          icon={<span className="text-gray-600 font-bold text-sm">📅</span>}
+          icon={<Calendar className="h-4 w-4 text-gray-600" />}
         >
           <div className="space-y-2">
             <div className="text-xs text-gray-500">Recent Years:</div>
@@ -273,7 +272,7 @@ export default function Home() {
         <ServiceCard
           title="Browse by Country"
           description={`Access speeches from all ${memberStatesCount} member states. Understand diverse national perspectives on international issues and global governance.`}
-          icon={<span className="text-gray-600 font-bold text-sm">🌍</span>}
+          icon={<Globe className="h-4 w-4 text-gray-600" />}
         >
           <div className="space-y-2">
             <div className="text-xs text-gray-500">Featured Countries:</div>
@@ -296,7 +295,7 @@ export default function Home() {
         <ServiceCard
           title="Search by Topic"
           description="Find speeches covering climate change, peacekeeping, development, human rights, and other critical global issues through our advanced search capabilities."
-          icon={<span className="text-gray-600 font-bold text-sm">💬</span>}
+          icon={<MessageCircle className="h-4 w-4 text-gray-600" />}
         >
           <div className="space-y-2">
             <div className="text-xs text-gray-500">Popular Topics:</div>

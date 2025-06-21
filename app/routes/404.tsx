@@ -1,88 +1,107 @@
 import { Link } from 'react-router'
-import { Search, Home, Globe, AlertCircle } from 'lucide-react'
+import { Search, Home, Globe, MessageSquare, AlertCircle } from 'lucide-react'
 import PageLayout from '~/components/page-layout'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { ServiceCard } from '~/components/ui/cards'
 
 export default function NotFound() {
   return (
-    <PageLayout maxWidth="narrow" className="flex items-center justify-center">
-      <Card className="max-w-2xl w-full">
-        <CardHeader className="text-center pb-4">
-          <div className="flex justify-center mb-4">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
-              <AlertCircle className="h-10 w-10 text-gray-600" />
-            </div>
-          </div>
-          <CardTitle className="text-4xl font-bold text-black mb-2">
-            404
-          </CardTitle>
-          <h1 className="text-2xl font-medium text-gray-600 mb-4">
-            Page Not Found
-          </h1>
-        </CardHeader>
+    <PageLayout className="space-y-0 py-0">
+      {/* Breadcrumb Navigation */}
+      <div className="py-4">
+        <div className="flex items-center text-sm text-gray-600">
+          <Link to="/" className="hover:text-[#009edb] transition-colors">
+            HOME
+          </Link>
+          <span className="mx-2">&gt;</span>
+          <span className="text-gray-900 font-medium">404 ERROR</span>
+        </div>
+      </div>
 
-        <CardContent className="text-center space-y-6">
-          <p className="text-gray-600 text-lg leading-relaxed">
-            The page you're looking for doesn't exist. It might have been moved,
-            deleted, or you entered the wrong URL.
+      {/* Hero Section */}
+      <div className="py-12 text-center">
+        <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-8">
+          <AlertCircle className="h-12 w-12 text-gray-600" />
+        </div>
+        <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
+        <h2 className="text-2xl font-semibold text-gray-700 mb-6">
+          Page Not Found
+        </h2>
+        <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
+          The page you're looking for doesn't exist. It might have been moved,
+          deleted, or you entered the wrong URL.
+        </p>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <ServiceCard
+          title="Browse Speeches"
+          description="Search through thousands of UN General Assembly speeches from member states."
+          icon={<Search className="h-6 w-6 text-gray-600" />}
+        />
+
+        <ServiceCard
+          title="Explore Globe"
+          description="View speeches by country on our interactive 3D globe visualization."
+          icon={<Globe className="h-6 w-6 text-gray-600" />}
+        />
+
+        <ServiceCard
+          title="AI Chat"
+          description="Ask questions about UN speeches using our AI-powered semantic search."
+          icon={<MessageSquare className="h-6 w-6 text-gray-600" />}
+        />
+      </div>
+
+      {/* Action Buttons */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center mb-12">
+        <h3 className="text-xl font-bold text-gray-900 mb-6">
+          Where would you like to go?
+        </h3>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <Link to="/">
+            <Button className="w-full sm:w-auto bg-[#009edb] hover:bg-[#009edb]/90 text-white px-8">
+              <Home className="h-4 w-4 mr-2" />
+              Go to Homepage
+            </Button>
+          </Link>
+
+          <Link to="/globe">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 px-8"
+            >
+              <Globe className="h-4 w-4 mr-2" />
+              View Globe
+            </Button>
+          </Link>
+
+          <Link to="/rag">
+            <Button
+              variant="outline"
+              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 px-8"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              AI Chat
+            </Button>
+          </Link>
+        </div>
+
+        <div className="pt-6 border-t border-gray-200">
+          <p className="text-sm text-gray-500">
+            If you believe this is an error, please check the URL or{' '}
+            <Link
+              to="/"
+              className="text-[#009edb] hover:text-[#009edb]/80 transition-colors"
+            >
+              return to the homepage
+            </Link>
+            .
           </p>
-
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Here's what you can do:
-            </h2>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded">
-                <Search className="h-5 w-5 text-black flex-shrink-0" />
-                <div className="text-left">
-                  <h3 className="font-medium text-gray-900">Browse Speeches</h3>
-                  <p className="text-sm text-gray-600">
-                    Search through thousands of UN speeches
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded">
-                <Globe className="h-5 w-5 text-black flex-shrink-0" />
-                <div className="text-left">
-                  <h3 className="font-medium text-gray-900">Explore Globe</h3>
-                  <p className="text-sm text-gray-600">
-                    View speeches by country on our interactive globe
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <Link to="/">
-              <Button className="w-full sm:w-auto">
-                <Home className="h-4 w-4 mr-2" />
-                Go to Homepage
-              </Button>
-            </Link>
-
-            <Link to="/globe">
-              <Button variant="outline" className="w-full sm:w-auto">
-                <Globe className="h-4 w-4 mr-2" />
-                View Globe
-              </Button>
-            </Link>
-          </div>
-
-          <div className="pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
-              If you believe this is an error, please check the URL or{' '}
-              <Link to="/" className="text-black hover:underline">
-                return to the homepage
-              </Link>
-              .
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </PageLayout>
   )
 }

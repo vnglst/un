@@ -83,7 +83,7 @@ export default function RoleSpeeches() {
         </Link>
 
         <div className="flex items-center space-x-3 mb-2">
-          <Briefcase className="h-6 w-6 text-[#009edb]" />
+          <Briefcase className="h-6 w-6 text-gray-600" />
           <h1 className="text-3xl font-medium text-black">
             Speeches by {role}
           </h1>

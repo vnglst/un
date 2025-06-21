@@ -1,7 +1,7 @@
 import PageLayout from '~/components/page-layout'
 import { Globe, Search, Database, Users } from 'lucide-react'
 import { Link } from 'react-router'
-import { FeatureCard, InfoBlock } from '~/components/ui/cards'
+import { FeatureCard } from '~/components/ui/cards'
 
 export function meta() {
   return [

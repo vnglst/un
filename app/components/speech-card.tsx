@@ -66,7 +66,7 @@ export default function SpeechCard({
 
           <div className="flex items-center text-sm text-gray-600 space-x-4">
             <span className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1 text-[#009edb]" />
+              <Calendar className="h-4 w-4 mr-1 text-gray-600" />
               {speech.year}
             </span>
             {speech.session && (
@@ -80,7 +80,7 @@ export default function SpeechCard({
         <div className="flex-1">
           {speech.speaker && (
             <div className="flex items-center text-sm text-gray-600 mb-4 pb-3 border-b border-gray-100">
-              <User className="h-4 w-4 mr-2 text-[#009edb] flex-shrink-0" />
+              <User className="h-4 w-4 mr-2 text-gray-600 flex-shrink-0" />
               <span className="truncate font-medium">
                 {hasHighlights && highlightedSpeech.highlighted_speaker ? (
                   <span

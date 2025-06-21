@@ -88,7 +88,7 @@ export default function YearSpeeches() {
         </Link>
 
         <div className="flex items-center space-x-3 mb-2">
-          <Calendar className="h-6 w-6 text-[#009edb]" />
+          <Calendar className="h-6 w-6 text-gray-600" />
           <h1 className="text-3xl font-medium text-black">
             Speeches from {year}
           </h1>
