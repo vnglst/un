@@ -347,13 +347,19 @@ export default function Analysis() {
           d3.select(this).style('stroke', '#333').style('stroke-width', '2')
 
           const tooltipHtml = `
-    <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
-    <br/>
-    <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
-    <em>${d.speech1.post}</em><br/>
-    <br/>
-    <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
-    <em>${d.speech2.post}</em>
+    <div class="tooltip-content">
+      <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
+      <br/>
+      <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
+      <em>${d.speech1.post}</em><br/>
+      <br/>
+      <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
+      <em>${d.speech2.post}</em><br/>
+      <br/>
+      <span style="color: var(--color-primary); font-weight: 500; font-size: 11px;">
+        Click to view detailed comparison
+      </span>
+    </div>
     `
 
           tooltip
@@ -365,6 +371,10 @@ export default function Analysis() {
         .on('mouseout', function () {
           d3.select(this).style('stroke', 'white').style('stroke-width', '0.5')
           tooltip.style('display', 'none')
+        })
+        .on('click', function (_, d) {
+          // Navigate to the similarity comparison page
+          window.location.href = `/similarity/${d.speech1.id}/${d.speech2.id}`
         })
 
       // Add country labels on axes

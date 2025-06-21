@@ -6,6 +6,10 @@ export default [
   route('analysis', 'routes/analysis.tsx'),
   route('globe', 'routes/globe.tsx'),
   route('rag', 'routes/rag.tsx'),
+  route(
+    'similarity/:speech1/:speech2',
+    'routes/similarity.$speech1.$speech2.tsx'
+  ),
   route('country/:code', 'routes/country.$code.tsx'),
   route('speech/:id', 'routes/speech.$id.tsx'),
   route('year/:year', 'routes/year.$year.tsx'),

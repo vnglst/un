@@ -30,9 +30,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url)
   const year = url.searchParams.get('year')
   const threshold = parseFloat(url.searchParams.get('threshold') || '0.5')
-  const format = url.searchParams.get('format') || 'list' // 'list', 'matrix', or 'countries'
+  const format = url.searchParams.get('format') || 'list' // 'list', 'matrix', 'countries', or 'comparison'
   const countries =
     url.searchParams.get('countries')?.split(',').filter(Boolean) || []
+
+  // For comparison format
+  const speech1Id = url.searchParams.get('speech1')
+  const speech2Id = url.searchParams.get('speech2')
 
   try {
     const db = openDatabase()
@@ -63,6 +67,132 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       return Response.json({
         countries: countryResults.map((r) => r.country),
+      })
+    }
+
+    // If format is 'comparison', return detailed comparison between two speeches
+    if (format === 'comparison') {
+      if (!speech1Id || !speech2Id) {
+        return Response.json(
+          { error: 'Both speech1 and speech2 IDs are required for comparison' },
+          { status: 400 }
+        )
+      }
+
+      // Get speech metadata
+      const speechQuery = `
+        SELECT 
+          s.id,
+          COALESCE(s.country_name, s.country_code) as country,
+          s.speaker,
+          s.post,
+          s.year || '-01-01' as date,
+          s.year
+        FROM speeches s
+        WHERE s.id IN (?, ?)
+      `
+
+      const speechResults = db
+        .prepare(speechQuery)
+        .all(speech1Id, speech2Id) as SpeechMetadata[]
+
+      if (speechResults.length !== 2) {
+        return Response.json(
+          { error: 'One or both speeches not found' },
+          { status: 404 }
+        )
+      }
+
+      const speech1 = speechResults.find((s) => s.id === parseInt(speech1Id))!
+      const speech2 = speechResults.find((s) => s.id === parseInt(speech2Id))!
+
+      // Get overall similarity
+      const overallSimilarityQuery = `
+        SELECT similarity 
+        FROM speech_similarities 
+        WHERE (speech1_id = ? AND speech2_id = ?) OR (speech1_id = ? AND speech2_id = ?)
+      `
+
+      const overallSimilarityResult = db
+        .prepare(overallSimilarityQuery)
+        .get(speech1Id, speech2Id, speech2Id, speech1Id) as
+        | { similarity: number }
+        | undefined
+
+      if (!overallSimilarityResult) {
+        return Response.json(
+          { error: 'Similarity data not found for these speeches' },
+          { status: 404 }
+        )
+      }
+
+      // Get chunk similarities - assuming we have a chunk_similarities table
+      // If this table doesn't exist, we'll need to create it or use a different approach
+      const chunkSimilarityQuery = `
+        SELECT 
+          cs.chunk1_text,
+          cs.chunk2_text,
+          cs.similarity,
+          cs.chunk1_position,
+          cs.chunk2_position
+        FROM chunk_similarities cs
+        WHERE (cs.speech1_id = ? AND cs.speech2_id = ?) OR (cs.speech1_id = ? AND cs.speech2_id = ?)
+        AND cs.similarity >= ?
+        ORDER BY cs.similarity DESC
+        LIMIT 100
+      `
+
+      let chunkSimilarities: Array<{
+        chunk1_text: string
+        chunk2_text: string
+        similarity: number
+        chunk1_position: number
+        chunk2_position: number
+      }> = []
+
+      try {
+        chunkSimilarities = db
+          .prepare(chunkSimilarityQuery)
+          .all(speech1Id, speech2Id, speech2Id, speech1Id, 0.3) as Array<{
+          chunk1_text: string
+          chunk2_text: string
+          similarity: number
+          chunk1_position: number
+          chunk2_position: number
+        }>
+      } catch {
+        console.warn(
+          'chunk_similarities table not found, returning empty chunk data'
+        )
+        // If chunk_similarities table doesn't exist, return empty array
+        chunkSimilarities = []
+      }
+
+      const totalChunksQuery = `
+        SELECT COUNT(*) as total
+        FROM chunk_similarities cs
+        WHERE (cs.speech1_id = ? AND cs.speech2_id = ?) OR (cs.speech1_id = ? AND cs.speech2_id = ?)
+      `
+
+      let totalChunks = 0
+      try {
+        const totalResult = db
+          .prepare(totalChunksQuery)
+          .get(speech1Id, speech2Id, speech2Id, speech1Id) as
+          | { total: number }
+          | undefined
+        totalChunks = totalResult?.total || 0
+      } catch {
+        console.warn('Could not get total chunk count')
+      }
+
+      db.close()
+      return Response.json({
+        speech1,
+        speech2,
+        overall_similarity: overallSimilarityResult.similarity,
+        chunk_similarities: chunkSimilarities,
+        total_chunks: totalChunks,
       })
     }
 

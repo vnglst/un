@@ -778,3 +778,164 @@ export function searchSpeechesWithHighlights(
     }
   })
 }
+
+// =============================================================================
+// SIMILARITY FUNCTIONS
+// =============================================================================
+
+export interface SimilarityComparison {
+  speech1: {
+    id: number
+    country: string
+    speaker: string
+    post: string
+    date: string
+    year: number
+  }
+  speech2: {
+    id: number
+    country: string
+    speaker: string
+    post: string
+    date: string
+    year: number
+  }
+  overall_similarity: number
+  chunk_similarities: Array<{
+    chunk1_text: string
+    chunk2_text: string
+    similarity: number
+    chunk1_position: number
+    chunk2_position: number
+  }>
+  total_chunks: number
+}
+
+/**
+ * Get similarity comparison between two speeches
+ */
+export function getSimilarityComparison(
+  speech1Id: string,
+  speech2Id: string
+): SimilarityComparison {
+  const context: LogContext = {
+    speech1Id,
+    speech2Id,
+    operation: 'getSimilarityComparison',
+  }
+
+  return timeOperation('getSimilarityComparison', () => {
+    // Get speech metadata
+    const speechQuery = `
+      SELECT 
+        s.id,
+        COALESCE(s.country_name, s.country_code) as country,
+        s.speaker,
+        s.post,
+        s.year || '-01-01' as date,
+        s.year
+      FROM speeches s
+      WHERE s.id IN (?, ?)
+    `
+
+    const speeches = db
+      .prepare(speechQuery)
+      .all(speech1Id, speech2Id) as Array<{
+      id: number
+      country: string
+      speaker: string
+      post: string
+      date: string
+      year: number
+    }>
+
+    if (speeches.length !== 2) {
+      throw new Error('One or both speeches not found')
+    }
+
+    const speech1 = speeches.find((s) => s.id === parseInt(speech1Id))!
+    const speech2 = speeches.find((s) => s.id === parseInt(speech2Id))!
+
+    // Get overall similarity
+    const overallSimilarityQuery = `
+      SELECT similarity 
+      FROM speech_similarities 
+      WHERE (speech1_id = ? AND speech2_id = ?) OR (speech1_id = ? AND speech2_id = ?)
+    `
+
+    const overallSimilarityResult = db
+      .prepare(overallSimilarityQuery)
+      .get(speech1Id, speech2Id, speech2Id, speech1Id) as
+      | { similarity: number }
+      | undefined
+
+    if (!overallSimilarityResult) {
+      throw new Error('Similarity data not found for these speeches')
+    }
+
+    // Get chunk similarities if available
+    let chunkSimilarities: Array<{
+      chunk1_text: string
+      chunk2_text: string
+      similarity: number
+      chunk1_position: number
+      chunk2_position: number
+    }> = []
+
+    let totalChunks = 0
+
+    try {
+      const chunkSimilarityQuery = `
+        SELECT 
+          cs.chunk1_text,
+          cs.chunk2_text,
+          cs.similarity,
+          cs.chunk1_position,
+          cs.chunk2_position
+        FROM chunk_similarities cs
+        WHERE (cs.speech1_id = ? AND cs.speech2_id = ?) OR (cs.speech1_id = ? AND cs.speech2_id = ?)
+        AND cs.similarity >= 0.3
+        ORDER BY cs.similarity DESC
+        LIMIT 100
+      `
+
+      chunkSimilarities = db
+        .prepare(chunkSimilarityQuery)
+        .all(speech1Id, speech2Id, speech2Id, speech1Id) as Array<{
+        chunk1_text: string
+        chunk2_text: string
+        similarity: number
+        chunk1_position: number
+        chunk2_position: number
+      }>
+
+      const totalChunksQuery = `
+        SELECT COUNT(*) as total
+        FROM chunk_similarities cs
+        WHERE (cs.speech1_id = ? AND cs.speech2_id = ?) OR (cs.speech1_id = ? AND cs.speech2_id = ?)
+      `
+
+      const totalResult = db
+        .prepare(totalChunksQuery)
+        .get(speech1Id, speech2Id, speech2Id, speech1Id) as
+        | { total: number }
+        | undefined
+
+      totalChunks = totalResult?.total || 0
+    } catch {
+      // chunk_similarities table doesn't exist, return empty array
+      logger.info(
+        'chunk_similarities table not found, returning empty chunk data',
+        context
+      )
+    }
+
+    return {
+      speech1,
+      speech2,
+      overall_similarity: overallSimilarityResult.similarity,
+      chunk_similarities: chunkSimilarities,
+      total_chunks: totalChunks,
+    }
+  })
+}
