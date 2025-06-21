@@ -31,121 +31,88 @@ export default function About() {
       {/* Hero Section */}
       <div className="py-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          About UN Speeches Database
+          About UN Speeches
         </h1>
         <p className="text-lg text-gray-700 mb-6 max-w-4xl">
-          Our comprehensive platform provides unprecedented access to United
-          Nations General Assembly speeches, enabling researchers, diplomats,
-          journalists, and citizens to explore decades of international
-          discourse and diplomatic engagement.
+          A modern web application for browsing and searching speeches from the
+          UN General Assembly. Built with React Router v7, TypeScript, and D3.js
+          for data visualization.
         </p>
       </div>
 
-      {/* Mission Statement */}
-      <div className="bg-white rounded-lg p-8 mb-12 shadow-sm border border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
-        <p className="text-gray-700 leading-relaxed">
-          We believe that access to diplomatic discourse is fundamental to
-          understanding global affairs. By making UN General Assembly speeches
-          searchable and accessible, we aim to foster greater transparency in
-          international relations and enable deeper analysis of how nations
-          address shared global challenges.
-        </p>
-      </div>
-
-      {/* Features Grid */}
+      {/* Features Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
         <FeatureCard
-          title="Comprehensive Archive"
-          description="Complete collection of UN General Assembly speeches spanning multiple decades"
-          icon={<Database className="h-8 w-8 text-white" />}
-        />
-
-        <FeatureCard
-          title="Advanced Search"
-          description="Powerful search capabilities with full-text search, filtering, and highlighting"
-          icon={<Search className="h-8 w-8 text-white" />}
-        />
-
-        <FeatureCard
-          title="Global Coverage"
-          description="Speeches from all UN member states providing diverse perspectives"
+          title="Interactive Globe"
+          description="Explore an interactive 3D globe showing speech frequency by country"
           icon={<Globe className="h-8 w-8 text-white" />}
         />
 
         <FeatureCard
-          title="Open Access"
-          description="Free and open access to diplomatic discourse for all users worldwide"
+          title="Advanced Search"
+          description="Full-text search with multiple modes (phrase, exact, fuzzy matching)"
+          icon={<Search className="h-8 w-8 text-white" />}
+        />
+
+        <FeatureCard
+          title="Rich Filtering"
+          description="Filter by country, year, session, and speaker with fast performance"
+          icon={<Database className="h-8 w-8 text-white" />}
+        />
+
+        <FeatureCard
+          title="Responsive Design"
+          description="Works seamlessly on desktop and mobile devices"
           icon={<Users className="h-8 w-8 text-white" />}
         />
       </div>
 
-      {/* Data Source Information */}
+      {/* Tech Stack Information */}
       <div className="bg-gradient-to-r from-[#009edb] to-[#009edb]/90 rounded-lg p-12 text-white mb-16">
-        <h2 className="text-3xl font-bold mb-6">Data Sources & Methodology</h2>
+        <h2 className="text-3xl font-bold mb-6">Technology Stack</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
-            <h3 className="text-xl font-bold mb-4">
-              Official UN Documentation
-            </h3>
-            <p className="text-white/90 mb-4">
-              All speeches are sourced directly from the official United Nations
-              Documentation Centre, ensuring authenticity and accuracy of the
-              diplomatic record.
-            </p>
-            <ul className="space-y-2 text-white/80">
-              <li>• General Assembly Official Records</li>
-              <li>• Verbatim transcripts and meeting minutes</li>
-              <li>• Complete speaker identification</li>
-              <li>• Session and year classification</li>
+            <h3 className="text-xl font-bold mb-4">Frontend</h3>
+            <ul className="space-y-2 text-white/90">
+              <li>• React Router v7</li>
+              <li>• TypeScript</li>
+              <li>• Tailwind CSS</li>
+              <li>• D3.js for interactive visualization</li>
             </ul>
           </div>
           <div>
-            <h3 className="text-xl font-bold mb-4">Technical Implementation</h3>
-            <p className="text-white/90 mb-4">
-              Our platform uses advanced search technologies to make diplomatic
-              discourse accessible and analyzable for researchers and the
-              public.
-            </p>
-            <ul className="space-y-2 text-white/80">
-              <li>• Full-text search with highlighting</li>
-              <li>• Multi-language support</li>
-              <li>• Advanced filtering capabilities</li>
-              <li>• Real-time search suggestions</li>
+            <h3 className="text-xl font-bold mb-4">Backend & Database</h3>
+            <ul className="space-y-2 text-white/90">
+              <li>• SQLite with FTS (Full-Text Search)</li>
+              <li>• Node.js with Better SQLite3</li>
+              <li>• Docker deployment</li>
+              <li>• Fast performance optimization</li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Contact Information */}
+      {/* Creator Information */}
       <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Contact & Support
+          About the Creator
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              Research Inquiries
-            </h3>
-            <p className="text-gray-700 mb-4">
-              For questions about data sources, methodology, or research
-              collaboration opportunities.
-            </p>
-            <p className="text-[#009edb] font-medium">
-              research@unspeeches.org
-            </p>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              Technical Support
-            </h3>
-            <p className="text-gray-700 mb-4">
-              For assistance with search functionality, data access, or
-              technical issues.
-            </p>
-            <p className="text-[#009edb] font-medium">support@unspeeches.org</p>
-          </div>
-        </div>
+        <p className="text-gray-700 mb-4">
+          This project was created to make UN General Assembly speeches more
+          accessible for research, analysis, and public understanding of
+          international discourse.
+        </p>
+        <p className="text-gray-700">
+          Learn more about the creator at{' '}
+          <a
+            href="https://koenvangilst.nl"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#009edb] hover:text-[#009edb]/80 transition-colors font-medium"
+          >
+            koenvangilst.nl
+          </a>
+        </p>
       </div>
     </PageLayout>
   )
