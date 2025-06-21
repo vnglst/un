@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import * as d3 from 'd3'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import PageLayout from '../components/page-layout'
 import { Button } from '../components/ui/button'
 import { Select } from '../components/ui/select'
-import { Input } from '../components/ui/input'
 import { InfoBlock } from '../components/ui/cards'
 
 export function meta() {
@@ -37,6 +36,42 @@ interface SimilarityData {
   matrix?: number[][]
 }
 
+// Default countries list - defined outside component to avoid re-renders
+const DEFAULT_COUNTRIES = [
+  'United States of America',
+  'China',
+  'Russian Federation',
+  'United Kingdom',
+  'France',
+  'Germany',
+  'Japan',
+  'India',
+  'Pakistan',
+  'Ukraine',
+  'Iran',
+  'Brazil',
+  'Canada',
+  'Australia',
+  'South Africa',
+  'Nigeria',
+  'Egypt',
+  'Saudi Arabia',
+  'Turkey',
+  'Israel',
+  'Mexico',
+  'Argentina',
+  'South Korea',
+  'Indonesia',
+  'Thailand',
+  'Singapore',
+  'Sweden',
+  'Norway',
+  'Netherlands',
+  'Spain',
+  'Italy',
+  'Poland',
+]
+
 export default function Analysis() {
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -44,16 +79,90 @@ export default function Analysis() {
   const [data, setData] = useState<SimilarityData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Control states
-  const [selectedYear, setSelectedYear] = useState<string>('2024')
-  const [threshold, setThreshold] = useState(0.5)
-  const [limit, setLimit] = useState(50)
-  const [viewThreshold, setViewThreshold] = useState(0.3)
+  // URL-based state management
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  // Fixed cell size (always use large)
-  const cellSize = 16
+  // Fixed thresholds (no longer user-configurable)
+  const threshold = 0.3 // Lower threshold to include more similarities
+  const viewThreshold = 0.0 // Show all similarities in the matrix
+
+  // Get state from URL or use defaults
+  const selectedYear = searchParams.get('year') || '2024'
+  const selectedCountriesParam = searchParams.get('countries')
+
+  // Use useMemo to prevent selectedCountries from changing on every render
+  const selectedCountries = useMemo(() => {
+    return selectedCountriesParam
+      ? selectedCountriesParam.split(',').filter(Boolean)
+      : DEFAULT_COUNTRIES
+  }, [selectedCountriesParam])
+
+  const [availableCountries, setAvailableCountries] = useState<string[]>([])
+  const [countryToAdd, setCountryToAdd] = useState<string>('')
+
+  const cellSize = 28
+
+  // Initialize URL params on first load if they're missing
+  useEffect(() => {
+    if (!isInitialized) {
+      const needsInit =
+        !searchParams.has('year') || !searchParams.has('countries')
+
+      if (needsInit) {
+        const newParams = new URLSearchParams(searchParams)
+        if (!newParams.has('year')) {
+          newParams.set('year', '2024')
+        }
+        if (!newParams.has('countries')) {
+          newParams.set('countries', DEFAULT_COUNTRIES.join(','))
+        }
+        setSearchParams(newParams, { replace: true })
+      }
+
+      setIsInitialized(true)
+    }
+  }, [searchParams, setSearchParams, isInitialized])
+
+  // Helper function to update URL params
+  const updateSearchParams = useCallback(
+    (updates: Record<string, string | null>) => {
+      const newParams = new URLSearchParams(searchParams)
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === null) {
+          newParams.delete(key)
+        } else {
+          newParams.set(key, value)
+        }
+      })
+
+      setSearchParams(newParams, { replace: true })
+    },
+    [searchParams, setSearchParams]
+  )
+
+  // Update selected year
+  const setSelectedYear = useCallback(
+    (year: string) => {
+      updateSearchParams({ year })
+    },
+    [updateSearchParams]
+  )
+
+  // Update selected countries
+  const setSelectedCountries = useCallback(
+    (countries: string[]) => {
+      updateSearchParams({
+        countries: countries.length > 0 ? countries.join(',') : null,
+      })
+    },
+    [updateSearchParams]
+  )
 
   const loadData = useCallback(async () => {
+    if (!isInitialized) return
+
     setIsLoading(true)
     setError(null)
 
@@ -61,7 +170,7 @@ export default function Analysis() {
       const params = new URLSearchParams({
         format: 'matrix',
         threshold: threshold.toString(),
-        limit: limit.toString(),
+        countries: selectedCountries.join(','),
       })
 
       if (selectedYear && selectedYear !== 'all') {
@@ -87,11 +196,60 @@ export default function Analysis() {
     } finally {
       setIsLoading(false)
     }
-  }, [threshold, selectedYear, limit])
+  }, [selectedYear, selectedCountries, isInitialized])
+
+  const loadAvailableCountries = useCallback(async () => {
+    if (!isInitialized) return
+
+    try {
+      const params = new URLSearchParams({
+        format: 'countries',
+      })
+
+      if (selectedYear && selectedYear !== 'all') {
+        params.set('year', selectedYear)
+      }
+
+      const response = await fetch(`/api/similarities?${params}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      if (result.countries) {
+        setAvailableCountries(
+          result.countries.filter(
+            (country: string) => !selectedCountries.includes(country)
+          )
+        )
+      }
+    } catch (err) {
+      console.error('Error loading available countries:', err)
+    }
+  }, [selectedYear, selectedCountries, isInitialized])
+
+  const addCountry = (country: string) => {
+    if (country && !selectedCountries.includes(country)) {
+      setSelectedCountries([...selectedCountries, country])
+      setAvailableCountries(availableCountries.filter((c) => c !== country))
+      setCountryToAdd('')
+    }
+  }
+
+  const removeCountry = (country: string) => {
+    setSelectedCountries(selectedCountries.filter((c) => c !== country))
+    if (!availableCountries.includes(country)) {
+      setAvailableCountries([...availableCountries, country].sort())
+    }
+  }
 
   useEffect(() => {
     loadData()
   }, [loadData]) // Reload when controls change
+
+  useEffect(() => {
+    loadAvailableCountries()
+  }, [loadAvailableCountries]) // Load available countries when year or selected countries change
 
   const initializeVisualization = useCallback(
     (speeches: SpeechMetadata[], matrix: number[][]) => {
@@ -249,8 +407,8 @@ export default function Analysis() {
           .text(country)
       })
     },
-    [viewThreshold]
-  ) // Include dependencies
+    []
+  ) // No dependencies since thresholds are now constants
 
   useEffect(() => {
     if (data?.matrix && data.speeches.length > 0) {
@@ -288,7 +446,7 @@ export default function Analysis() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           Analysis Controls
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Year
@@ -307,33 +465,29 @@ export default function Analysis() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Min Similarity
+              Add Country
             </label>
-            <Input
-              type="number"
-              value={threshold}
-              onChange={(e) => setThreshold(parseFloat(e.target.value))}
-              min="0"
-              max="1"
-              step="0.1"
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Max Speeches
-            </label>
-            <Select
-              value={limit.toString()}
-              onChange={(e) => setLimit(parseInt(e.target.value))}
-              className="w-full"
-            >
-              <option value="25">25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="200">200</option>
-            </Select>
+            <div className="flex gap-2">
+              <Select
+                value={countryToAdd}
+                onChange={(e) => setCountryToAdd(e.target.value)}
+                className="flex-1"
+              >
+                <option value="">Select a country...</option>
+                {availableCountries.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </Select>
+              <Button
+                onClick={() => addCountry(countryToAdd)}
+                disabled={!countryToAdd}
+                className="px-3 py-1 text-sm"
+              >
+                Add
+              </Button>
+            </div>
           </div>
 
           <div>
@@ -346,24 +500,27 @@ export default function Analysis() {
           </div>
         </div>
 
-        {/* Display Controls */}
-        <div className="flex flex-col sm:flex-row sm:justify-start gap-4 sm:gap-6 pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              View Threshold:
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={viewThreshold}
-              onChange={(e) => setViewThreshold(parseFloat(e.target.value))}
-              className="flex-1 sm:w-24"
-            />
-            <span className="text-sm text-gray-600 min-w-[3rem]">
-              {viewThreshold.toFixed(2)}
-            </span>
+        {/* Selected Countries */}
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">
+            Selected Countries ({selectedCountries.length})
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {selectedCountries.map((country) => (
+              <div
+                key={country}
+                className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+              >
+                <span>{country}</span>
+                <button
+                  onClick={() => removeCountry(country)}
+                  className="hover:text-blue-600 font-bold"
+                  title={`Remove ${country}`}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -433,19 +590,23 @@ export default function Analysis() {
             <h3 className="font-semibold text-gray-900 mb-2">How to use:</h3>
             <ul className="text-gray-700 space-y-1 list-disc list-inside">
               <li>
-                Adjust the year, minimum similarity threshold, and maximum
-                number of speeches using the controls above
+                The visualization starts with major world powers. Add or remove
+                countries using the controls above
+              </li>
+              <li>
+                Adjust the year and minimum similarity threshold to focus on
+                specific time periods and relationships
               </li>
               <li>
                 Use the view threshold slider to filter which similarities are
                 displayed in the matrix
               </li>
               <li>
-                Adjust cell size for better visibility depending on your screen
-                size
+                Hover over cells to see detailed comparisons between speeches
               </li>
               <li>
-                Hover over cells to see detailed comparisons between speeches
+                Click the × button next to any country name to remove it from
+                the analysis
               </li>
             </ul>
           </div>

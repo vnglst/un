@@ -30,13 +30,43 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url)
   const year = url.searchParams.get('year')
   const threshold = parseFloat(url.searchParams.get('threshold') || '0.5')
-  const format = url.searchParams.get('format') || 'list' // 'list' or 'matrix'
-  const limit = parseInt(url.searchParams.get('limit') || '100')
+  const format = url.searchParams.get('format') || 'list' // 'list', 'matrix', or 'countries'
+  const countries =
+    url.searchParams.get('countries')?.split(',').filter(Boolean) || []
 
   try {
     const db = openDatabase()
 
-    // Get speeches with similarities
+    // If format is 'countries', return available countries
+    if (format === 'countries') {
+      let countryQuery = `
+        SELECT DISTINCT COALESCE(s.country_name, s.country_code) as country
+        FROM speeches s
+        WHERE EXISTS (
+          SELECT 1 FROM speech_similarities ss 
+          WHERE (ss.speech1_id = s.id OR ss.speech2_id = s.id)
+          AND ss.similarity >= ?
+        )
+      `
+      const countryParams: (number | string)[] = [threshold]
+
+      if (year && year !== 'all') {
+        countryQuery += ' AND s.year = ?'
+        countryParams.push(parseInt(year))
+      }
+
+      countryQuery += ' ORDER BY country'
+
+      const countryResults = db.prepare(countryQuery).all(...countryParams) as {
+        country: string
+      }[]
+
+      return Response.json({
+        countries: countryResults.map((r) => r.country),
+      })
+    }
+
+    // Get speeches with similarities, filtered by countries if provided
     let speechQuery = `
       SELECT DISTINCT
         s.id,
@@ -55,13 +85,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const params: (number | string)[] = [threshold]
 
-    if (year) {
+    if (year && year !== 'all') {
       speechQuery += ` AND s.year = ?`
       params.push(parseInt(year))
     }
 
-    speechQuery += ` ORDER BY s.country_code, s.year LIMIT ?`
-    params.push(limit)
+    // Filter by countries if provided
+    if (countries.length > 0) {
+      const countryPlaceholders = countries.map(() => '?').join(',')
+      speechQuery += ` AND COALESCE(s.country_name, s.country_code) IN (${countryPlaceholders})`
+      params.push(...countries)
+    }
+
+    speechQuery += ` ORDER BY COALESCE(s.country_name, s.country_code), s.year`
 
     const speeches = db.prepare(speechQuery).all(...params) as SpeechMetadata[]
 
