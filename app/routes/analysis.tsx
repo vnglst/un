@@ -269,10 +269,17 @@ export default function Analysis() {
       // Clear previous content
       svg.selectAll('*').remove()
 
-      // Color scale - use actual data range for better contrast
+      // Get theme colors from CSS custom properties
+      const primaryColor =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--color-primary')
+          .trim() || '#009edb'
+
+      // Color scale - use theme colors for brand consistency
       const colorScale = d3
-        .scaleSequential(d3.interpolateBlues)
+        .scaleSequential()
         .domain([minSim, maxSim])
+        .interpolator(d3.interpolateRgb('#f0f9ff', primaryColor))
 
       // Calculate responsive dimensions
       const containerWidth = svgRef.current.parentElement?.clientWidth || 800
@@ -421,7 +428,10 @@ export default function Analysis() {
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link to="/" className="hover:text-[#009edb] transition-colors">
+          <Link
+            to="/"
+            className="hover:text-[var(--color-primary)] transition-colors"
+          >
             HOME
           </Link>
           <span className="mx-2">&gt;</span>
@@ -446,7 +456,7 @@ export default function Analysis() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           Analysis Controls
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Year
@@ -489,15 +499,6 @@ export default function Analysis() {
               </Button>
             </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Actions
-            </label>
-            <Button onClick={loadData} disabled={isLoading} className="w-full">
-              {isLoading ? 'Loading...' : 'Refresh'}
-            </Button>
-          </div>
         </div>
 
         {/* Selected Countries */}
@@ -509,12 +510,12 @@ export default function Analysis() {
             {selectedCountries.map((country) => (
               <div
                 key={country}
-                className="flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                className="flex items-center gap-2 px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-sm border border-[var(--color-primary)]/20"
               >
                 <span>{country}</span>
                 <button
                   onClick={() => removeCountry(country)}
-                  className="hover:text-blue-600 font-bold"
+                  className="hover:text-[var(--color-primary-hover)] font-bold transition-colors"
                   title={`Remove ${country}`}
                 >
                   ×
@@ -547,7 +548,7 @@ export default function Analysis() {
             </h2>
             <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
               <span className="whitespace-nowrap">Low Similarity</span>
-              <div className="w-20 sm:w-32 h-3 sm:h-4 bg-gradient-to-r from-blue-50 to-blue-800 border border-gray-300 rounded"></div>
+              <div className="w-20 sm:w-32 h-3 sm:h-4 bg-gradient-to-r from-blue-50 to-[var(--color-primary)] border border-gray-300 rounded"></div>
               <span className="whitespace-nowrap">High Similarity</span>
             </div>
           </div>
