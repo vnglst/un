@@ -40,7 +40,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     let speechQuery = `
       SELECT DISTINCT
         s.id,
-        s.country_code as country,
+        COALESCE(s.country_name, s.country_code) as country,
         s.speaker,
         s.post,
         s.year || '-01-01' as date,

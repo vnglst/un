@@ -47,9 +47,11 @@ export default function Analysis() {
   // Control states
   const [selectedYear, setSelectedYear] = useState<string>('2024')
   const [threshold, setThreshold] = useState(0.5)
-  const [cellSize, setCellSize] = useState(12)
   const [limit, setLimit] = useState(50)
   const [viewThreshold, setViewThreshold] = useState(0.3)
+
+  // Fixed cell size (always use large)
+  const cellSize = 16
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -114,15 +116,41 @@ export default function Analysis() {
         .scaleSequential(d3.interpolateBlues)
         .domain([minSim, maxSim])
 
-      const margin = { top: 100, right: 100, bottom: 100, left: 100 }
-      const width = speeches.length * cellSize + margin.left + margin.right
-      const height = speeches.length * cellSize + margin.top + margin.bottom
+      // Calculate responsive dimensions
+      const containerWidth = svgRef.current.parentElement?.clientWidth || 800
+      const maxCellSize = Math.max(
+        4,
+        Math.min(cellSize, Math.floor((containerWidth - 200) / speeches.length))
+      )
+      const actualCellSize = Math.max(4, maxCellSize)
 
-      svg.attr('width', width).attr('height', height)
+      const responsiveMargin = {
+        top: Math.max(50, Math.min(100, containerWidth * 0.1)),
+        right: Math.max(20, Math.min(100, containerWidth * 0.05)),
+        bottom: Math.max(20, Math.min(100, containerWidth * 0.05)),
+        left: Math.max(50, Math.min(100, containerWidth * 0.1)),
+      }
+
+      const width =
+        speeches.length * actualCellSize +
+        responsiveMargin.left +
+        responsiveMargin.right
+      const height =
+        speeches.length * actualCellSize +
+        responsiveMargin.top +
+        responsiveMargin.bottom
+
+      svg
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`)
 
       const g = svg
         .append('g')
-        .attr('transform', `translate(${margin.left},${margin.top})`)
+        .attr(
+          'transform',
+          `translate(${responsiveMargin.left},${responsiveMargin.top})`
+        )
 
       // Create cells
       g.selectAll('.matrix-cell')
@@ -141,10 +169,10 @@ export default function Analysis() {
         .enter()
         .append('rect')
         .attr('class', 'matrix-cell')
-        .attr('x', (d) => d.j * cellSize)
-        .attr('y', (d) => d.i * cellSize)
-        .attr('width', cellSize)
-        .attr('height', cellSize)
+        .attr('x', (d) => d.j * actualCellSize)
+        .attr('y', (d) => d.i * actualCellSize)
+        .attr('width', actualCellSize)
+        .attr('height', actualCellSize)
         .attr('fill', (d) => (d.visible ? colorScale(d.similarity) : '#f8f9fa'))
         .attr('opacity', (d) => (d.visible ? 1 : 0.3))
         .style('cursor', 'pointer')
@@ -189,6 +217,8 @@ export default function Analysis() {
       })
 
       // Add country labels
+      const labelFontSize = Math.max(8, Math.min(12, actualCellSize * 0.8))
+
       countries.forEach((country) => {
         const positions = countryPositions.get(country) || []
         const avgPos = positions.reduce((a, b) => a + b, 0) / positions.length
@@ -196,10 +226,14 @@ export default function Analysis() {
         // X-axis label (top)
         g.append('text')
           .attr('class', 'axis-label')
-          .attr('x', avgPos * cellSize + cellSize / 2)
+          .attr('x', avgPos * actualCellSize + actualCellSize / 2)
           .attr('y', -10)
-          .attr('text-anchor', 'middle')
-          .style('font-size', '10px')
+          .attr('text-anchor', 'start')
+          .attr(
+            'transform',
+            `rotate(-90, ${avgPos * actualCellSize + actualCellSize / 2}, -10)`
+          )
+          .style('font-size', `${labelFontSize}px`)
           .style('fill', '#666')
           .text(country)
 
@@ -207,48 +241,15 @@ export default function Analysis() {
         g.append('text')
           .attr('class', 'axis-label')
           .attr('x', -10)
-          .attr('y', avgPos * cellSize + cellSize / 2)
+          .attr('y', avgPos * actualCellSize + actualCellSize / 2)
           .attr('text-anchor', 'end')
           .attr('alignment-baseline', 'middle')
-          .style('font-size', '10px')
+          .style('font-size', `${labelFontSize}px`)
           .style('fill', '#666')
           .text(country)
       })
-
-      // Add country group separators
-      let currentPos = 0
-      countries.forEach((country) => {
-        const positions = countryPositions.get(country) || []
-        currentPos += positions.length
-
-        if (currentPos < speeches.length) {
-          // Vertical line
-          g.append('line')
-            .attr('class', 'country-group')
-            .attr('x1', currentPos * cellSize)
-            .attr('x2', currentPos * cellSize)
-            .attr('y1', 0)
-            .attr('y2', speeches.length * cellSize)
-            .style('fill', 'none')
-            .style('stroke', '#999')
-            .style('stroke-width', '1')
-            .style('stroke-dasharray', '2,2')
-
-          // Horizontal line
-          g.append('line')
-            .attr('class', 'country-group')
-            .attr('x1', 0)
-            .attr('x2', speeches.length * cellSize)
-            .attr('y1', currentPos * cellSize)
-            .attr('y2', currentPos * cellSize)
-            .style('fill', 'none')
-            .style('stroke', '#999')
-            .style('stroke-width', '1')
-            .style('stroke-dasharray', '2,2')
-        }
-      })
     },
-    [viewThreshold, cellSize]
+    [viewThreshold]
   ) // Include dependencies
 
   useEffect(() => {
@@ -287,7 +288,7 @@ export default function Analysis() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           Analysis Controls
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Year
@@ -346,9 +347,9 @@ export default function Analysis() {
         </div>
 
         {/* Display Controls */}
-        <div className="flex justify-start gap-6 pt-4 border-t border-gray-200 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:justify-start gap-4 sm:gap-6 pt-4 border-t border-gray-200">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
               View Threshold:
             </label>
             <input
@@ -358,26 +359,11 @@ export default function Analysis() {
               step="0.01"
               value={viewThreshold}
               onChange={(e) => setViewThreshold(parseFloat(e.target.value))}
-              className="w-24"
+              className="flex-1 sm:w-24"
             />
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 min-w-[3rem]">
               {viewThreshold.toFixed(2)}
             </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">
-              Cell Size:
-            </label>
-            <select
-              value={cellSize}
-              onChange={(e) => setCellSize(parseInt(e.target.value))}
-              className="px-3 py-1 border border-gray-300 rounded text-sm"
-            >
-              <option value="8">Small</option>
-              <option value="12">Medium</option>
-              <option value="16">Large</option>
-              <option value="20">Extra Large</option>
-            </select>
           </div>
         </div>
       </div>
@@ -398,23 +384,25 @@ export default function Analysis() {
       {/* Visualization Section */}
       {data && (
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-8">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <h2 className="text-xl font-bold text-gray-900">
               Similarity Matrix
             </h2>
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <span>Low Similarity</span>
-              <div className="w-32 h-4 bg-gradient-to-r from-blue-50 to-blue-800 border border-gray-300 rounded"></div>
-              <span>High Similarity</span>
+            <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+              <span className="whitespace-nowrap">Low Similarity</span>
+              <div className="w-20 sm:w-32 h-3 sm:h-4 bg-gradient-to-r from-blue-50 to-blue-800 border border-gray-300 rounded"></div>
+              <span className="whitespace-nowrap">High Similarity</span>
             </div>
           </div>
 
-          <div className="flex justify-center overflow-auto border border-gray-200 rounded-lg bg-gray-50">
-            <svg ref={svgRef} id="matrix"></svg>
+          <div className="w-full overflow-auto border border-gray-200 rounded-lg bg-gray-50">
+            <div className="min-w-fit flex justify-center">
+              <svg ref={svgRef} id="matrix" className="max-w-full h-auto"></svg>
+            </div>
           </div>
 
           {/* Statistics */}
-          <div className="flex justify-center gap-8 mt-6 pt-4 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 mt-6 pt-4 border-t border-gray-200">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
                 {data.speeches.length}
