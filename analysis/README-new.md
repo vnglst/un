@@ -28,7 +28,7 @@ npm run analysis:similarities -- --year 2023 --threshold 0.7 --batch-size 50
 ## Command Line Options
 
 - `--year <year>`: Calculate similarities only for specific year
-- `--force`: Force recalculation of existing similarities  
+- `--force`: Force recalculation of existing similarities
 - `--batch-size <size>`: Number of speeches to process per batch (default: 100)
 - `--threshold <value>`: Minimum similarity to store (default: 0.5)
 - `--help`: Show help message
@@ -36,6 +36,7 @@ npm run analysis:similarities -- --year 2023 --threshold 0.7 --batch-size 50
 ## Web Interface
 
 Visit `/analysis` on the website to explore the interactive similarity matrix with:
+
 - Dynamic year filtering
 - Adjustable similarity thresholds
 - Interactive D3.js visualization

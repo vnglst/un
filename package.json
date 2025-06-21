@@ -29,7 +29,10 @@
     "rag:stats": "node rag-ts/tests/verify-rag.ts stats",
     "rag:chat": "node rag-ts/runtime/rag-pipeline.ts",
     "rag:examples": "node rag-ts/tests/examples.ts",
-    "analysis:speech-similarity": "node --experimental-strip-types analysis/speech-similarity-matrix-2024.ts"
+    "analysis:similarities": "node analysis/calculate-speech-similarities.ts",
+    "analysis:similarities:2024": "node analysis/calculate-speech-similarities.ts --year 2024",
+    "analysis:similarities:force": "node analysis/calculate-speech-similarities.ts --force",
+    "migrate:similarities": "node scripts/create-similarities-table.js"
   },
   "keywords": [],
   "author": "",

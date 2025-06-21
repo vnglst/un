@@ -1,6 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import * as d3 from 'd3'
 import PageLayout from '../components/page-layout'
+import { Button } from '../components/ui/button'
+import { Select } from '../components/ui/select'
+import { Input } from '../components/ui/input'
 
 export function meta() {
   return [
@@ -13,90 +16,103 @@ export function meta() {
   ]
 }
 
-interface Speech {
+interface SpeechMetadata {
   id: number
   country: string
   speaker: string
-  title: string
+  post: string
   date: string
-  index: number
+  year: number
 }
 
 interface SimilarityData {
-  speeches: Speech[]
-  similarities: number[][]
+  speeches: SpeechMetadata[]
+  similarities: Array<{
+    speech1_id: number
+    speech2_id: number
+    similarity: number
+  }>
+  matrix?: number[][]
 }
 
 export default function Analysis() {
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
-  const thresholdRef = useRef<HTMLInputElement>(null)
-  const thresholdValueRef = useRef<HTMLSpanElement>(null)
-  const cellSizeRef = useRef<HTMLSelectElement>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [data, setData] = useState<SimilarityData | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // Control states
+  const [selectedYear, setSelectedYear] = useState<string>('2024')
+  const [threshold, setThreshold] = useState(0.5)
+  const [cellSize, setCellSize] = useState(12)
+  const [limit, setLimit] = useState(50)
+  const [viewThreshold, setViewThreshold] = useState(0.3)
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const params = new URLSearchParams({
+        format: 'matrix',
+        threshold: threshold.toString(),
+        limit: limit.toString(),
+      })
+
+      if (selectedYear && selectedYear !== 'all') {
+        params.set('year', selectedYear)
+      }
+
+      const response = await fetch(`/api/similarities?${params}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result: SimilarityData = await response.json()
+
+      if ('error' in result) {
+        throw new Error(result.error as string)
+      }
+
+      setData(result)
+      console.log('Loaded similarity data:', result.speeches.length, 'speeches')
+    } catch (err) {
+      console.error('Error loading data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load data')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [threshold, selectedYear, limit])
 
   useEffect(() => {
-    // Load the similarity data and initialize visualization
-    fetch('/speech-similarity-2024.json')
-      .then((response) => response.json())
-      .then((data: SimilarityData) => {
-        console.log('Loaded similarity data:', data.speeches.length, 'speeches')
-        initializeVisualization(data)
-      })
-      .catch((error) => {
-        console.error('Error loading data:', error)
-      })
-  }, [])
+    loadData()
+  }, [loadData]) // Reload when controls change
 
-  const initializeVisualization = (data: SimilarityData) => {
-    const { speeches, similarities } = data
+  const initializeVisualization = useCallback(
+    (speeches: SpeechMetadata[], matrix: number[][]) => {
+      if (!svgRef.current || !tooltipRef.current) return
 
-    // Update stats
-    document.getElementById('total-speeches')!.textContent =
-      speeches.length.toString()
+      // Calculate statistics for reference (though not displayed in this version)
+      const allSimilarities = matrix
+        .flat()
+        .filter((sim) => sim > 0 && sim < 1.0)
+      const maxSim = Math.max(...allSimilarities)
+      const minSim = Math.min(...allSimilarities)
 
-    // Calculate statistics
-    const allSimilarities = similarities.flat().filter((sim) => sim < 1.0)
-    const avgSim =
-      allSimilarities.reduce((a, b) => a + b, 0) / allSimilarities.length
-    const maxSim = Math.max(...allSimilarities)
-    const minSim = Math.min(...allSimilarities)
+      // Set up the visualization
+      const svg = d3.select(svgRef.current)
+      const tooltip = d3.select(tooltipRef.current)
 
-    document.getElementById('avg-similarity')!.textContent = avgSim.toFixed(3)
-    document.getElementById('max-similarity')!.textContent = maxSim.toFixed(3)
-
-    // Set up the visualization
-    const svg = d3.select(svgRef.current)
-    const tooltip = d3.select(tooltipRef.current)
-
-    // Color scale - use actual data range for better contrast
-    const colorScale = d3
-      .scaleSequential(d3.interpolateBlues)
-      .domain([minSim, maxSim])
-
-    // Update legend labels with actual range
-    const legendLabels = document.getElementById('legend-labels')!
-    legendLabels.innerHTML = `
-      <span>${minSim.toFixed(3)}</span>
-      <span>${((minSim + maxSim) / 2).toFixed(3)}</span>
-      <span>${maxSim.toFixed(3)}</span>
-    `
-
-    // Update threshold slider to use actual data range
-    const thresholdSlider = thresholdRef.current!
-    thresholdSlider.min = minSim.toFixed(3)
-    thresholdSlider.max = maxSim.toFixed(3)
-    thresholdSlider.value = minSim.toFixed(3)
-    thresholdSlider.step = '0.001'
-    thresholdValueRef.current!.textContent = minSim.toFixed(3)
-
-    let currentThreshold = minSim // Start with minimum to show all data
-    let currentCellSize = 12
-
-    const updateMatrix = () => {
+      // Clear previous content
       svg.selectAll('*').remove()
 
+      // Color scale - use actual data range for better contrast
+      const colorScale = d3
+        .scaleSequential(d3.interpolateBlues)
+        .domain([minSim, maxSim])
+
       const margin = { top: 100, right: 100, bottom: 100, left: 100 }
-      const cellSize = currentCellSize
       const width = speeches.length * cellSize + margin.left + margin.right
       const height = speeches.length * cellSize + margin.top + margin.bottom
 
@@ -115,8 +131,8 @@ export default function Analysis() {
               j,
               speech1: speech1,
               speech2: speech2,
-              similarity: similarities[i][j],
-              visible: similarities[i][j] >= currentThreshold,
+              similarity: matrix[i][j],
+              visible: matrix[i][j] >= viewThreshold,
             }))
           )
         )
@@ -138,14 +154,14 @@ export default function Analysis() {
           d3.select(this).style('stroke', '#333').style('stroke-width', '2')
 
           const tooltipHtml = `
-            <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
-            <br/>
-            <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
-            <em>${d.speech1.title}</em><br/>
-            <br/>
-            <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
-            <em>${d.speech2.title}</em>
-          `
+          <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
+          <br/>
+          <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
+          <em>${d.speech1.post}</em><br/>
+          <br/>
+          <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
+          <em>${d.speech2.post}</em>
+        `
 
           tooltip
             .html(tooltipHtml)
@@ -160,22 +176,20 @@ export default function Analysis() {
 
       // Add country labels on axes
       const countries = [...new Set(speeches.map((s) => s.country))].sort()
-      const countryPositions = new Map()
+      const countryPositions = new Map<string, number[]>()
 
       // Calculate country positions
       speeches.forEach((speech, i) => {
         if (!countryPositions.has(speech.country)) {
           countryPositions.set(speech.country, [])
         }
-        countryPositions.get(speech.country).push(i)
+        countryPositions.get(speech.country)!.push(i)
       })
 
       // Add country labels
       countries.forEach((country) => {
-        const positions = countryPositions.get(country)
-        const avgPos =
-          positions.reduce((a: number, b: number) => a + b, 0) /
-          positions.length
+        const positions = countryPositions.get(country) || []
+        const avgPos = positions.reduce((a, b) => a + b, 0) / positions.length
 
         // X-axis label (top)
         g.append('text')
@@ -202,7 +216,7 @@ export default function Analysis() {
       // Add country group separators
       let currentPos = 0
       countries.forEach((country) => {
-        const positions = countryPositions.get(country)
+        const positions = countryPositions.get(country) || []
         currentPos += positions.length
 
         if (currentPos < speeches.length) {
@@ -231,65 +245,105 @@ export default function Analysis() {
             .style('stroke-dasharray', '2,2')
         }
       })
+    },
+    [viewThreshold, cellSize]
+  ) // Include dependencies
+
+  useEffect(() => {
+    if (data?.matrix && data.speeches.length > 0) {
+      initializeVisualization(data.speeches, data.matrix)
     }
-
-    // Event listeners
-    thresholdRef.current!.addEventListener('input', function () {
-      currentThreshold = parseFloat(this.value)
-      thresholdValueRef.current!.textContent = currentThreshold.toFixed(3)
-      updateMatrix()
-    })
-
-    cellSizeRef.current!.addEventListener('change', function () {
-      currentCellSize = parseInt(this.value)
-      updateMatrix()
-    })
-
-    // Initial render
-    updateMatrix()
-  }
+  }, [data, initializeVisualization]) // Re-render when data changes
 
   return (
     <PageLayout>
       <div className="container mx-auto max-w-7xl bg-white rounded-lg shadow-lg p-8">
         <h1 className="text-4xl font-bold text-center text-gray-800 mb-3">
-          🌍 UN General Assembly 2024
+          🌍 UN General Assembly Speech Analysis
         </h1>
         <div className="text-center text-gray-600 mb-8 text-lg">
-          Speech Similarity Matrix - 40 Selected Countries
+          Interactive Speech Similarity Matrix
         </div>
 
+        {/* Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Year
+            </label>
+            <Select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">All Years</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Min Similarity
+            </label>
+            <Input
+              type="number"
+              value={threshold}
+              onChange={(e) => setThreshold(parseFloat(e.target.value))}
+              min="0"
+              max="1"
+              step="0.1"
+              className="w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Max Speeches
+            </label>
+            <Select
+              value={limit.toString()}
+              onChange={(e) => setLimit(parseInt(e.target.value))}
+              className="w-full"
+            >
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+            </Select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Actions
+            </label>
+            <Button onClick={loadData} disabled={isLoading} className="w-full">
+              {isLoading ? 'Loading...' : 'Refresh'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Display Controls */}
         <div className="flex justify-center gap-6 mb-8 flex-wrap">
           <div className="flex items-center gap-2">
-            <label htmlFor="threshold" className="font-medium text-gray-700">
-              Similarity Threshold:
-            </label>
+            <label className="font-medium text-gray-700">View Threshold:</label>
             <input
-              ref={thresholdRef}
               type="range"
-              id="threshold"
               min="0"
               max="1"
               step="0.01"
-              defaultValue="0.3"
+              value={viewThreshold}
+              onChange={(e) => setViewThreshold(parseFloat(e.target.value))}
               className="px-3 py-1 border border-gray-300 rounded text-sm"
             />
-            <span
-              ref={thresholdValueRef}
-              id="threshold-value"
-              className="text-sm"
-            >
-              0.30
-            </span>
+            <span className="text-sm">{viewThreshold.toFixed(2)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="cellSize" className="font-medium text-gray-700">
-              Cell Size:
-            </label>
+            <label className="font-medium text-gray-700">Cell Size:</label>
             <select
-              ref={cellSizeRef}
-              id="cellSize"
-              defaultValue="12"
+              value={cellSize}
+              onChange={(e) => setCellSize(parseInt(e.target.value))}
               className="px-3 py-1 border border-gray-300 rounded text-sm"
             >
               <option value="8">Small</option>
@@ -300,71 +354,66 @@ export default function Analysis() {
           </div>
         </div>
 
-        <div className="flex justify-center overflow-auto border border-gray-300 rounded-lg bg-white mb-6">
-          <svg ref={svgRef} id="matrix"></svg>
-        </div>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800">Error: {error}</p>
+          </div>
+        )}
 
-        <div className="flex justify-center items-center mb-4 gap-6">
-          <div className="flex items-center gap-3">
-            <span className="text-sm">Low Similarity</span>
-            <div className="w-48 h-5 bg-gradient-to-r from-blue-50 to-blue-800 border border-gray-300 rounded"></div>
-            <span className="text-sm">High Similarity</span>
+        {isLoading && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-800">Loading similarity data...</p>
           </div>
-        </div>
+        )}
 
-        <div id="legend-labels" className="flex justify-center">
-          <div className="flex justify-between w-48 text-xs text-gray-600">
-            <span>0.0</span>
-            <span>0.5</span>
-            <span>1.0</span>
+        {data && (
+          <div className="flex justify-center overflow-auto border border-gray-300 rounded-lg bg-white mb-6">
+            <svg ref={svgRef} id="matrix"></svg>
           </div>
-        </div>
+        )}
 
-        <div className="flex justify-center gap-8 mt-6 text-sm text-gray-600">
-          <div className="text-center">
-            <div
-              id="total-speeches"
-              className="text-lg font-bold text-gray-800"
-            >
-              -
+        {data && (
+          <>
+            <div className="flex justify-center items-center mb-4 gap-6">
+              <div className="flex items-center gap-3">
+                <span className="text-sm">Low Similarity</span>
+                <div className="w-48 h-5 bg-gradient-to-r from-blue-50 to-blue-800 border border-gray-300 rounded"></div>
+                <span className="text-sm">High Similarity</span>
+              </div>
             </div>
-            <div>Total Speeches</div>
-          </div>
-          <div className="text-center">
-            <div
-              id="avg-similarity"
-              className="text-lg font-bold text-gray-800"
-            >
-              -
+
+            <div className="flex justify-center gap-8 mt-6 text-sm text-gray-600">
+              <div className="text-center">
+                <div className="text-lg font-bold text-gray-800">
+                  {data.speeches.length}
+                </div>
+                <div>Total Speeches</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-gray-800">
+                  {data.similarities.length}
+                </div>
+                <div>Similarity Pairs</div>
+              </div>
             </div>
-            <div>Average Similarity</div>
-          </div>
-          <div className="text-center">
-            <div
-              id="max-similarity"
-              className="text-lg font-bold text-gray-800"
-            >
-              -
-            </div>
-            <div>Maximum Similarity</div>
-          </div>
-        </div>
+          </>
+        )}
 
         <div className="mt-8 p-6 bg-gray-50 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">About This Analysis</h2>
           <p className="text-gray-700 mb-4">
             This interactive matrix shows semantic similarities between UN
-            General Assembly speeches from 40 selected countries in 2024. Each
-            cell represents the similarity between two countries' speeches, with
-            darker blue indicating higher similarity.
+            General Assembly speeches. Each cell represents the similarity
+            between two speeches, with darker blue indicating higher similarity.
+            The similarity is calculated using cosine similarity between speech
+            embeddings.
           </p>
           <p className="text-gray-700">
-            <strong>Key insights:</strong> Hover over cells to see detailed
-            comparisons. Use the threshold slider to filter similarities and the
-            cell size selector to adjust the visualization. The analysis reveals
-            interesting patterns like the high similarity between Germany and UK
-            (0.788), Nordic country clustering, and unexpected cross-regional
-            diplomatic alignments.
+            <strong>How to use:</strong> Adjust the year, minimum similarity
+            threshold, and maximum number of speeches using the controls above.
+            Use the view threshold slider to filter which similarities are
+            displayed, and adjust cell size for better visibility. Hover over
+            cells to see detailed comparisons between speeches.
           </p>
         </div>
       </div>
