@@ -338,7 +338,7 @@ export default function Analysis() {
         .attr('width', actualCellSize)
         .attr('height', actualCellSize)
         .attr('fill', (d) =>
-          d.similarity === 1 ? primaryColor : colorScale(d.similarity)
+          d.similarity === 1 ? '#007bb5' : colorScale(d.similarity)
         )
         .style('cursor', 'pointer')
         .style('stroke', 'white')
@@ -347,13 +347,13 @@ export default function Analysis() {
           d3.select(this).style('stroke', '#333').style('stroke-width', '2')
 
           const tooltipHtml = `
-      <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
-      <br/>
-      <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
-      <em>${d.speech1.post}</em><br/>
-      <br/>
-      <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
-      <em>${d.speech2.post}</em>
+    <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
+    <br/>
+    <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
+    <em>${d.speech1.post}</em><br/>
+    <br/>
+    <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
+    <em>${d.speech2.post}</em>
     `
 
           tooltip
