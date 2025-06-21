@@ -85,7 +85,6 @@ export default function Analysis() {
 
   // Fixed thresholds (no longer user-configurable)
   const threshold = 0.3 // Lower threshold to include more similarities
-  const viewThreshold = 0.0 // Show all similarities in the matrix
 
   // Get state from URL or use defaults
   const selectedYear = searchParams.get('year') || '2024'
@@ -259,6 +258,7 @@ export default function Analysis() {
       const allSimilarities = matrix
         .flat()
         .filter((sim) => sim > 0 && sim < 1.0)
+
       const maxSim = Math.max(...allSimilarities)
       const minSim = Math.min(...allSimilarities)
 
@@ -270,10 +270,9 @@ export default function Analysis() {
       svg.selectAll('*').remove()
 
       // Get theme colors from CSS custom properties
-      const primaryColor =
-        getComputedStyle(document.documentElement)
-          .getPropertyValue('--color-primary')
-          .trim() || '#009edb'
+      const primaryColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--color-primary')
+        .trim()
 
       // Color scale - use theme colors for brand consistency
       const colorScale = d3
@@ -327,7 +326,6 @@ export default function Analysis() {
               speech1: speech1,
               speech2: speech2,
               similarity: matrix[i][j],
-              visible: matrix[i][j] >= viewThreshold,
             }))
           )
         )
@@ -338,25 +336,22 @@ export default function Analysis() {
         .attr('y', (d) => d.i * actualCellSize)
         .attr('width', actualCellSize)
         .attr('height', actualCellSize)
-        .attr('fill', (d) => (d.visible ? colorScale(d.similarity) : '#f8f9fa'))
-        .attr('opacity', (d) => (d.visible ? 1 : 0.3))
+        .attr('fill', (d) => colorScale(d.similarity))
         .style('cursor', 'pointer')
         .style('stroke', 'white')
         .style('stroke-width', '0.5')
         .on('mouseover', function (event, d) {
-          if (!d.visible) return
-
           d3.select(this).style('stroke', '#333').style('stroke-width', '2')
 
           const tooltipHtml = `
-          <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
-          <br/>
-          <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
-          <em>${d.speech1.post}</em><br/>
-          <br/>
-          <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
-          <em>${d.speech2.post}</em>
-        `
+        <strong>Similarity: ${d.similarity.toFixed(3)}</strong><br/>
+        <br/>
+        <strong>${d.speech1.country}</strong> - ${d.speech1.speaker}<br/>
+        <em>${d.speech1.post}</em><br/>
+        <br/>
+        <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
+        <em>${d.speech2.post}</em>
+      `
 
           tooltip
             .html(tooltipHtml)
