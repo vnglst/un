@@ -180,7 +180,7 @@ async function processSpeech(
   insertEmbeddings: Database.Statement<[string]>,
   updateChunkWithEmbeddingId: Database.Statement<[number, number]>
 ): Promise<{ chunks: number; embeddings: number }> {
-  const { id: speechId, country_name: country, speaker, year, text } = speech
+  const { id: speechId, text } = speech
 
   // Check existing chunks
   const existingChunks = db
