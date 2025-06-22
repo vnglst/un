@@ -2,6 +2,8 @@ import Database from 'better-sqlite3'
 import { join } from 'path'
 import { load } from 'sqlite-vec'
 import fs from 'fs'
+import { Worker } from 'worker_threads'
+import { cpus } from 'os'
 
 interface SpeechEmbedding {
   speechId: number
@@ -9,6 +11,18 @@ interface SpeechEmbedding {
   country: string
   year: number
   speaker: string
+}
+
+interface SimilarityResult {
+  speech1Id: number
+  speech2Id: number
+  similarity: number
+}
+
+interface WorkerResult {
+  success: boolean
+  results?: SimilarityResult[]
+  error?: string
 }
 
 function openDatabase(): Database.Database {
@@ -30,18 +44,40 @@ function openDatabase(): Database.Database {
   return db
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dotProduct = 0
-  let normA = 0
-  let normB = 0
+function runWorker(
+  speechBatch: SpeechEmbedding[],
+  allSpeeches: SpeechEmbedding[],
+  similarityThreshold: number,
+  forceRecalculate: boolean
+): Promise<SimilarityResult[]> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      new URL('./similarity-worker.ts', import.meta.url),
+      {
+        workerData: {
+          speechBatch,
+          allSpeeches,
+          similarityThreshold,
+          forceRecalculate,
+        },
+      }
+    )
 
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i]
-    normA += a[i] * a[i]
-    normB += b[i] * b[i]
-  }
+    worker.on('message', (result: WorkerResult) => {
+      if (result.success && result.results) {
+        resolve(result.results)
+      } else {
+        reject(new Error(result.error || 'Unknown worker error'))
+      }
+    })
 
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
+    worker.on('error', reject)
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Worker stopped with exit code ${code}`))
+      }
+    })
+  })
 }
 
 async function calculateAllSpeechSimilarities(options: {
@@ -49,15 +85,18 @@ async function calculateAllSpeechSimilarities(options: {
   forceRecalculate?: boolean
   batchSize?: number
   similarityThreshold?: number
+  maxWorkers?: number
 }) {
   const {
     year,
     forceRecalculate = false,
-    batchSize = 100,
+    batchSize = 50, // Reduced default batch size for better worker distribution
     similarityThreshold = 0.5,
+    maxWorkers = Math.min(cpus().length, 8), // Use up to 8 workers
   } = options
 
-  console.log('🔍 Starting speech similarity calculation...')
+  console.log('🔍 Starting concurrent speech similarity calculation...')
+  console.log(`🧵 Using ${maxWorkers} worker threads`)
 
   const db = openDatabase()
 
@@ -107,71 +146,71 @@ async function calculateAllSpeechSimilarities(options: {
     return
   }
 
-  // Function to get embedding by ID
-  function getEmbedding(embeddingId: number): number[] {
-    const result = db
-      .prepare('SELECT embedding FROM speech_embeddings WHERE rowid = ?')
-      .get(embeddingId) as { embedding: Float32Array } | undefined
-    if (!result) throw new Error(`Embedding not found for ID ${embeddingId}`)
-    return Array.from(result.embedding)
-  }
-
   // Prepare insert statement
   const insertSimilarity = db.prepare(`
     INSERT OR REPLACE INTO speech_similarities (speech1_id, speech2_id, similarity)
     VALUES (?, ?, ?)
   `)
 
-  console.log('🧮 Computing pairwise similarities...')
-  let totalPairs = 0
-  let insertedPairs = 0
+  console.log('🧮 Computing pairwise similarities with concurrent workers...')
   const startTime = Date.now()
+  let totalInserted = 0
 
-  // Process in batches for better performance
+  // Split speeches into batches for workers
+  const speechBatches: SpeechEmbedding[][] = []
   for (let i = 0; i < speeches.length; i += batchSize) {
-    const batch = speeches.slice(i, i + batchSize)
+    speechBatches.push(speeches.slice(i, i + batchSize))
+  }
 
-    // Begin transaction for this batch
-    const transaction = db.transaction(() => {
-      for (const speech1 of batch) {
-        const embedding1 = getEmbedding(speech1.embeddingId)
+  console.log(
+    `📦 Created ${speechBatches.length} batches of ~${batchSize} speeches each`
+  )
 
-        for (const speech2 of speeches) {
-          // Skip self-similarity and duplicate pairs (speech1_id < speech2_id)
-          if (speech1.speechId >= speech2.speechId) continue
+  // Process batches concurrently with limited workers
+  for (let i = 0; i < speechBatches.length; i += maxWorkers) {
+    const currentBatches = speechBatches.slice(i, i + maxWorkers)
 
-          totalPairs++
+    // Create promises for current batch of workers
+    const workerPromises = currentBatches.map((batch) =>
+      runWorker(batch, speeches, similarityThreshold, forceRecalculate)
+    )
 
-          // Check if similarity already exists (unless force recalculate)
-          if (!forceRecalculate) {
-            const existing = db
-              .prepare(
-                'SELECT 1 FROM speech_similarities WHERE speech1_id = ? AND speech2_id = ?'
-              )
-              .get(speech1.speechId, speech2.speechId)
-            if (existing) continue
-          }
+    try {
+      // Wait for all workers in this batch to complete
+      const batchResults = await Promise.all(workerPromises)
 
-          const embedding2 = getEmbedding(speech2.embeddingId)
-          const similarity = cosineSimilarity(embedding1, embedding2)
-
-          // Only store similarities above threshold to save space
-          if (similarity >= similarityThreshold) {
-            insertSimilarity.run(speech1.speechId, speech2.speechId, similarity)
-            insertedPairs++
+      // Insert all results from this batch
+      const transaction = db.transaction(() => {
+        for (const workerResults of batchResults) {
+          for (const result of workerResults) {
+            insertSimilarity.run(
+              result.speech1Id,
+              result.speech2Id,
+              result.similarity
+            )
+            totalInserted++
           }
         }
-      }
-    })
+      })
 
-    transaction()
+      transaction()
 
-    const progress = (((i + batch.length) / speeches.length) * 100).toFixed(1)
-    const elapsed = (Date.now() - startTime) / 1000
-    const estimated = (elapsed / (i + batch.length)) * speeches.length
-    console.log(
-      `  Progress: ${progress}% (${i + batch.length}/${speeches.length} speeches) - ${elapsed.toFixed(1)}s elapsed, ~${estimated.toFixed(1)}s total`
-    )
+      // Progress reporting
+      const completedBatches = Math.min(i + maxWorkers, speechBatches.length)
+      const progress = (
+        (completedBatches / speechBatches.length) *
+        100
+      ).toFixed(1)
+      const elapsed = (Date.now() - startTime) / 1000
+      const estimated = (elapsed / completedBatches) * speechBatches.length
+
+      console.log(
+        `  Progress: ${progress}% (${completedBatches}/${speechBatches.length} batches) - ${elapsed.toFixed(1)}s elapsed, ~${estimated.toFixed(1)}s total`
+      )
+    } catch (error) {
+      console.error('❌ Error in worker batch:', error)
+      throw error
+    }
   }
 
   // Get statistics
@@ -194,12 +233,15 @@ async function calculateAllSpeechSimilarities(options: {
   }
 
   const elapsedTime = (Date.now() - startTime) / 1000
+  const estimatedTotalPairs = (speeches.length * (speeches.length - 1)) / 2
 
-  console.log(`\n📈 Similarity Calculation Complete!`)
+  console.log(`\n📈 Concurrent Similarity Calculation Complete!`)
   console.log(`  Processing time: ${elapsedTime.toFixed(1)} seconds`)
-  console.log(`  Total speech pairs processed: ${totalPairs.toLocaleString()}`)
   console.log(
-    `  Similarities stored (>=${similarityThreshold}): ${insertedPairs.toLocaleString()}`
+    `  Estimated total speech pairs: ${estimatedTotalPairs.toLocaleString()}`
+  )
+  console.log(
+    `  Similarities stored (>=${similarityThreshold}): ${totalInserted.toLocaleString()}`
   )
   console.log(`  Database statistics:`)
   console.log(
@@ -247,7 +289,7 @@ async function calculateAllSpeechSimilarities(options: {
   })
 
   db.close()
-  console.log('✅ Analysis complete!')
+  console.log('✅ Concurrent analysis complete!')
 }
 
 // CLI interface
@@ -270,6 +312,9 @@ async function main() {
       case '--threshold':
         options.similarityThreshold = parseFloat(args[++i])
         break
+      case '--max-workers':
+        options.maxWorkers = parseInt(args[++i])
+        break
       case '--help':
         console.log(`
 Usage: node calculate-speech-similarities.ts [options]
@@ -277,8 +322,9 @@ Usage: node calculate-speech-similarities.ts [options]
 Options:
   --year <year>         Calculate similarities only for specific year
   --force               Force recalculation of existing similarities
-  --batch-size <size>   Number of speeches to process per batch (default: 100)
+  --batch-size <size>   Number of speeches to process per batch (default: 50)
   --threshold <value>   Minimum similarity to store (default: 0.5)
+  --max-workers <num>   Maximum number of worker threads (default: min(CPU cores, 8))
   --help               Show this help message
 
 Examples:
@@ -286,6 +332,7 @@ Examples:
   node calculate-speech-similarities.ts --year 2024       # Only 2024 speeches  
   node calculate-speech-similarities.ts --force           # Recalculate everything
   node calculate-speech-similarities.ts --threshold 0.7   # Only store high similarities
+  node calculate-speech-similarities.ts --max-workers 4   # Use 4 worker threads
         `)
         process.exit(0)
     }

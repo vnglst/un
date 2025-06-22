@@ -32,6 +32,7 @@
     "analysis:similarities": "node analysis/calculate-speech-similarities.ts",
     "analysis:similarities:2024": "node analysis/calculate-speech-similarities.ts --year 2024",
     "analysis:similarities:force": "node analysis/calculate-speech-similarities.ts --force",
+    "analysis:similarities:fast": "node analysis/calculate-speech-similarities.ts --max-workers 8 --batch-size 25",
     "migrate:similarities": "node scripts/create-similarities-table.js"
   },
   "keywords": [],
