@@ -84,6 +84,3 @@ ENV HOST=0.0.0.0
 # Start the application
 CMD ["npm", "start"]
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
