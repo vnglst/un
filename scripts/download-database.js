@@ -6,6 +6,8 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
+import { createReadStream } from 'fs'
+import { createGunzip } from 'zlib'
 
 // Load environment variables from .env file
 config()
@@ -17,6 +19,7 @@ const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
 const dataDir = join(projectRoot, 'data')
 const dbPath = join(dataDir, 'un_speeches.db')
+const zipPath = join(dataDir, 'un_speeches.db.gz')
 
 async function downloadDatabase() {
   console.log('🔍 Checking for database file...')
@@ -43,7 +46,7 @@ async function downloadDatabase() {
       mkdirSync(dataDir, { recursive: true })
     }
 
-    // Download the database
+    // Download the database (compressed)
     const response = await fetch(databaseUrl)
 
     if (!response.ok) {
@@ -54,25 +57,49 @@ async function downloadDatabase() {
       throw new Error('No response body received')
     }
 
-    // Create write stream and pipe the response
-    const fileStream = createWriteStream(dbPath)
-    await pipeline(response.body, fileStream)
+    // Create write stream for the compressed file and pipe the response
+    console.log('💾 Downloading compressed database...')
+    const zipFileStream = createWriteStream(zipPath)
+    await pipeline(response.body, zipFileStream)
 
-    console.log('✅ Database downloaded successfully to:', dbPath)
+    console.log('✅ Compressed database downloaded successfully')
 
-    // Log file size for verification
+    // Log compressed file size
     const fs = await import('fs')
-    const stats = fs.statSync(dbPath)
-    const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
-    console.log(`📊 Database size: ${sizeMB} MB`)
-  } catch (error) {
-    console.error('❌ Failed to download database:', error.message)
+    const zipStats = fs.statSync(zipPath)
+    const zipSizeMB = (zipStats.size / 1024 / 1024).toFixed(2)
+    console.log(`📊 Compressed size: ${zipSizeMB} MB`)
 
-    // Clean up partial download if it exists
+    // Unzip the database
+    console.log('📂 Extracting database...')
+    const readStream = createReadStream(zipPath)
+    const gunzip = createGunzip()
+    const writeStream = createWriteStream(dbPath)
+
+    await pipeline(readStream, gunzip, writeStream)
+
+    console.log('✅ Database extracted successfully to:', dbPath)
+
+    // Log uncompressed file size
+    const dbStats = fs.statSync(dbPath)
+    const dbSizeMB = (dbStats.size / 1024 / 1024).toFixed(2)
+    console.log(`📊 Database size: ${dbSizeMB} MB`)
+
+    // Clean up the compressed file
+    fs.unlinkSync(zipPath)
+    console.log('🧹 Cleaned up compressed file')
+  } catch (error) {
+    console.error('❌ Failed to download or extract database:', error.message)
+
+    // Clean up partial downloads if they exist
+    const fs = await import('fs')
+    if (existsSync(zipPath)) {
+      fs.unlinkSync(zipPath)
+      console.log('🧹 Cleaned up partial zip download')
+    }
     if (existsSync(dbPath)) {
-      const fs = await import('fs')
       fs.unlinkSync(dbPath)
-      console.log('🧹 Cleaned up partial download')
+      console.log('🧹 Cleaned up partial database extraction')
     }
 
     process.exit(1)
