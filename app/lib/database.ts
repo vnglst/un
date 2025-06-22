@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
-import { join } from 'path'
-import { existsSync, statSync } from 'fs'
+import { join, resolve } from 'path'
+import { existsSync, statSync, mkdirSync } from 'fs'
 import { load } from 'sqlite-vec'
 import { logger, timeOperation, type LogContext } from './logger'
 
@@ -15,7 +15,14 @@ let isVectorSearchAvailable = false
  * Initialize database connection with proper error handling and logging
  */
 function initializeDatabase(): Database.Database {
-  const dbPath = join(process.cwd(), 'data', 'un_speeches.db')
+  // Use consistent data directory for both dev and production
+  const dataDir = resolve(process.cwd(), 'data')
+  const dbPath = join(dataDir, 'un_speeches.db')
+
+  // Ensure data directory exists
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true })
+  }
 
   logger.info('Initializing database connection', { path: dbPath })
 
