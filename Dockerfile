@@ -64,11 +64,11 @@ COPY --from=build --chown=react-router:nodejs /app/scripts ./scripts
 # Copy analysis directory for analysis scripts
 COPY --from=build --chown=react-router:nodejs /app/analysis ./analysis
 
-# Create data directory for database download and potential volume mounting
-RUN mkdir -p /app/data && chown react-router:nodejs /app/data
-
 # Copy any other necessary files
 COPY --chown=react-router:nodejs app/lib/topology.json ./app/lib/topology.json
+
+# Create data directory for database download and potential volume mounting
+RUN mkdir -p /app/data && chown react-router:nodejs /app/data && chmod 755 /app/data
 
 # Switch to non-root user
 USER react-router
