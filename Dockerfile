@@ -60,6 +60,9 @@ COPY --from=build --chown=react-router:nodejs /app/package.json ./package.json
 # Copy scripts directory for database download
 COPY --from=build --chown=react-router:nodejs /app/scripts ./scripts
 
+# Copy analysis directory for analysis scripts
+COPY --from=build --chown=react-router:nodejs /app/analysis ./analysis
+
 # Create data directory for database download and potential volume mounting
 RUN mkdir -p /app/data && chown react-router:nodejs /app/data
 
