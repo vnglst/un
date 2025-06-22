@@ -7,7 +7,10 @@ import { fileURLToPath } from 'url'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import { createReadStream } from 'fs'
-import { createGunzip } from 'zlib'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 // Load environment variables from .env file
 config()
@@ -19,7 +22,7 @@ const __dirname = dirname(__filename)
 const projectRoot = join(__dirname, '..')
 const dataDir = join(projectRoot, 'data')
 const dbPath = join(dataDir, 'un_speeches.db')
-const zipPath = join(dataDir, 'un_speeches.db.gz')
+const zipPath = join(dataDir, 'un_speeches.zip')
 
 async function downloadDatabase() {
   console.log('🔍 Checking for database file...')
@@ -72,11 +75,36 @@ async function downloadDatabase() {
 
     // Unzip the database
     console.log('📂 Extracting database...')
-    const readStream = createReadStream(zipPath)
-    const gunzip = createGunzip()
-    const writeStream = createWriteStream(dbPath)
 
-    await pipeline(readStream, gunzip, writeStream)
+    try {
+      // Use system unzip command for large files
+      const { stdout, stderr } = await execAsync(
+        `unzip -o "${zipPath}" -d "${dataDir}"`
+      )
+
+      if (stderr && !stderr.includes('inflating:')) {
+        console.warn('⚠️ Unzip warnings:', stderr)
+      }
+
+      console.log('✅ Database extracted successfully')
+
+      // Find the extracted .db file
+      const fs = await import('fs')
+      const files = fs.readdirSync(dataDir)
+      const dbFile = files.find(
+        (file) => file.endsWith('.db') && file !== 'un_speeches.db'
+      )
+
+      if (dbFile) {
+        const extractedPath = join(dataDir, dbFile)
+        if (extractedPath !== dbPath) {
+          fs.renameSync(extractedPath, dbPath)
+          console.log(`📄 Renamed ${dbFile} to un_speeches.db`)
+        }
+      }
+    } catch (unzipError) {
+      throw new Error(`Failed to extract ZIP file: ${unzipError.message}`)
+    }
 
     console.log('✅ Database extracted successfully to:', dbPath)
 
