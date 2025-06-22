@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
   g++ \
   sqlite3 \
   curl \
+  unzip \
   && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -41,6 +42,7 @@ FROM node:23-slim AS runtime
 RUN apt-get update && apt-get install -y \
   sqlite3 \
   curl \
+  unzip \
   && rm -rf /var/lib/apt/lists/*
 
 # Create app user for security
