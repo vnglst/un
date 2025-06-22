@@ -1,15 +1,13 @@
 # Use Node.js 23 Debian for better compatibility
 FROM node:23-slim
 
-# Install system dependencies
+# Install only necessary dependencies
 RUN apt-get update && apt-get install -y \
   python3 \
   make \
   g++ \
   sqlite3 \
   curl \
-  unzip \
-  wget \
   && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

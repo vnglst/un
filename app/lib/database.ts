@@ -30,10 +30,10 @@ function initializeDatabase(): Database.Database {
   if (!existsSync(dbPath)) {
     logger.error('Database file not found', { path: dbPath })
     logger.error(
-      'Please run "npm run download-db" to download the database file'
+      'Database must be provided manually. In development, run "./update-db.sh" to get the database.'
     )
     throw new Error(
-      `Database file not found at ${dbPath}. Run "npm run download-db" to download it.`
+      `Database file not found at ${dbPath}. Database must be provided manually - no automatic download available.`
     )
   }
 
