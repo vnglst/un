@@ -64,11 +64,11 @@ COPY --from=build --chown=react-router:nodejs /app/scripts ./scripts
 # Copy analysis directory for analysis scripts
 COPY --from=build --chown=react-router:nodejs /app/analysis ./analysis
 
-# Copy existing data directory if it exists
-COPY --chown=react-router:nodejs data ./data
-
 # Create data directory for database download and potential volume mounting
 RUN mkdir -p /app/data && chown react-router:nodejs /app/data
+
+# Copy existing data directory if it exists (optional, won't fail if missing)
+COPY --chown=react-router:nodejs data* ./
 
 # Copy any other necessary files
 COPY --chown=react-router:nodejs app/lib/topology.json ./app/lib/topology.json
