@@ -81,14 +81,14 @@ export default function SpeechDetail() {
           <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
             <Link
               to={`/year/${speech.year}`}
-              className="flex items-center space-x-1 hover:text-[#009edb] transition-colors"
+              className="flex items-center space-x-1 hover:text-un-blue transition-colors"
             >
               <Calendar className="h-4 w-4" />
               <span>{speech.year}</span>
             </Link>
             <Link
               to={`/session/${speech.session}`}
-              className="flex items-center space-x-1 hover:text-[#009edb] transition-colors"
+              className="flex items-center space-x-1 hover:text-un-blue transition-colors"
             >
               <FileText className="h-4 w-4" />
               <span>Session {speech.session}</span>
@@ -101,7 +101,7 @@ export default function SpeechDetail() {
                 <User className="h-4 w-4" />
                 <Link
                   to={`/speaker/${encodeURIComponent(speech.speaker)}`}
-                  className="font-medium hover:text-[#009edb] transition-colors"
+                  className="font-medium hover:text-un-blue transition-colors"
                 >
                   {speech.speaker}
                 </Link>
@@ -110,7 +110,7 @@ export default function SpeechDetail() {
                     <span>•</span>
                     <Link
                       to={`/role/${encodeURIComponent(speech.post)}`}
-                      className="hover:text-[#009edb] transition-colors"
+                      className="hover:text-un-blue transition-colors"
                     >
                       {speech.post}
                     </Link>

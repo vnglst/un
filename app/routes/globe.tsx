@@ -146,6 +146,10 @@ export default function Globe() {
           startRotation()
         })
 
+      // Get theme colors from CSS variables
+      const styles = getComputedStyle(document.documentElement)
+      const unBlue = styles.getPropertyValue('--color-un-blue').trim()
+
       // Add water background
       globe
         .append('circle')
@@ -237,7 +241,7 @@ export default function Globe() {
                     .code as keyof typeof iso2ToIso3
                 ]
               const count = countryLookup.get(iso3Code) || 0
-              d3.select(this).attr('stroke-width', 2).attr('stroke', '#009edb')
+              d3.select(this).attr('stroke-width', 2).attr('stroke', unBlue)
 
               const mouseEvent = event as MouseEvent
               // Tooltip
@@ -310,7 +314,7 @@ export default function Globe() {
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link to="/" className="hover:text-[#009edb] transition-colors">
+          <Link to="/" className="hover:text-un-blue transition-colors">
             HOME
           </Link>
           <span className="mx-2">&gt;</span>
@@ -366,13 +370,13 @@ export default function Globe() {
                 <Link
                   key={country.country_code}
                   to={`/country/${country.country_code}`}
-                  className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-[#009edb] hover:shadow-sm transition-all group"
+                  className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-un-blue hover:shadow-sm transition-all group"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-sm font-bold text-[#009edb] w-6">
+                    <span className="text-sm font-bold text-un-blue w-6">
                       {index + 1}
                     </span>
-                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#009edb] transition-colors">
+                    <span className="text-sm font-medium text-gray-900 group-hover:text-un-blue transition-colors">
                       {country.country_name || country.country_code}
                     </span>
                   </div>
@@ -385,7 +389,7 @@ export default function Globe() {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <Link
                 to="/"
-                className="text-sm text-[#009edb] hover:text-[#009edb]/80 transition-colors font-medium"
+                className="text-sm text-un-blue hover:text-un-blue/80 transition-colors font-medium"
               >
                 View all countries →
               </Link>
@@ -395,7 +399,7 @@ export default function Globe() {
       </div>
 
       {/* Information Section */}
-      <div className="bg-gradient-to-r from-[#009edb] to-[#009edb]/90 rounded-lg p-12 text-white">
+      <div className="bg-gradient-to-r from-un-blue to-un-blue/90 rounded-lg p-12 text-white">
         <div className="max-w-4xl">
           <h2 className="text-3xl font-bold mb-6">About This Visualization</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

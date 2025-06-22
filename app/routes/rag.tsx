@@ -214,7 +214,7 @@ export default function RAGPage() {
       <PageLayout>
         <div className="py-4">
           <div className="flex items-center text-sm text-gray-600">
-            <Link to="/" className="hover:text-[#009edb] transition-colors">
+            <Link to="/" className="hover:text-un-blue transition-colors">
               HOME
             </Link>
             <span className="mx-2">&gt;</span>
@@ -244,7 +244,7 @@ export default function RAGPage() {
                       href="https://platform.openai.com/api-keys"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#009edb] hover:underline"
+                      className="text-un-blue hover:underline"
                     >
                       OpenAI Platform
                     </a>
@@ -267,7 +267,7 @@ export default function RAGPage() {
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link to="/" className="hover:text-[#009edb] transition-colors">
+          <Link to="/" className="hover:text-un-blue transition-colors">
             HOME
           </Link>
           <span className="mx-2">&gt;</span>
@@ -332,7 +332,7 @@ export default function RAGPage() {
           {conversation.length === 0 ? (
             <div className="text-center py-16">
               <div className="max-w-lg mx-auto">
-                <div className="w-16 h-16 bg-[#009edb] rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 bg-un-blue rounded-lg flex items-center justify-center mx-auto mb-6">
                   <MessageSquare className="h-8 w-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
@@ -349,21 +349,21 @@ export default function RAGPage() {
                   </p>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-[#009edb] rounded-full mt-2 flex-shrink-0"></div>
+                      <div className="w-2 h-2 bg-un-blue rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-gray-700">
                         "What did countries say about climate change in recent
                         years?"
                       </p>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-[#009edb] rounded-full mt-2 flex-shrink-0"></div>
+                      <div className="w-2 h-2 bg-un-blue rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-gray-700">
                         "How has the discussion on nuclear weapons evolved over
                         time?"
                       </p>
                     </div>
                     <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-[#009edb] rounded-full mt-2 flex-shrink-0"></div>
+                      <div className="w-2 h-2 bg-un-blue rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-gray-700">
                         "What are the main concerns about global security
                         mentioned by African countries?"
@@ -383,7 +383,7 @@ export default function RAGPage() {
                   <div
                     className={`max-w-[85%] rounded-lg px-6 py-4 ${
                       message.type === 'user'
-                        ? 'bg-[#009edb] text-white'
+                        ? 'bg-un-blue text-white'
                         : 'bg-white text-gray-900 shadow-sm border border-gray-200'
                     }`}
                   >
@@ -444,7 +444,7 @@ export default function RAGPage() {
             <div className="flex justify-start mt-6">
               <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-[85%] shadow-sm">
                 <div className="flex items-center space-x-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#009edb] border-t-transparent"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-un-blue border-t-transparent"></div>
                   <span className="text-gray-700">AI is thinking...</span>
                 </div>
               </div>
@@ -480,7 +480,7 @@ export default function RAGPage() {
               <Button
                 type="submit"
                 disabled={isLoading || !question.trim()}
-                className="bg-[#009edb] hover:bg-[#009edb]/90 text-white px-6"
+                className="bg-un-blue hover:bg-un-blue/90 text-white px-6"
               >
                 {isLoading ? (
                   <>

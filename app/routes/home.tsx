@@ -259,7 +259,7 @@ export default function Home() {
                 <Link
                   key={year}
                   to={`/year/${year}`}
-                  className="px-3 py-1 text-xs bg-[#009edb] text-white rounded hover:bg-[#009edb]/90 transition-colors"
+                  className="px-3 py-1 text-xs bg-un-blue text-white rounded hover:bg-un-blue/90 transition-colors"
                 >
                   {year}
                 </Link>
@@ -281,7 +281,7 @@ export default function Home() {
                 <Link
                   key={country.country_code}
                   to={`/country/${country.country_code}`}
-                  className="px-3 py-1 text-xs bg-[#009edb] text-white rounded hover:bg-[#009edb]/90 transition-colors"
+                  className="px-3 py-1 text-xs bg-un-blue text-white rounded hover:bg-un-blue/90 transition-colors"
                   title={country.country_name}
                 >
                   {country.country_code}
@@ -310,7 +310,7 @@ export default function Home() {
                       params.set('q', topic)
                       navigate(`/?${params.toString()}`)
                     }}
-                    className="px-3 py-1 text-xs bg-[#009edb] text-white rounded hover:bg-[#009edb]/90 transition-colors"
+                    className="px-3 py-1 text-xs bg-un-blue text-white rounded hover:bg-un-blue/90 transition-colors"
                   >
                     {topic}
                   </button>
@@ -331,7 +331,7 @@ export default function Home() {
             variant="ghost"
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className="text-[#009edb] hover:bg-[#009edb]/10"
+            className="text-un-blue hover:bg-un-blue/10"
           >
             <Filter className="h-4 w-4 mr-2" />
             {showFilters ? 'Hide' : 'Show'} Advanced Filters
@@ -407,7 +407,7 @@ export default function Home() {
                           e.target.value as 'exact' | 'phrase' | 'fuzzy'
                         )
                       }
-                      className="text-[#009edb] focus:ring-[#009edb]"
+                      className="text-un-blue focus:ring-un-blue"
                     />
                     <span className="text-gray-700" title={mode.description}>
                       {mode.label}
@@ -428,7 +428,7 @@ export default function Home() {
                 <select
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009edb] focus:border-transparent"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-un-blue focus:border-transparent"
                 >
                   <option value="">All countries</option>
                   {countries.map((country) => (
@@ -449,7 +449,7 @@ export default function Home() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009edb] focus:border-transparent"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-un-blue focus:border-transparent"
                 >
                   <option value="">All years</option>
                   {years.map((year) => (
@@ -467,7 +467,7 @@ export default function Home() {
                 <select
                   value={selectedSession}
                   onChange={(e) => setSelectedSession(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#009edb] focus:border-transparent"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-un-blue focus:border-transparent"
                 >
                   <option value="">All sessions</option>
                   {sessions.map((session) => (
@@ -485,7 +485,7 @@ export default function Home() {
             <div className="flex space-x-3">
               <Button
                 type="submit"
-                className="bg-[#009edb] hover:bg-[#009edb]/90 text-white px-6 py-2"
+                className="bg-un-blue hover:bg-un-blue/90 text-white px-6 py-2"
               >
                 <SearchIcon className="h-4 w-4 mr-2" />
                 Search Speeches
@@ -524,7 +524,7 @@ export default function Home() {
           {/* Active filters display */}
           <div className="flex flex-wrap gap-2 mb-6">
             {currentFilters.search && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
                 {currentFilters.searchMode === 'exact' && 'Exact: '}
                 {currentFilters.searchMode === 'fuzzy' && 'Any words: '}
                 {currentFilters.searchMode === 'phrase' && 'Text: '}"
@@ -532,7 +532,7 @@ export default function Home() {
               </span>
             )}
             {currentFilters.country && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
                 Country:{' '}
                 {countries.find(
                   (c) => c.country_code === currentFilters.country
@@ -540,12 +540,12 @@ export default function Home() {
               </span>
             )}
             {currentFilters.year && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
                 Year: {currentFilters.year}
               </span>
             )}
             {currentFilters.session && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-[#009edb] text-white">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
                 Session: {currentFilters.session}
               </span>
             )}
@@ -584,7 +584,7 @@ export default function Home() {
       )}
 
       {/* Large Featured Content Block */}
-      <div className="bg-gradient-to-r from-[#009edb] to-[#009edb]/90 rounded-lg p-12 text-white mb-16">
+      <div className="bg-gradient-to-r from-un-blue to-un-blue/90 rounded-lg p-12 text-white mb-16">
         <div className="max-w-4xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>

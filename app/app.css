@@ -1,21 +1,26 @@
 @import 'tailwindcss';
 
-:root {
-  --color-primary: #009edb;
-  --color-primary-hover: #0087c4;
+@theme {
+  --color-un-blue: #009edb;
+  --color-un-blue-hover: #0087c4;
+  --color-un-blue-light: #e6f6ff;
   --color-beige: #f5f5dc;
   --color-warm-beige: #faf7f0;
+  --color-text-primary: #1f2937;
+  --color-text-muted: #6b7280;
+  --color-mark-bg: #fef3c7;
+  --color-mark-text: #92400e;
 }
 
 html,
 body {
-  background-color: #faf7f0;
-  color: #1f2937;
+  background-color: var(--color-warm-beige);
+  color: var(--color-text-primary);
 }
 
 mark {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: var(--color-mark-bg);
+  color: var(--color-mark-text);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
 }

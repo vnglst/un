@@ -22,7 +22,7 @@ export default function Footer() {
                   href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/0TJX8Y"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#009edb] hover:text-[#009edb]/80 transition-colors"
+                  className="text-un-blue hover:text-un-blue/80 transition-colors"
                 >
                   Harvard Dataverse Dataset
                 </a>
@@ -32,7 +32,7 @@ export default function Footer() {
                   href="https://www.ungdc.bham.ac.uk/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#009edb] hover:text-[#009edb]/80 transition-colors"
+                  className="text-un-blue hover:text-un-blue/80 transition-colors"
                 >
                   University of Birmingham Research
                 </a>
@@ -49,7 +49,7 @@ export default function Footer() {
                   href="https://github.com/vnglst/un"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#009edb] hover:text-[#009edb]/80 transition-colors"
+                  className="text-un-blue hover:text-un-blue/80 transition-colors"
                 >
                   Source Code (GitHub)
                 </a>
@@ -78,7 +78,7 @@ export default function Footer() {
                   href="https://koenvangilst.nl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#009edb] hover:text-[#009edb]/80 transition-colors"
+                  className="text-un-blue hover:text-un-blue/80 transition-colors"
                 >
                   Koen van Gilst
                 </a>

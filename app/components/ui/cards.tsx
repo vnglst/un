@@ -50,7 +50,7 @@ export function FeatureCard({
 }: FeatureCardProps) {
   return (
     <div className={cn('text-center', className)}>
-      <div className="w-16 h-16 bg-[#009edb] rounded-lg flex items-center justify-center mx-auto mb-4">
+      <div className="w-16 h-16 bg-un-blue rounded-lg flex items-center justify-center mx-auto mb-4">
         {icon}
       </div>
       <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
@@ -75,7 +75,7 @@ export function InfoBlock({
   const baseClasses = 'rounded-lg p-8 mb-12 shadow-sm border'
   const variantClasses = {
     default: 'bg-white border-gray-200',
-    blue: 'bg-gradient-to-r from-[#009edb] to-[#009edb]/90 text-white border-transparent',
+    blue: 'bg-gradient-to-r from-un-blue to-un-blue/90 text-white border-transparent',
   }
 
   return (

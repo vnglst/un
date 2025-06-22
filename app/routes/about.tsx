@@ -20,7 +20,7 @@ export default function About() {
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link to="/" className="hover:text-[#009edb] transition-colors">
+          <Link to="/" className="hover:text-un-blue transition-colors">
             HOME
           </Link>
           <span className="mx-2">&gt;</span>
@@ -68,7 +68,7 @@ export default function About() {
       </div>
 
       {/* Tech Stack Information */}
-      <div className="bg-gradient-to-r from-[#009edb] to-[#009edb]/90 rounded-lg p-12 text-white mb-16">
+      <div className="bg-gradient-to-r from-un-blue to-un-blue/90 rounded-lg p-12 text-white mb-16">
         <h2 className="text-3xl font-bold mb-6">Technology Stack</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
@@ -108,7 +108,7 @@ export default function About() {
             href="https://koenvangilst.nl"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#009edb] hover:text-[#009edb]/80 transition-colors font-medium"
+            className="text-un-blue hover:text-un-blue/80 transition-colors font-medium"
           >
             koenvangilst.nl
           </a>

@@ -45,10 +45,10 @@ export default function SpeechCard({
 
   return (
     <Link to={`/speech/${speech.id}`} className="block group">
-      <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-[#009edb] hover:shadow-md transition-all duration-200 h-full flex flex-col">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-un-blue hover:shadow-md transition-all duration-200 h-full flex flex-col">
         <div className="mb-4">
           <div className="flex items-start justify-between mb-3">
-            <h3 className="font-bold text-gray-900 group-hover:text-[#009edb] transition-colors line-clamp-2">
+            <h3 className="font-bold text-gray-900 group-hover:text-un-blue transition-colors line-clamp-2">
               {hasHighlights && highlightedSpeech.highlighted_country_name ? (
                 <span
                   dangerouslySetInnerHTML={{
@@ -59,7 +59,7 @@ export default function SpeechCard({
                 speech.country_name || speech.country_code
               )}
             </h3>
-            <span className="text-xs bg-[#009edb] text-white px-2 py-1 rounded-full font-medium ml-2 flex-shrink-0">
+            <span className="text-xs bg-un-blue text-white px-2 py-1 rounded-full font-medium ml-2 flex-shrink-0">
               {speech.country_code}
             </span>
           </div>
@@ -112,7 +112,7 @@ export default function SpeechCard({
         </div>
 
         <div className="mt-4 pt-3 border-t border-gray-100">
-          <span className="text-xs text-[#009edb] font-medium group-hover:text-[#009edb]/80 transition-colors">
+          <span className="text-xs text-un-blue font-medium group-hover:text-un-blue/80 transition-colors">
             Read full speech →
           </span>
         </div>

@@ -34,7 +34,7 @@ export default function ErrorPage({
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link to="/" className="hover:text-[#009edb] transition-colors">
+          <Link to="/" className="hover:text-un-blue transition-colors">
             HOME
           </Link>
           <span className="mx-2">&gt;</span>
@@ -98,7 +98,7 @@ export default function ErrorPage({
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
           <Button
             onClick={handleRefresh}
-            className="w-full sm:w-auto bg-[#009edb] hover:bg-[#009edb]/90 text-white px-8"
+            className="w-full sm:w-auto bg-un-blue hover:bg-un-blue/90 text-white px-8"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Page
@@ -130,7 +130,7 @@ export default function ErrorPage({
             If this problem persists, you can{' '}
             <Link
               to="/"
-              className="text-[#009edb] hover:text-[#009edb]/80 transition-colors"
+              className="text-un-blue hover:text-un-blue/80 transition-colors"
             >
               return to the homepage
             </Link>{' '}

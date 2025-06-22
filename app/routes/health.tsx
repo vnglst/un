@@ -89,7 +89,7 @@ export default function Health() {
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link to="/" className="hover:text-[#009edb] transition-colors">
+          <Link to="/" className="hover:text-un-blue transition-colors">
             HOME
           </Link>
           <span className="mx-2">&gt;</span>
@@ -215,13 +215,13 @@ export default function Health() {
         <div className="flex space-x-4">
           <Link
             to="/"
-            className="text-[#009edb] hover:text-[#009edb]/80 transition-colors font-medium"
+            className="text-un-blue hover:text-un-blue/80 transition-colors font-medium"
           >
             ← Return to Homepage
           </Link>
           <Link
             to="/globe"
-            className="text-[#009edb] hover:text-[#009edb]/80 transition-colors font-medium"
+            className="text-un-blue hover:text-un-blue/80 transition-colors font-medium"
           >
             View Globe →
           </Link>

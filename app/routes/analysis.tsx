@@ -248,7 +248,7 @@ export default function Analysis() {
 
       // Get theme colors from CSS custom properties
       const primaryColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--color-primary')
+        .getPropertyValue('--color-un-blue')
         .trim()
 
       // Color scale - use theme colors for brand consistency
@@ -333,7 +333,7 @@ export default function Analysis() {
       <strong>${d.speech2.country}</strong> - ${d.speech2.speaker}<br/>
       <em>${d.speech2.post}</em><br/>
       <br/>
-      <span style="color: var(--color-primary); font-weight: 500; font-size: 11px;">
+      <span style="color: var(--color-un-blue); font-weight: 500; font-size: 11px;">
         Click to view detailed comparison
       </span>
     </div>
@@ -413,10 +413,7 @@ export default function Analysis() {
       {/* Breadcrumb Navigation */}
       <div className="py-4">
         <div className="flex items-center text-sm text-gray-600">
-          <Link
-            to="/"
-            className="hover:text-[var(--color-primary)] transition-colors"
-          >
+          <Link to="/" className="hover:text-un-blue transition-colors">
             HOME
           </Link>
           <span className="mx-2">&gt;</span>
@@ -499,12 +496,12 @@ export default function Analysis() {
             {selectedCountries.map((country) => (
               <div
                 key={country}
-                className="flex items-center gap-2 px-3 py-1 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full text-sm border border-[var(--color-primary)]/20"
+                className="flex items-center gap-2 px-3 py-1 bg-un-blue/10 text-un-blue rounded-full text-sm border border-un-blue/20"
               >
                 <span>{country}</span>
                 <button
                   onClick={() => removeCountry(country)}
-                  className="hover:text-[var(--color-primary-hover)] font-bold transition-colors"
+                  className="hover:text-un-blue/80 font-bold transition-colors"
                   title={`Remove ${country}`}
                 >
                   ×
@@ -531,7 +528,7 @@ export default function Analysis() {
             </h2>
             <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
               <span className="whitespace-nowrap">Low Similarity</span>
-              <div className="w-20 sm:w-32 h-3 sm:h-4 bg-gradient-to-r from-blue-50 to-[var(--color-primary)] border border-gray-300 rounded"></div>
+              <div className="w-20 sm:w-32 h-3 sm:h-4 bg-gradient-to-r from-blue-50 to-un-blue border border-gray-300 rounded"></div>
               <span className="whitespace-nowrap">High Similarity</span>
             </div>
           </div>

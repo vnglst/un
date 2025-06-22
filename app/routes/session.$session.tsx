@@ -88,7 +88,7 @@ export default function SessionSpeeches() {
         </Link>
 
         <div className="flex items-center space-x-3 mb-2">
-          <FileText className="h-6 w-6 text-[#009edb]" />
+          <FileText className="h-6 w-6 text-un-blue" />
           <h1 className="text-3xl font-medium text-black">
             Session {session} Speeches
           </h1>

@@ -21,8 +21,8 @@ export default function Header() {
 
   const getNavLinkClass = (path: string) => {
     const baseClass = 'text-sm font-medium transition-colors duration-200'
-    const activeClass = 'text-[#009edb] border-b-2 border-[#009edb] pb-1'
-    const hoverClass = 'text-gray-700 hover:text-[#009edb]'
+    const activeClass = 'text-un-blue border-b-2 border-un-blue pb-1'
+    const hoverClass = 'text-gray-700 hover:text-un-blue'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -32,8 +32,8 @@ export default function Header() {
   const getMobileNavLinkClass = (path: string) => {
     const baseClass =
       'block px-4 py-3 text-sm font-medium transition-colors duration-200'
-    const activeClass = 'text-[#009edb] bg-[#009edb]/10'
-    const hoverClass = 'text-gray-700 hover:text-[#009edb] hover:bg-gray-50'
+    const activeClass = 'text-un-blue bg-un-blue/10'
+    const hoverClass = 'text-gray-700 hover:text-un-blue hover:bg-gray-50'
 
     return isActive(path)
       ? `${baseClass} ${activeClass}`
@@ -78,7 +78,7 @@ export default function Header() {
           {/* Mobile menu button */}
           <button
             onClick={toggleMenu}
-            className="md:hidden flex items-center justify-center w-8 h-8 text-gray-600 hover:text-[#009edb] transition-colors duration-200"
+            className="md:hidden flex items-center justify-center w-8 h-8 text-gray-600 hover:text-un-blue transition-colors duration-200"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? (
