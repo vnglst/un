@@ -6,7 +6,6 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
-import { createReadStream } from 'fs'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
