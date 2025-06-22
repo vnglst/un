@@ -26,3 +26,8 @@ export function useAppContext() {
   }
   return context
 }
+
+export function useAppContextSafe() {
+  const context = useContext(AppContext)
+  return context ?? { ragAvailable: false }
+}

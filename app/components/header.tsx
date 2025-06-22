@@ -1,12 +1,12 @@
 import { Link, useLocation } from 'react-router'
 import { Globe, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { useAppContext } from '~/lib/app-context'
+import { useAppContextSafe } from '~/lib/app-context'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
-  const { ragAvailable } = useAppContext()
+  const { ragAvailable } = useAppContextSafe()
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
