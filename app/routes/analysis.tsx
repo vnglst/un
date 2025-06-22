@@ -451,10 +451,14 @@ export default function Analysis() {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="w-full"
             >
-              <option value="all">All Years</option>
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
+              {Array.from({ length: 2024 - 1946 + 1 }, (_, i) => {
+                const year = 2024 - i
+                return (
+                  <option key={year} value={year.toString()}>
+                    {year}
+                  </option>
+                )
+              })}
             </Select>
           </div>
 
