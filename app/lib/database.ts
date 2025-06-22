@@ -58,8 +58,24 @@ function initializeDatabase(): Database.Database {
     isVectorSearchAvailable = false
     logger.warn('Failed to load sqlite-vec extension', {
       error: error instanceof Error ? error.message : String(error),
+      platform: process.platform,
+      arch: process.arch,
+      nodeVersion: process.version,
     })
     logger.warn('Vector search functionality will be disabled')
+
+    // Try to provide more specific guidance
+    if (
+      error instanceof Error &&
+      error.message.includes('No such file or directory')
+    ) {
+      logger.info('This appears to be a missing native module issue. Consider:')
+      logger.info('1. Rebuilding native modules: npm rebuild sqlite-vec')
+      logger.info('2. Installing platform-specific dependencies')
+      logger.info(
+        '3. Using a different base image or installing required system libraries'
+      )
+    }
   }
 
   logger.info('Database connection established')

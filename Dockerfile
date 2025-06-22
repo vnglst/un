@@ -2,7 +2,7 @@
 FROM node:23-alpine AS base
 
 # Install dependencies needed for native modules
-RUN apk add --no-cache python3 make g++ sqlite
+RUN apk add --no-cache python3 make g++ sqlite libc6-compat
 
 # Set working directory
 WORKDIR /app
@@ -14,6 +14,8 @@ COPY package.json package-lock.json* ./
 FROM base AS deps
 # Set npm to use platform-appropriate binaries
 RUN npm ci --omit=dev
+# Rebuild native modules to ensure compatibility
+RUN npm rebuild sqlite-vec
 
 # Build stage
 FROM base AS build
@@ -30,7 +32,7 @@ RUN npm run build
 FROM node:23-alpine AS runtime
 
 # Install sqlite and curl for runtime (before switching to non-root user)
-RUN apk add --no-cache sqlite curl
+RUN apk add --no-cache sqlite curl libc6-compat
 
 # Create app user for security
 RUN addgroup --system --gid 1001 nodejs
