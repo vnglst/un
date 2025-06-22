@@ -22,9 +22,9 @@ const openai = new OpenAI({
 const DB_PATH = join(process.cwd(), 'data', 'un_speeches.db')
 const CHUNK_SIZE = 2000 // characters per chunk
 const OVERLAP_SIZE = 200 // overlap between chunks
-const BATCH_SIZE = 500 // Increased batch size for embeddings API
-const RATE_LIMIT_DELAY = 100 // Reduced delay between batches
-const CONCURRENT_SPEECHES = 3 // Process multiple speeches concurrently
+const BATCH_SIZE = 100 // Increased batch size for embeddings API
+const RATE_LIMIT_DELAY = 500 // Reduced delay between batches
+const CONCURRENT_SPEECHES = 2 // Process multiple speeches concurrently
 
 type Speech = {
   id: number
