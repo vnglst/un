@@ -4,6 +4,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Database files - exclude to keep image lightweight
+data/
+*.db
+*.sqlite
+*.sqlite3
+
 # Build outputs
 build
 dist
