@@ -33,8 +33,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Use build cache for database downloads - this will persist across builds
+RUN --mount=type=cache,target=/app/data \
+    npm run build
 
 # Production stage
 FROM node:23-slim AS runtime
@@ -61,6 +62,9 @@ COPY --from=build --chown=react-router:nodejs /app/package.json ./package.json
 # Copy scripts directory for database download
 COPY --from=build --chown=react-router:nodejs /app/scripts ./scripts
 
+# Make startup script executable
+RUN chmod +x ./scripts/start.sh
+
 # Copy analysis directory for analysis scripts
 COPY --from=build --chown=react-router:nodejs /app/analysis ./analysis
 
@@ -85,6 +89,6 @@ ENV HOST=0.0.0.0
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Start the application
-CMD ["npm", "start"]
+# Start the application with smart database handling
+CMD ["./scripts/start.sh"]
 
