@@ -37,9 +37,6 @@ export default function Footer() {
                   University of Birmingham Research
                 </a>
               </li>
-              <li>
-                <span className="text-gray-300">UN Documentation Centre</span>
-              </li>
             </ul>
           </div>
 
@@ -74,9 +71,19 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-gray-700 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-gray-400 text-sm">
-              Built for research and educational purposes.
-            </p>
+            <div className="text-gray-400 text-sm">
+              <p>
+                Built for research and educational purposes by{' '}
+                <a
+                  href="https://koenvangilst.nl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#009edb] hover:text-[#009edb]/80 transition-colors"
+                >
+                  Koen van Gilst
+                </a>
+              </p>
+            </div>
             <div className="flex items-center space-x-6 text-sm">
               <span className="text-gray-400">
                 Engineered for Diplomacy. Built for Research.
