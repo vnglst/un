@@ -194,23 +194,15 @@ function createFTSTriggers(): void {
  * Check FTS index status and rebuild if necessary
  */
 function validateAndRebuildFTSIfNeeded(): void {
-  try {
-    const ftsCount = db
-      .prepare('SELECT COUNT(*) as count FROM speeches_fts')
-      .get() as { count: number }
+  const ftsCount = db
+    .prepare('SELECT COUNT(*) as count FROM speeches_fts')
+    .get() as { count: number }
 
-    logger.info('FTS index status', { recordCount: ftsCount.count })
+  logger.info('FTS index status', { recordCount: ftsCount.count })
 
-    if (ftsCount.count === 0) {
-      logger.warn('FTS index is empty, attempting to rebuild...')
-      rebuildFTSIndex()
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('readonly')) {
-      logger.warn('Cannot rebuild FTS index on read-only database')
-      return
-    }
-    throw error
+  if (ftsCount.count === 0) {
+    logger.warn('FTS index is empty, rebuilding...')
+    rebuildFTSIndex()
   }
 }
 
@@ -225,10 +217,6 @@ function rebuildFTSIndex(): void {
     const duration = Date.now() - start
     logger.info('FTS index rebuild completed', { duration: `${duration}ms` })
   } catch (error) {
-    if (error instanceof Error && error.message.includes('readonly')) {
-      logger.warn('Cannot rebuild FTS index on read-only database')
-      return
-    }
     logger.error('Error rebuilding FTS index', error)
     throw error
   }
@@ -240,31 +228,11 @@ function rebuildFTSIndex(): void {
 function initializeFTS(): void {
   logger.info('Initializing FTS (Full Text Search)')
   try {
-    // Check if FTS table already exists
-    const tableExists = db
-      .prepare(
-        `
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='speeches_fts'
-    `
-      )
-      .get()
-
-    if (tableExists) {
-      logger.info('FTS table found - search functionality enabled')
-      return
-    }
-
-    // Try to create FTS table (will fail on read-only database)
     createFTSTable()
     createFTSTriggers()
     validateAndRebuildFTSIfNeeded()
     logger.info('FTS initialization completed successfully')
   } catch (error) {
-    if (error instanceof Error && error.message.includes('readonly')) {
-      logger.warn('Database is read-only, FTS search disabled')
-      return
-    }
     logger.error('Error initializing FTS', error)
   }
 }
