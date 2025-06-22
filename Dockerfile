@@ -1,8 +1,14 @@
-# Use Node.js 23 Alpine for smaller image size
-FROM node:23-alpine AS base
+# Use Node.js 23 Debian for better compatibility
+FROM node:23-slim AS base
 
 # Install dependencies needed for native modules
-RUN apk add --no-cache python3 make g++ sqlite libc6-compat
+RUN apt-get update && apt-get install -y \
+  python3 \
+  make \
+  g++ \
+  sqlite3 \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -29,14 +35,17 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:23-alpine AS runtime
+FROM node:23-slim AS runtime
 
 # Install sqlite and curl for runtime (before switching to non-root user)
-RUN apk add --no-cache sqlite curl libc6-compat
+RUN apt-get update && apt-get install -y \
+  sqlite3 \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create app user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 react-router
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 --gid nodejs react-router
 
 # Set working directory
 WORKDIR /app
