@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
   sqlite3 \
   curl \
   unzip \
+  wget \
   && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
