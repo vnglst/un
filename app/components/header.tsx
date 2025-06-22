@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router'
 import { Globe, Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import { useAppContext } from '~/lib/app-context'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
+  const { ragAvailable } = useAppContext()
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -66,9 +68,11 @@ export default function Header() {
             <Link to="/globe" className={getNavLinkClass('/globe')}>
               Globe
             </Link>
-            <Link to="/rag" className={getNavLinkClass('/rag')}>
-              AI Chat
-            </Link>
+            {ragAvailable && (
+              <Link to="/rag" className={getNavLinkClass('/rag')}>
+                AI Chat
+              </Link>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -110,13 +114,15 @@ export default function Header() {
               >
                 Globe
               </Link>
-              <Link
-                to="/rag"
-                className={getMobileNavLinkClass('/rag')}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                AI Chat
-              </Link>
+              {ragAvailable && (
+                <Link
+                  to="/rag"
+                  className={getMobileNavLinkClass('/rag')}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  AI Chat
+                </Link>
+              )}
             </nav>
           </div>
         )}

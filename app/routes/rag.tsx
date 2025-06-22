@@ -1,11 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import {
-  Form,
-  useActionData,
-  useLoaderData,
-  useNavigation,
-  Link,
-} from 'react-router'
+import { Form, useActionData, useNavigation, Link } from 'react-router'
 import PageLayout from '~/components/page-layout'
 import { Button } from '~/components/ui/button'
 import { Card } from '~/components/ui/card'
@@ -13,6 +7,7 @@ import { Input } from '~/components/ui/input'
 import { Select } from '~/components/ui/select'
 import { ServiceCard } from '~/components/ui/cards'
 import { logger, timeAsyncOperation } from '~/lib/logger'
+import { useAppContext } from '~/lib/app-context'
 import {
   MessageSquare,
   Brain,
@@ -56,10 +51,6 @@ interface ConversationMessage {
   ragResponse?: RAGResponse
 }
 
-type LoaderData = {
-  ragAvailable: boolean
-}
-
 type ActionData = { success: true; result: RAGResponse } | { error: string }
 
 export function meta() {
@@ -71,32 +62,6 @@ export function meta() {
         'Ask questions about UN General Assembly speeches using AI-powered semantic search.',
     },
   ]
-}
-
-export async function loader({
-  request,
-}: {
-  request: Request
-}): Promise<LoaderData> {
-  const url = new URL(request.url)
-
-  logger.requestStart('GET', url.pathname, {
-    searchParams: Object.fromEntries(url.searchParams),
-  })
-
-  return timeAsyncOperation('rag-loader', async () => {
-    // Check if RAG is available
-    const ragAvailable = !!process.env.OPENAI_API_KEY
-
-    logger.info('RAG loader completed', {
-      ragAvailable,
-      hasOpenAIKey: !!process.env.OPENAI_API_KEY,
-    })
-
-    return {
-      ragAvailable,
-    }
-  })
 }
 
 export async function action({
@@ -135,7 +100,7 @@ export async function action({
         searchLimit,
       })
 
-      const db = await initDatabase()
+      const db = initDatabase()
 
       const filters: Record<string, unknown> = {}
       if (country && country !== 'all') {
@@ -189,7 +154,7 @@ export async function action({
 }
 
 export default function RAGPage() {
-  const { ragAvailable } = useLoaderData<LoaderData>()
+  const { ragAvailable } = useAppContext()
   const actionData = useActionData<ActionData>()
   const navigation = useNavigation()
   const [conversation, setConversation] = useState<ConversationMessage[]>([])

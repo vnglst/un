@@ -12,13 +12,6 @@ import { logger, timeOperation, type LogContext } from './logger'
 let isVectorSearchAvailable = false
 
 /**
- * Check if vector search functionality is available
- */
-export function isVectorSearchEnabled(): boolean {
-  return isVectorSearchAvailable
-}
-
-/**
  * Initialize database connection with proper error handling and logging
  */
 function initializeDatabase(): Database.Database {
