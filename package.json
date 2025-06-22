@@ -5,9 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run db:ensure && react-router build",
+    "build": "react-router build",
     "dev": "npm run db:ensure && react-router dev",
-    "start": "npm run db:setup && react-router-serve ./build/server/index.js",
+    "start": "react-router-serve ./build/server/index.js",
     "preview": "npm run build && npm start",
     "db:download": "node scripts/download-database.js",
     "db:indexes": "node scripts/create-indexes.js",
