@@ -64,7 +64,7 @@ function initDatabase(): Database.Database {
     throw new Error(`Database file not found at ${DB_PATH}`)
   }
 
-  const db = new Database(DB_PATH, { readonly: true })
+  const db = new Database(DB_PATH, { readonly: false })
 
   try {
     // Load sqlite-vec extension

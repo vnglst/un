@@ -46,8 +46,8 @@ function initializeDatabase(): Database.Database {
     lastModified: stats.mtime.toISOString(),
   })
 
-  // Create database connection
-  const database = new Database(dbPath, { readonly: true })
+  // Create database connection - remove readonly restriction for FTS setup
+  const database = new Database(dbPath, { readonly: false })
 
   // Load sqlite-vec extension for vector operations (with error handling)
   try {
