@@ -94,8 +94,18 @@ export function isDatabaseHealthy(): boolean {
     const result = db.prepare('SELECT 1 as test').get() as { test: number }
     return result?.test === 1
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : undefined
+    const errorCode =
+      error instanceof Error && 'code' in error ? error.code : undefined
+
     logger.error('Database health check failed', {
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
+      stack: errorStack,
+      code: errorCode,
+      type: error?.constructor?.name || typeof error,
+      dbPath: join(process.cwd(), 'data', 'un_speeches.db'),
+      dbExists: existsSync(join(process.cwd(), 'data', 'un_speeches.db')),
     })
     return false
   }
@@ -105,6 +115,9 @@ export function getDatabaseStats(): {
   healthy: boolean
   speechCount?: number
   sizeMB?: string
+  countriesCount?: number
+  yearsSpanned?: string
+  avgSpeechLength?: number
   error?: string
 } {
   try {
@@ -112,18 +125,51 @@ export function getDatabaseStats(): {
       return { healthy: false, error: 'Database connection failed' }
     }
 
+    const startTime = performance.now()
+
+    // Get speech count
     const countResult = db
       .prepare('SELECT COUNT(*) as count FROM speeches')
       .get() as { count: number }
 
+    // Get unique countries count
+    const countriesResult = db
+      .prepare('SELECT COUNT(DISTINCT country_code) as count FROM speeches')
+      .get() as { count: number }
+
+    // Get year range
+    const yearRangeResult = db
+      .prepare(
+        'SELECT MIN(year) as min_year, MAX(year) as max_year FROM speeches'
+      )
+      .get() as { min_year: number; max_year: number }
+
+    // Get average speech length
+    const avgLengthResult = db
+      .prepare(
+        'SELECT AVG(LENGTH(text)) as avg_length FROM speeches WHERE text IS NOT NULL'
+      )
+      .get() as { avg_length: number }
+
+    // Get database file size
     const dbPath = join(process.cwd(), 'data', 'un_speeches.db')
     const stats = statSync(dbPath)
     const sizeMB = (stats.size / 1024 / 1024).toFixed(2)
+
+    const queryTime = performance.now() - startTime
+    logger.debug('Database stats retrieved', {
+      queryTime: `${queryTime.toFixed(2)}ms`,
+      speechCount: countResult.count,
+      countriesCount: countriesResult.count,
+    })
 
     return {
       healthy: true,
       speechCount: countResult.count,
       sizeMB: `${sizeMB} MB`,
+      countriesCount: countriesResult.count,
+      yearsSpanned: `${yearRangeResult.min_year}-${yearRangeResult.max_year}`,
+      avgSpeechLength: Math.round(avgLengthResult.avg_length),
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
