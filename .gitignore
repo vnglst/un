@@ -3,3 +3,4 @@ build/
 data/
 *.db
 un_speeches.db
+node_modules/
