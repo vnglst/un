@@ -264,7 +264,7 @@ export default function LetterDetail() {
                     ) {
                       return null
                     }
-                    return <h1 className="mb-4">{children}</h1>
+                    return <h1 className="mb-4 font-bold">{children}</h1>
                   },
                   h2: ({ children }) => {
                     // Hide "Footnotes" headings
@@ -274,7 +274,7 @@ export default function LetterDetail() {
                     ) {
                       return null
                     }
-                    return <h2 className="mb-3">{children}</h2>
+                    return <h2 className="mb-3 font-bold">{children}</h2>
                   },
                   h3: ({ children }) => {
                     // Hide "Footnotes" headings
@@ -284,7 +284,7 @@ export default function LetterDetail() {
                     ) {
                       return null
                     }
-                    return <h3 className="mb-2">{children}</h3>
+                    return <h3 className="my-2 font-bold">{children}</h3>
                   },
                   h4: ({ children }) => {
                     // Hide "Footnotes" headings
@@ -294,7 +294,7 @@ export default function LetterDetail() {
                     ) {
                       return null
                     }
-                    return <h4 className="mb-2">{children}</h4>
+                    return <h4 className="my-2 font-bold">{children}</h4>
                   },
                   // Hide horizontal rules (lines)
                   hr: () => null,

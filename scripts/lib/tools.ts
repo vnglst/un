@@ -39,60 +39,80 @@ export class ToolImplementations {
     this.db = new Database(dbPath, { readonly: false })
   }
 
-  async sqlQuery(args: { query: string; limit?: number }): Promise<string> {
+  async sqlQuery(args: { query: string }): Promise<string> {
     try {
-      const { query, limit = 100 } = args
+      const { query } = args
 
-      // Add LIMIT if not present
-      let finalQuery = query.trim()
-      if (!finalQuery.toLowerCase().includes('limit')) {
-        finalQuery += ` LIMIT ${Math.min(limit, 1000)}`
-      }
+      const finalQuery = query.trim()
 
       const stmt = this.db.prepare(finalQuery)
-      const results = stmt.all() as Record<string, unknown>[]
 
-      if (results.length === 0) {
-        return 'No results found for the query.'
-      }
+      // Determine if this is a SELECT query or a write operation
+      const isSelectQuery = finalQuery.toLowerCase().trim().startsWith('select')
 
-      // Format results as a table
-      if (results.length > 0) {
-        const headers = Object.keys(results[0])
-        const maxResults = Math.min(results.length, 20) // Limit displayed results
+      if (isSelectQuery) {
+        const results = stmt.all() as Record<string, unknown>[]
+        return this.formatSelectResults(results)
+      } else {
+        // For INSERT, UPDATE, DELETE, etc. use run()
+        const result = stmt.run()
 
-        let output = `Query returned ${results.length} rows (showing first ${maxResults}):\n\n`
+        // Format the result based on the operation
+        const operation = finalQuery.split(' ')[0].toUpperCase()
+        let output = `${operation} operation completed successfully.\n`
 
-        // Create table header
-        output += headers.join(' | ') + '\n'
-        output += headers.map(() => '---').join(' | ') + '\n'
-
-        // Add data rows
-        for (let i = 0; i < maxResults; i++) {
-          const row = results[i] as Record<string, unknown>
-          const values = headers.map((header) => {
-            const value = row[header]
-            if (typeof value === 'string' && value.length > 50) {
-              return value.substring(0, 47) + '...'
-            }
-            return value || ''
-          })
-          output += values.join(' | ') + '\n'
+        if (result.changes !== undefined) {
+          output += `Rows affected: ${result.changes}\n`
         }
 
-        if (results.length > maxResults) {
-          output += `\n... and ${results.length - maxResults} more rows`
+        if (
+          result.lastInsertRowid !== undefined &&
+          result.lastInsertRowid !== 0
+        ) {
+          output += `Last insert row ID: ${result.lastInsertRowid}\n`
         }
 
         return output
       }
-
-      return JSON.stringify(results, null, 2)
     } catch (error) {
       throw new Error(
         `SQL query failed: ${error instanceof Error ? error.message : String(error)}`
       )
     }
+  }
+
+  private formatSelectResults(results: Record<string, unknown>[]): string {
+    if (results.length === 0) {
+      return 'No results found for the query.'
+    }
+
+    const headers = Object.keys(results[0])
+    const maxResults = Math.min(results.length, 20) // Limit displayed results
+
+    let output = `Query returned ${results.length} rows (showing first ${maxResults}):\n\n`
+
+    // Create table header
+    output += headers.join(' | ') + '\n'
+    output += headers.map(() => '---').join(' | ') + '\n'
+
+    // Add data rows
+    for (let i = 0; i < maxResults; i++) {
+      const row = results[i]
+      const values = headers.map((header) => {
+        const value = row[header]
+        if (typeof value === 'string' && value.length > 50) {
+          return value.substring(0, 47) + '...'
+        }
+        return value || ''
+      })
+      output += values.join(' | ') + '\n'
+    }
+
+    if (results.length > maxResults) {
+      output += `\n... and ${results.length - maxResults} more rows`
+    }
+
+    return output
   }
 
   async fullTextSearch(args: {

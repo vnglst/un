@@ -26,7 +26,7 @@
     "rag:chat": "node rag-ts/runtime/rag-pipeline.ts",
     "rag:examples": "node rag-ts/tests/examples.ts",
     "agent": "node scripts/cli.ts",
-    "agent:letter": "node scripts/cli.ts --letter",
+    "letters:write": "node scripts/cli.ts --letter",
     "letters:clean": "sqlite3 data/un_speeches.db < scripts/clean-letters-table.sql"
   },
   "keywords": [],

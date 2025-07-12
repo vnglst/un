@@ -34,7 +34,7 @@ prompt: |
   ### Formatting
 
   - **Use formal letter formatting**.
-  - **All direct UN speech citations must use the format speech/ID and be presented as a clickable link in the references**.
+  - **All direct UN speech citations must use the format speech/ID and be presented as a clickable link in the references using the following format: [Speaker, Country](/speech/ID)**.
   - **All letters are signed: "A Diplomatic AI Agent"**.
   - **References must appear only as markdown references at the end of the letter**.
 
