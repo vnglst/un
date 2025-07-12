@@ -45,6 +45,8 @@ prompt: |
 
   **References section at the end:**
 
+  - Don't add a title # References. This will be automatically added by the system.
+
   > [^1]: News article reference, [CNN, July 12, 2025](https://lite.cnn.com/2025/07/12/asia/poland-south-korea-tank-deal-intl-hnk-ml)  
   > [^2]: Wikipedia reference, [Wikipedia](https://en.wikipedia.org/wiki/Poland)  
   > [^3]: UN General Assembly, Year, [Speaker, Country](/speech/ID)

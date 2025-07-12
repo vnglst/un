@@ -255,45 +255,16 @@ export default function LetterDetail() {
                     }
                     return <section {...props}>{children}</section>
                   },
-                  // Style headings with plain text - hide footnotes headings
                   h1: ({ children }) => {
-                    // Hide "Footnotes" headings
-                    if (
-                      typeof children === 'string' &&
-                      children.toLowerCase().includes('footnotes')
-                    ) {
-                      return null
-                    }
                     return <h1 className="mb-4 font-bold">{children}</h1>
                   },
                   h2: ({ children }) => {
-                    // Hide "Footnotes" headings
-                    if (
-                      typeof children === 'string' &&
-                      children.toLowerCase().includes('footnotes')
-                    ) {
-                      return null
-                    }
                     return <h2 className="mb-3 font-bold">{children}</h2>
                   },
                   h3: ({ children }) => {
-                    // Hide "Footnotes" headings
-                    if (
-                      typeof children === 'string' &&
-                      children.toLowerCase().includes('footnotes')
-                    ) {
-                      return null
-                    }
                     return <h3 className="my-2 font-bold">{children}</h3>
                   },
                   h4: ({ children }) => {
-                    // Hide "Footnotes" headings
-                    if (
-                      typeof children === 'string' &&
-                      children.toLowerCase().includes('footnotes')
-                    ) {
-                      return null
-                    }
                     return <h4 className="my-2 font-bold">{children}</h4>
                   },
                   // Hide horizontal rules (lines)
@@ -359,28 +330,16 @@ export default function LetterDetail() {
           {/* Referenced Speeches Section */}
           {metadata && (metadata.speech_ids || metadata.session_numbers) && (
             <div className="mt-8 pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Referenced UN Speeches
-              </h3>
-              <div className="space-y-3">
-                {metadata.speech_ids && metadata.speech_ids.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Speech IDs:
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {metadata.speech_ids.map((speechId: number) => (
-                        <Link
-                          key={speechId}
-                          to={`/speech/${speechId}`}
-                          className="inline-flex items-center px-3 py-1 text-sm font-medium text-un-blue bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors"
-                        >
-                          Speech #{speechId}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div className="flex flex-wrap gap-2">
+                {metadata.speech_ids?.map((speechId: number) => (
+                  <Link
+                    key={speechId}
+                    to={`/speech/${speechId}`}
+                    className="inline-flex items-center px-3 py-1 text-sm font-medium text-un-blue bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors"
+                  >
+                    Speech #{speechId}
+                  </Link>
+                ))}
               </div>
             </div>
           )}
