@@ -62,11 +62,11 @@ export default function Header() {
             <Link to="/" className={getNavLinkClass('/')}>
               Browse
             </Link>
-            <Link to="/analysis" className={getNavLinkClass('/analysis')}>
-              Analysis
-            </Link>
             <Link to="/globe" className={getNavLinkClass('/globe')}>
               Globe
+            </Link>
+            <Link to="/letters" className={getNavLinkClass('/letters')}>
+              Letters
             </Link>
             {ragAvailable && (
               <Link to="/rag" className={getNavLinkClass('/rag')}>
@@ -101,18 +101,18 @@ export default function Header() {
                 Browse
               </Link>
               <Link
-                to="/analysis"
-                className={getMobileNavLinkClass('/analysis')}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Analysis
-              </Link>
-              <Link
                 to="/globe"
                 className={getMobileNavLinkClass('/globe')}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Globe
+              </Link>
+              <Link
+                to="/letters"
+                className={getMobileNavLinkClass('/letters')}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Letters
               </Link>
               {ragAvailable && (
                 <Link

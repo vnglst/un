@@ -8,9 +8,6 @@ import { logger, timeOperation, type LogContext } from './logger'
 // DATABASE CONFIGURATION & INITIALIZATION
 // =============================================================================
 
-// Track sqlite-vec availability
-let isVectorSearchAvailable = false
-
 /**
  * Initialize database connection with proper error handling and logging
  */
@@ -52,10 +49,8 @@ function initializeDatabase(): Database.Database {
   // Load sqlite-vec extension for vector operations (with error handling)
   try {
     load(database)
-    isVectorSearchAvailable = true
     logger.info('sqlite-vec extension loaded successfully')
   } catch (error) {
-    isVectorSearchAvailable = false
     logger.warn('Failed to load sqlite-vec extension', {
       error: error instanceof Error ? error.message : String(error),
       platform: process.platform,
@@ -84,6 +79,11 @@ function initializeDatabase(): Database.Database {
 }
 
 const db = initializeDatabase()
+
+// Export the database instance for use by other modules (like CLI tools)
+export function getDatabase() {
+  return db
+}
 
 // =============================================================================
 // HEALTH CHECK & DIAGNOSTICS
@@ -867,401 +867,122 @@ export function searchSpeechesWithHighlights(
 }
 
 // =============================================================================
-// SIMILARITY FUNCTIONS
+// LETTERS MANAGEMENT
 // =============================================================================
 
-export interface SpeechMetadata {
+export interface Letter {
   id: number
-  country: string
-  speaker: string
-  post: string
-  date: string
-  year: number
+  content: string
+  addressed_to: string
+  date_created: string
+  subject?: string
+  metadata?: string
 }
 
-export interface SimilarityData {
-  speeches: SpeechMetadata[]
-  similarities: Array<{
-    speech1_id: number
-    speech2_id: number
-    similarity: number
-  }>
-  matrix?: number[][]
+export interface LetterInsert {
+  content: string
+  addressed_to: string
+  subject?: string
+  metadata?: Record<string, unknown>
 }
 
 /**
- * Get available countries for similarity analysis
+ * Store a new letter in the database
  */
-export function getSimilarityCountries(
-  year?: number,
-  threshold: number = 0.3
-): string[] {
-  const context: LogContext = {
-    year,
-    threshold,
-    operation: 'getSimilarityCountries',
-  }
+export function storeLetter(letter: LetterInsert): number {
+  return timeOperation('storeLetter', () => {
+    const stmt = db.prepare(`
+      INSERT INTO letters (content, addressed_to, subject, metadata)
+      VALUES (?, ?, ?, ?)
+    `)
 
-  return timeOperation('getSimilarityCountries', () => {
-    let countryQuery = `
-      SELECT DISTINCT COALESCE(s.country_name, s.country_code) as country
-      FROM speeches s
-      WHERE EXISTS (
-        SELECT 1 FROM speech_similarities ss 
-        WHERE (ss.speech1_id = s.id OR ss.speech2_id = s.id)
-        AND ss.similarity >= ?
-      )
-    `
-    const countryParams: (number | string)[] = [threshold]
+    const metadata = letter.metadata ? JSON.stringify(letter.metadata) : null
+    const result = stmt.run(
+      letter.content,
+      letter.addressed_to,
+      letter.subject || null,
+      metadata
+    )
 
-    if (year) {
-      countryQuery += ' AND s.year = ?'
-      countryParams.push(year)
-    }
-
-    countryQuery += ' ORDER BY country'
-
-    const results = db.prepare(countryQuery).all(...countryParams) as {
-      country: string
-    }[]
-
-    logger.info('Retrieved similarity countries', {
-      ...context,
-      count: results.length,
+    logger.info('Letter stored successfully', {
+      letterId: result.lastInsertRowid,
+      addressedTo: letter.addressed_to,
+      subject: letter.subject,
     })
 
-    return results.map((r) => r.country)
+    return result.lastInsertRowid as number
   })
 }
 
 /**
- * Get similarity analysis data for specified countries and year
+ * Retrieve all letters from the database
  */
-export function getSimilarityAnalysis(
-  countries: string[],
-  year?: number,
-  threshold: number = 0.3,
-  includeMatrix: boolean = false
-): SimilarityData {
-  const context: LogContext = {
-    countries,
-    year,
-    threshold,
-    includeMatrix,
-    operation: 'getSimilarityAnalysis',
-  }
+export function getLetters(): Letter[] {
+  return timeOperation('getLetters', () => {
+    const stmt = db.prepare(`
+      SELECT id, content, addressed_to, date_created, subject, metadata
+      FROM letters
+      ORDER BY date_created DESC
+    `)
 
-  return timeOperation('getSimilarityAnalysis', () => {
-    // Get speeches for the selected countries and year - limit to 2 per country to avoid performance issues
-    let speechQuery = `
-      SELECT DISTINCT
-        s.id,
-        COALESCE(s.country_name, s.country_code) as country,
-        s.speaker,
-        s.post,
-        s.year || '-01-01' as date,
-        s.year
-      FROM speeches s
-      WHERE 1=1
-    `
+    const letters = stmt.all() as Letter[]
 
-    const params: (number | string)[] = []
+    logger.info('Retrieved letters', { count: letters.length })
 
-    if (year) {
-      speechQuery += ` AND s.year = ?`
-      params.push(year)
-    }
-
-    // Filter by countries if provided
-    if (countries.length > 0) {
-      const countryPlaceholders = countries.map(() => '?').join(',')
-      speechQuery += ` AND COALESCE(s.country_name, s.country_code) IN (${countryPlaceholders})`
-      params.push(...countries)
-    }
-
-    speechQuery += ` ORDER BY COALESCE(s.country_name, s.country_code), s.year DESC`
-
-    const allSpeeches = db
-      .prepare(speechQuery)
-      .all(...params) as SpeechMetadata[]
-
-    // Limit to 2 speeches per country to avoid performance issues
-    const speechesByCountry = new Map<string, SpeechMetadata[]>()
-    for (const speech of allSpeeches) {
-      if (!speechesByCountry.has(speech.country)) {
-        speechesByCountry.set(speech.country, [])
-      }
-      const countrySpeeches = speechesByCountry.get(speech.country)!
-      if (countrySpeeches.length < 2) {
-        countrySpeeches.push(speech)
-      }
-    }
-
-    const speeches = Array.from(speechesByCountry.values()).flat()
-
-    if (speeches.length === 0) {
-      logger.info('No speeches found for similarity analysis', context)
-      return { speeches: [], similarities: [] }
-    }
-
-    // Get similarities for these speeches
-    const speechIds = speeches.map((s) => s.id)
-    const placeholders = speechIds.map(() => '?').join(',')
-
-    const similarityQuery = `
-      SELECT speech1_id, speech2_id, similarity
-      FROM speech_similarities
-      WHERE speech1_id IN (${placeholders})
-        AND speech2_id IN (${placeholders})
-        AND similarity >= ?
-      ORDER BY similarity DESC
-    `
-
-    const similarities = db
-      .prepare(similarityQuery)
-      .all(...speechIds, ...speechIds, threshold) as Array<{
-      speech1_id: number
-      speech2_id: number
-      similarity: number
-    }>
-
-    const result: SimilarityData = {
-      speeches,
-      similarities,
-    }
-
-    // If matrix format is requested, convert to matrix
-    if (includeMatrix) {
-      const matrix: number[][] = Array(speeches.length)
-        .fill(null)
-        .map(() => Array(speeches.length).fill(0))
-
-      // Create speech ID to index mapping
-      const idToIndex = new Map<number, number>()
-      speeches.forEach((speech, index) => {
-        idToIndex.set(speech.id, index)
-      })
-
-      // Fill the matrix with similarity data
-      similarities.forEach(({ speech1_id, speech2_id, similarity }) => {
-        const index1 = idToIndex.get(speech1_id)
-        const index2 = idToIndex.get(speech2_id)
-
-        if (index1 !== undefined && index2 !== undefined) {
-          matrix[index1][index2] = similarity
-          matrix[index2][index1] = similarity // Symmetric matrix
-        }
-      })
-
-      // Set diagonal to 1 (self-similarity)
-      for (let i = 0; i < speeches.length; i++) {
-        matrix[i][i] = 1
-      }
-
-      result.matrix = matrix
-    }
-
-    logger.info('Retrieved similarity analysis', {
-      ...context,
-      speechCount: speeches.length,
-      similarityCount: similarities.length,
-    })
-
-    return result
+    return letters
   })
 }
 
-export interface SimilarityComparison {
-  speech1: {
-    id: number
-    country: string
-    speaker: string
-    post: string
-    date: string
-    year: number
-  }
-  speech2: {
-    id: number
-    country: string
-    speaker: string
-    post: string
-    date: string
-    year: number
-  }
-  overall_similarity: number
-  chunk_similarities: Array<{
-    chunk1_text: string
-    chunk2_text: string
-    similarity: number
-    chunk1_position: number
-    chunk2_position: number
-  }>
-  total_chunks: number
-}
-
 /**
- * Get similarity comparison between two speeches
+ * Retrieve a specific letter by ID
  */
-export function getSimilarityComparison(
-  speech1Id: string,
-  speech2Id: string
-): SimilarityComparison {
-  const context: LogContext = {
-    speech1Id,
-    speech2Id,
-    operation: 'getSimilarityComparison',
-  }
+export function getLetterById(id: number): Letter | null {
+  return timeOperation('getLetterById', () => {
+    const stmt = db.prepare(`
+      SELECT id, content, addressed_to, date_created, subject, metadata
+      FROM letters
+      WHERE id = ?
+    `)
 
-  return timeOperation('getSimilarityComparison', () => {
-    // Get speech metadata
-    const speechQuery = `
-      SELECT 
-        s.id,
-        COALESCE(s.country_name, s.country_code) as country,
-        s.speaker,
-        s.post,
-        s.year || '-01-01' as date,
-        s.year
-      FROM speeches s
-      WHERE s.id IN (?, ?)
-    `
+    const letter = stmt.get(id) as Letter | undefined
 
-    const speeches = db
-      .prepare(speechQuery)
-      .all(speech1Id, speech2Id) as Array<{
-      id: number
-      country: string
-      speaker: string
-      post: string
-      date: string
-      year: number
-    }>
-
-    if (speeches.length !== 2) {
-      throw new Error('One or both speeches not found')
-    }
-
-    const speech1 = speeches.find((s) => s.id === parseInt(speech1Id))!
-    const speech2 = speeches.find((s) => s.id === parseInt(speech2Id))!
-
-    // Get overall similarity
-    const overallSimilarityQuery = `
-      SELECT similarity 
-      FROM speech_similarities 
-      WHERE (speech1_id = ? AND speech2_id = ?) OR (speech1_id = ? AND speech2_id = ?)
-    `
-
-    const overallSimilarityResult = db
-      .prepare(overallSimilarityQuery)
-      .get(speech1Id, speech2Id, speech2Id, speech1Id) as
-      | { similarity: number }
-      | undefined
-
-    if (!overallSimilarityResult) {
-      throw new Error('Similarity data not found for these speeches')
-    }
-
-    // Get chunk similarities using sqlite-vec real-time calculation
-    let chunkSimilarities: Array<{
-      chunk1_text: string
-      chunk2_text: string
-      similarity: number
-      chunk1_position: number
-      chunk2_position: number
-    }> = []
-
-    let totalChunks = 0
-
-    // Only try to calculate chunk similarities if sqlite-vec is available
-    if (isVectorSearchAvailable) {
-      try {
-        // Real-time chunk similarity calculation using sqlite-vec
-        // Get the best match for each chunk from speech1
-        const chunkSimilarityQuery = `
-          WITH chunk_similarities AS (
-            SELECT 
-              c1.chunk_text as chunk1_text,
-              c2.chunk_text as chunk2_text,
-              (1 - vec_distance_cosine(e1.embedding, e2.embedding)) as similarity,
-              c1.chunk_index as chunk1_position,
-              c2.chunk_index as chunk2_position,
-              ROW_NUMBER() OVER (
-                PARTITION BY c1.chunk_index 
-                ORDER BY (1 - vec_distance_cosine(e1.embedding, e2.embedding)) DESC
-              ) as rn
-            FROM speech_chunks c1
-            JOIN speech_embeddings e1 ON c1.embedding_id = e1.rowid
-            JOIN speech_chunks c2 ON c2.speech_id = ?
-            JOIN speech_embeddings e2 ON c2.embedding_id = e2.rowid
-            WHERE c1.speech_id = ?
-            AND c1.embedding_id IS NOT NULL 
-            AND c2.embedding_id IS NOT NULL
-            AND (1 - vec_distance_cosine(e1.embedding, e2.embedding)) >= 0.1
-        )
-        SELECT 
-          chunk1_text,
-          chunk2_text,
-          similarity,
-          chunk1_position,
-          chunk2_position
-        FROM chunk_similarities
-        WHERE rn = 1
-        ORDER BY chunk1_position ASC
-      `
-
-        chunkSimilarities = db
-          .prepare(chunkSimilarityQuery)
-          .all(speech2Id, speech1Id) as Array<{
-          chunk1_text: string
-          chunk2_text: string
-          similarity: number
-          chunk1_position: number
-          chunk2_position: number
-        }>
-
-        // Get total number of chunks from speech1 (for display purposes)
-        const totalChunksQuery = `
-          SELECT 
-            COUNT(*) as total
-          FROM speech_chunks c1
-          WHERE c1.speech_id = ?
-            AND c1.embedding_id IS NOT NULL
-        `
-
-        const totalResult = db.prepare(totalChunksQuery).get(speech1Id) as
-          | { total: number }
-          | undefined
-
-        totalChunks = totalResult?.total || 0
-
-        logger.info('Calculated best chunk matches using sqlite-vec', {
-          ...context,
-          chunkSimilaritiesCount: chunkSimilarities.length,
-          totalChunks,
-        })
-      } catch (error) {
-        // If speech_chunks or speech_embeddings tables don't exist, return empty array
-        logger.info(
-          'speech_chunks/speech_embeddings tables not found or error calculating similarities',
-          {
-            ...context,
-            error: error instanceof Error ? error.message : String(error),
-          }
-        )
-      }
+    if (letter) {
+      logger.info('Retrieved letter', {
+        letterId: id,
+        addressedTo: letter.addressed_to,
+      })
     } else {
-      logger.info(
-        'Vector search not available, skipping chunk similarities',
-        context
-      )
+      logger.warn('Letter not found', { letterId: id })
     }
 
-    return {
-      speech1,
-      speech2,
-      overall_similarity: overallSimilarityResult.similarity,
-      chunk_similarities: chunkSimilarities,
-      total_chunks: totalChunks,
-    }
+    return letter || null
   })
 }
+
+/**
+ * Retrieve letters addressed to a specific person/entity
+ */
+export function getLettersByRecipient(addressedTo: string): Letter[] {
+  return timeOperation('getLettersByRecipient', () => {
+    const stmt = db.prepare(`
+      SELECT id, content, addressed_to, date_created, subject, metadata
+      FROM letters
+      WHERE addressed_to = ?
+      ORDER BY date_created DESC
+    `)
+
+    const letters = stmt.all(addressedTo) as Letter[]
+
+    logger.info('Retrieved letters by recipient', {
+      addressedTo,
+      count: letters.length,
+    })
+
+    return letters
+  })
+}
+
+// =============================================================================
+// =============================================================================
+// EXPORT ALL FUNCTIONS
+// =============================================================================

@@ -1,0 +1,161 @@
+name: Diplomatic Research & Analysis Agent
+description: Comprehensive diplomatic agent for researching international affairs, analyzing UN speeches, and providing informed responses to user questions
+model: gpt-4.1
+temperature: 0.4
+max_steps: 15
+
+system_prompts:
+  - role: system
+    content: |-
+      You are a comprehensive diplomatic research and analysis agent with expertise in international affairs, UN history, and current events. Your primary goal is to answer user questions with thorough research and analysis, though you can also write diplomatic letters when specifically requested.
+
+      **Core Capabilities:**
+      1. **Research & Analysis**: Use all available tools to thoroughly research topics, providing comprehensive, well-sourced answers
+      2. **UN Speech Database Analysis**: Query and analyze historical UN speeches to find relevant quotations and patterns
+      3. **Current Affairs Research**: Access current news to understand ongoing conflicts and diplomatic situations
+      4. **Historical Context**: Use Wikipedia and other sources to provide historical background and context
+      5. **Letter Writing**: When requested, craft diplomatic letters with proper citations and footnotes
+      6. **Duplicate Checking**: Verify if topics or recipients have been previously addressed
+      7. **Information Storage**: Store letters and findings when appropriate
+
+      **Research Process:**
+      1. **Understand the Question**: Analyze what the user is asking for and identify key research areas
+      2. **Multi-Source Research**: Use combination of:
+         - UN speeches database for official statements and historical positions
+         - Current news sources for recent developments
+         - Wikipedia for background context and biographical information
+         - Full-text search for specific topics in UN speeches
+      3. **Analysis & Synthesis**: Combine findings from multiple sources to provide comprehensive answers
+      4. **Quality Assurance**: Ensure all information is properly sourced and attributed
+
+      **Response Guidelines:**
+      - Provide thorough, well-researched answers that address the user's question directly
+      - Include relevant quotations from UN speeches with proper attribution (Speaker, Country, Year, Speech ID)
+      - Reference current events when relevant to provide contemporary context
+      - Use clear, accessible language while maintaining diplomatic professionalism
+      - Always cite sources and provide specific references
+      - If writing letters, follow diplomatic conventions but keep language simple and clear
+
+      **Tool Usage Strategy:**
+      - Start with broad research using sql_query to understand available data
+      - Use full_text_search for specific topic searches in UN speeches
+      - Get current context with get_cnn_lite_news for recent developments
+      - Use wikipedia_search for biographical and historical background
+      - Check for duplicates when appropriate using check_duplicate_recipient
+      - Store letters only when specifically requested and after quality validation
+
+      **Answer Format:**
+      Structure your responses to be informative and well-organized:
+      - Direct answer to the user's question
+      - Supporting evidence from multiple sources
+      - Relevant historical context when applicable
+      - Current developments if pertinent
+      - Proper attribution for all sources
+
+      Focus on being a knowledgeable, thorough diplomatic researcher who can provide comprehensive answers to complex international affairs questions.
+
+tools:
+  - type: function
+    function:
+      name: sql_query
+      description: "Execute SQL queries against the UN speeches database for data extraction, filtering, counting, and aggregation."
+      parameters:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "SQL query to execute. Use proper SQLite syntax. Always use LIMIT for large result sets."
+          limit:
+            type: number
+            description: "Maximum number of rows to return (default: 100, max: 1000)"
+            default: 100
+        required:
+          - query
+
+  - type: function
+    function:
+      name: full_text_search
+      description: "Search UN speeches database using full-text search for specific topics, keywords, or phrases."
+      parameters:
+        type: object
+        properties:
+          search_term:
+            type: string
+            description: "The term or phrase to search for in UN speeches"
+          country_filter:
+            type: string
+            description: "Optional country code to filter results (e.g., 'US', 'FR', 'CN')"
+          year_from:
+            type: number
+            description: "Optional starting year to filter results"
+          year_to:
+            type: number
+            description: "Optional ending year to filter results"
+          limit:
+            type: number
+            description: "Maximum number of results to return (default: 50)"
+            default: 50
+        required:
+          - search_term
+
+  - type: function
+    function:
+      name: wikipedia_search
+      description: "Search Wikipedia for information about topics, countries, people, events, or background context."
+      parameters:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "Search term or phrase to look up on Wikipedia"
+        required:
+          - query
+
+  - type: function
+    function:
+      name: get_cnn_lite_news
+      description: "Get current news headlines from CNN Lite or fetch specific news articles for current affairs context."
+      parameters:
+        type: object
+        properties:
+          url:
+            type: string
+            description: "Optional specific CNN Lite article URL to fetch. If not provided, returns current headlines."
+        required: []
+
+  - type: function
+    function:
+      name: check_duplicate_recipient
+      description: "Check if letters have been previously sent to a specific world leader or recipient."
+      parameters:
+        type: object
+        properties:
+          leader_name:
+            type: string
+            description: "The name and title of the world leader to check for existing letters"
+        required:
+          - leader_name
+
+  - type: function
+    function:
+      name: store_letter
+      description: "Store a diplomatic letter in the database with metadata after quality validation."
+      parameters:
+        type: object
+        properties:
+          content:
+            type: string
+            description: "The complete letter content"
+          addressed_to:
+            type: string
+            description: "The recipient of the letter (name and title)"
+          subject:
+            type: string
+            description: "Subject line for the letter"
+          metadata:
+            type: string
+            description: "JSON string containing additional metadata including extracted speech_ids array"
+        required:
+          - content
+          - addressed_to
+          - subject

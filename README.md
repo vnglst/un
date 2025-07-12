@@ -1,26 +1,27 @@
-# UN General Assembly Speeches
+# UN General Assembly Speeches Browser
 
-A modern web application for browsing and searching speeches from the UN General Assembly. Built with React Router v7, TypeScript, and D3.js for data visualization.
+A modern web application for browsing and searching UN General Assembly speeches (1946-2024). Built with React Router v7, TypeScript, and D3.js, featuring advanced AI-powered search and analysis capabilities.
 
 ## Features
 
 - 🌍 **Interactive Globe**: Explore an interactive 3D globe showing speech frequency by country
 - 🔍 **Advanced Search**: Full-text search with multiple modes (phrase, exact, fuzzy matching)
 - 📊 **Rich Filtering**: Filter by country, year, session, and speaker
-- � **Speech Analysis**: Semantic similarity analysis between speeches using AI embeddings
-- �📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
-- ⚡ **Fast Performance**: SQLite database with full-text search capabilities
+- 🤖 **RAG Search**: Ask questions about speeches using advanced AI and vector search
+- 🧠 **AI Research Agent**: Command-line AI agent for deep research and analysis
+- 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
+- ⚡ **Fast Performance**: SQLite database with full-text search and vector embeddings
 
-## Tech Stack
+## 🚀 Tech Stack
 
-- **Frontend**: React Router v7, TypeScript, Tailwind CSS
-- **Visualization**: D3.js for interactive globe and similarity matrix
+- **Frontend**: React Router v7, TypeScript, Tailwind CSS v4
+- **Visualization**: D3.js for interactive globe visualization
 - **Database**: SQLite with FTS (Full-Text Search) and sqlite-vec for embeddings
-- **AI/ML**: Vector embeddings for semantic similarity analysis
+- **AI/ML**: Vector embeddings for RAG search functionality, OpenAI GPT models
 - **Backend**: Node.js with Better SQLite3
 - **Deployment**: Docker with multi-stage builds
 
-## Quick Start
+## 📦 Quick Start
 
 ### Development
 
@@ -28,8 +29,8 @@ A modern web application for browsing and searching speeches from the UN General
 # Install dependencies
 npm install
 
-# Set up database (includes similarities table)
-npm run migrate:similarities
+# Set up database (download if needed)
+./update-db.sh
 
 # Start development server
 npm run dev
@@ -37,67 +38,93 @@ npm run dev
 
 Visit `http://localhost:5173` to view the application.
 
-### Speech Similarity Analysis
+### 🤖 AI Research Agent
 
-The application includes advanced semantic similarity analysis between speeches:
+For advanced research and analysis, use the command-line AI agent:
 
 ```bash
-# Calculate similarities for all speeches
-npm run analysis:similarities
+# Interactive chat session
+npm run agent chat
 
-# Calculate only for 2024 speeches
-npm run analysis:similarities:2024
+# Ask a single question
+npm run agent ask "What are the main themes in recent African speeches?"
 
-# Force recalculation of existing similarities
-npm run analysis:similarities:force
+# View example queries
+npm run agent examples
 
-# Custom options
-npm run analysis:similarities -- --year 2023 --threshold 0.7 --batch-size 50
+# Test setup
+npm run agent:test
 ```
 
-## Project Structure
+**Requirements**: Set `OPENAI_API_KEY` in your `.env` file for AI functionality.
+
+See [scripts/README.md](scripts/README.md) for detailed agent documentation.
+
+## 📁 Project Structure
 
 ```
 app/
-├── routes/           # React Router pages
+├── routes/           # React Router v7 pages
 │   ├── home.tsx     # Main search interface
-│   ├── globe.tsx    # Interactive globe view
-│   ├── analysis.tsx # Speech similarity analysis
+│   ├── globe.tsx    # Interactive globe visualization
+│   ├── rag.tsx      # AI-powered RAG search interface
 │   ├── country.$code.tsx  # Country-specific speeches
 │   └── speech.$id.tsx     # Individual speech details
 ├── components/      # Reusable UI components
 ├── lib/            # Database utilities and helpers
 └── app.css         # Global styles
 
-analysis/
-├── calculate-speech-similarities.ts  # Main similarity calculation script
-└── README.md                        # Analysis documentation
-
 scripts/
-├── create-similarities-table.js     # Database migration script
-└── create-similarities-table.sql    # Table schema
+├── lib/            # AI agent framework
+│   ├── agent.ts    # Core AI agent implementation
+│   └── database-tools.ts  # Database utilities for agent
+├── agents/         # Agent configurations
+│   └── un-researcher.yaml # UN research agent config
+└── un-research-agent.ts   # CLI interface
+
+data/
+└── un_speeches.db  # SQLite database with UN speeches
 ```
 
-## Database Schema
+## 🗃️ Database Schema
 
 The application uses a SQLite database with the following structure:
 
 - **speeches**: Main table containing speech data (country, year, session, speaker, text)
 - **speeches_fts**: Full-text search index for efficient text searching
-- **speech_similarities**: Precomputed similarity scores between speech pairs
-- **speech_embeddings**: Vector embeddings for semantic analysis
+- **speech_embeddings**: Vector embeddings for RAG search functionality
+- **speech_chunks**: Text chunks for efficient vector search
 
-## Speech Similarity Analysis
+## 🚢 Deployment
 
-The similarity analysis uses cosine similarity between vector embeddings to find semantically similar speeches. Key features:
+### Docker
 
-- **Scalable**: Processes all speeches with configurable batch sizes
-- **Re-runnable**: Can recalculate similarities after new embeddings are added
-- **Filtered**: Only stores similarities above a configurable threshold
-- **Interactive**: Web interface with dynamic filtering and visualization
+```bash
+# Build the Docker image
+docker build -t un-speeches .
 
-Visit `/analysis` to explore the interactive similarity matrix.
+# Run the container
+docker run -p 3000:3000 un-speeches
+```
 
-## License
+### Environment Variables
+
+```bash
+# Required for AI functionality
+OPENAI_API_KEY=your_openai_api_key
+
+# Optional for development
+NODE_ENV=development
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `npm run typecheck` and `npm run lint`
+5. Submit a pull request
+
+## 📄 License
 
 ISC
