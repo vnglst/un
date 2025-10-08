@@ -20,7 +20,6 @@ echo "📊 Local database size: $DB_SIZE"
 echo "🔍 Checking available disk space on server..."
 ssh root@un.koenvangilst.nl "df -h /mnt/HC_Volume_102788309/un-sqlite"
 
-# Calculate required space: database size + 20% buffer for safety
 REQUIRED_SPACE=$((DB_SIZE_KB * 120 / 100))
 AVAILABLE_SPACE=$(ssh root@un.koenvangilst.nl "df /mnt/HC_Volume_102788309/un-sqlite | tail -1 | awk '{print \$4}'")
 if [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ]; then

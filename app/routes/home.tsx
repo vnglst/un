@@ -16,12 +16,7 @@ import { logger, timeAsyncOperation } from '~/lib/logger'
 import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
-import {
-  Search as SearchIcon,
-  Filter,
-  X,
-} from 'lucide-react'
+import { Search as SearchIcon, Filter, X } from 'lucide-react'
 import { useState } from 'react'
 
 type LoaderData = {
@@ -69,7 +64,12 @@ export async function loader({
         'phrase',
     }
 
-    const hasSearched = !!(filters.search || filters.country || filters.year || filters.session)
+    const hasSearched = !!(
+      filters.search ||
+      filters.country ||
+      filters.year ||
+      filters.session
+    )
 
     logger.info('Home loader filters', { filters, page })
 
@@ -92,7 +92,8 @@ export async function loader({
 }
 
 export default function Home() {
-  const { speeches, pagination, currentFilters, hasSearched } = useLoaderData<LoaderData>()
+  const { speeches, pagination, currentFilters, hasSearched } =
+    useLoaderData<LoaderData>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [showFilters, setShowFilters] = useState(false)
@@ -183,25 +184,31 @@ export default function Home() {
             </div>
 
             <div className="flex justify-center gap-3 mb-8">
-              <Button type="submit" className="bg-un-blue hover:bg-un-blue/90 text-white px-8 py-2.5 text-sm font-medium">
+              <Button
+                type="submit"
+                className="bg-un-blue hover:bg-un-blue/90 text-white px-6 sm:px-8 py-2.5 text-sm font-medium"
+              >
                 Search Speeches
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
-                className="border-gray-300 px-6 py-2.5 text-sm font-medium"
+                className="border-gray-300 px-4 sm:px-6 py-2.5 text-sm font-medium"
               >
                 <Filter className="h-4 w-4 mr-2" />
-                Advanced Filters
+                <span className="hidden sm:inline">Advanced Filters</span>
+                <span className="sm:hidden">Filters</span>
               </Button>
             </div>
 
             {/* Advanced Filters */}
             {showFilters && (
-              <div className="bg-gray-50 rounded-lg p-6 mb-4">
-                <h3 className="font-semibold mb-4 text-gray-900">Advanced Filters</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-4">
+                <h3 className="font-semibold mb-4 text-gray-900">
+                  Advanced Filters
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Search Mode
@@ -248,7 +255,6 @@ export default function Home() {
               </div>
             )}
           </Form>
-
         </div>
       </div>
     )
@@ -259,13 +265,21 @@ export default function Home() {
     <div className="min-h-screen bg-stone-50">
       {/* Search Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="text-lg font-bold text-gray-900 hover:text-un-blue whitespace-nowrap flex-shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          {/* Desktop Layout */}
+          <div className="hidden md:flex items-center gap-4 lg:gap-6">
+            <Link
+              to="/"
+              className="text-lg font-bold text-gray-900 hover:text-un-blue whitespace-nowrap flex-shrink-0"
+            >
               UN Speeches
             </Link>
 
-            <Form method="get" onSubmit={handleSearch} className="flex-1 max-w-3xl">
+            <Form
+              method="get"
+              onSubmit={handleSearch}
+              className="flex-1 max-w-3xl"
+            >
               <div className="flex items-center h-11 rounded-full border border-gray-300 hover:shadow-md focus-within:shadow-md transition-all bg-white">
                 <SearchIcon className="h-4 w-4 text-gray-400 ml-4 flex-shrink-0" />
                 <input
@@ -275,11 +289,31 @@ export default function Home() {
                   defaultValue={currentFilters.search}
                   className="flex-1 h-full border-0 focus:ring-0 focus:outline-none px-3 text-sm bg-transparent rounded-full"
                 />
-                <input type="hidden" name="country" value={currentFilters.country || ''} />
-                <input type="hidden" name="year" value={currentFilters.year || ''} />
-                <input type="hidden" name="session" value={currentFilters.session || ''} />
-                <input type="hidden" name="mode" value={currentFilters.searchMode} />
-                <Button type="submit" size="sm" className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-5 text-sm font-medium">
+                <input
+                  type="hidden"
+                  name="country"
+                  value={currentFilters.country || ''}
+                />
+                <input
+                  type="hidden"
+                  name="year"
+                  value={currentFilters.year || ''}
+                />
+                <input
+                  type="hidden"
+                  name="session"
+                  value={currentFilters.session || ''}
+                />
+                <input
+                  type="hidden"
+                  name="mode"
+                  value={currentFilters.searchMode}
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-5 text-sm font-medium"
+                >
                   Search
                 </Button>
               </div>
@@ -292,7 +326,7 @@ export default function Home() {
                 className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
               >
                 <Filter className="h-4 w-4" />
-                Filters
+                <span className="hidden lg:inline">Filters</span>
               </button>
               {hasActiveFilters && (
                 <button
@@ -301,18 +335,91 @@ export default function Home() {
                   className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                 >
                   <X className="h-4 w-4" />
-                  Clear
+                  <span className="hidden lg:inline">Clear</span>
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden space-y-3">
+            <div className="flex items-center justify-between">
+              <Link
+                to="/"
+                className="text-lg font-bold text-gray-900 hover:text-un-blue"
+              >
+                UN Speeches
+              </Link>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <Filter className="h-4 w-4" />
+                </button>
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <Form method="get" onSubmit={handleSearch}>
+              <div className="flex items-center h-11 rounded-full border border-gray-300 hover:shadow-md focus-within:shadow-md transition-all bg-white">
+                <SearchIcon className="h-4 w-4 text-gray-400 ml-4 flex-shrink-0" />
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search speeches..."
+                  defaultValue={currentFilters.search}
+                  className="flex-1 h-full border-0 focus:ring-0 focus:outline-none px-3 text-sm bg-transparent rounded-full"
+                />
+                <input
+                  type="hidden"
+                  name="country"
+                  value={currentFilters.country || ''}
+                />
+                <input
+                  type="hidden"
+                  name="year"
+                  value={currentFilters.year || ''}
+                />
+                <input
+                  type="hidden"
+                  name="session"
+                  value={currentFilters.session || ''}
+                />
+                <input
+                  type="hidden"
+                  name="mode"
+                  value={currentFilters.searchMode}
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-4 text-sm font-medium"
+                >
+                  Search
+                </Button>
+              </div>
+            </Form>
           </div>
 
           {/* Filters Panel */}
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <Form method="get" onSubmit={handleSearch}>
-                <input type="hidden" name="q" value={currentFilters.search || ''} />
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input
+                  type="hidden"
+                  name="q"
+                  value={currentFilters.search || ''}
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
                       Search Mode
@@ -355,7 +462,11 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-end">
-                    <Button type="submit" size="sm" className="w-full bg-un-blue hover:bg-un-blue/90">
+                    <Button
+                      type="submit"
+                      size="sm"
+                      className="w-full bg-un-blue hover:bg-un-blue/90"
+                    >
                       Apply Filters
                     </Button>
                   </div>
@@ -380,7 +491,9 @@ export default function Home() {
         {speeches.length === 0 ? (
           <div className="text-center py-12">
             <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No speeches found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No speeches found
+            </h3>
             <p className="text-gray-600 mb-4">
               Try adjusting your search terms or filters
             </p>
@@ -397,7 +510,7 @@ export default function Home() {
             {/* Pagination */}
             {pagination.totalPages > 1 && (
               <Pagination
-                currentPage={pagination.currentPage}
+                currentPage={pagination.page}
                 totalPages={pagination.totalPages}
                 baseUrl="/"
                 queryParams={Object.fromEntries(searchParams)}
