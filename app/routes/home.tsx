@@ -312,7 +312,7 @@ export default function Home() {
                 <Button
                   type="submit"
                   size="sm"
-                  className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-5 text-sm font-medium"
+                  className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-5 text-sm font-medium rounded-full"
                 >
                   Search
                 </Button>
@@ -402,7 +402,7 @@ export default function Home() {
                 <Button
                   type="submit"
                   size="sm"
-                  className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-4 text-sm font-medium"
+                  className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-4 text-sm font-medium rounded-full"
                 >
                   Search
                 </Button>
