@@ -13,18 +13,19 @@ fi
 
 # Get database file size for verification
 DB_SIZE=$(du -h data/un_speeches.db | cut -f1)
+DB_SIZE_KB=$(du -k data/un_speeches.db | cut -f1)
 echo "📊 Local database size: $DB_SIZE"
 
 # Check available disk space on server
 echo "🔍 Checking available disk space on server..."
 ssh root@un.koenvangilst.nl "df -h /mnt/HC_Volume_102788309/un-sqlite"
 
-# Check if there's enough space (database is ~9.6GB, need some buffer)
+# Calculate required space: database size + 20% buffer for safety
+REQUIRED_SPACE=$((DB_SIZE_KB * 120 / 100))
 AVAILABLE_SPACE=$(ssh root@un.koenvangilst.nl "df /mnt/HC_Volume_102788309/un-sqlite | tail -1 | awk '{print \$4}'")
-REQUIRED_SPACE=10485760  # 10GB in KB as buffer
 if [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ]; then
     echo "❌ Insufficient disk space on server"
-    echo "💾 Available: $(($AVAILABLE_SPACE / 1024 / 1024))GB, Required: ~10GB"
+    echo "💾 Available: $(($AVAILABLE_SPACE / 1024))MB, Required: $(($REQUIRED_SPACE / 1024))MB (DB size + 20% buffer)"
     echo "🧹 Try cleaning up space or expanding the volume"
     exit 1
 fi
