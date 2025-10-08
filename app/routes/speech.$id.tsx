@@ -137,7 +137,7 @@ export default function SpeechDetail() {
       </div>
 
       <div className="mt-6 text-center">
-        <Link to="/">
+        <Link onClick={handleBack} to="#" className="inline-block">
           <Button size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
