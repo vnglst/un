@@ -1,4 +1,4 @@
-import { useLoaderData, Link, useNavigate } from 'react-router'
+import { useLoaderData, Link } from 'react-router'
 import {
   searchSpeeches,
   type Speech,
@@ -71,11 +71,6 @@ export async function loader({
 
 export default function SessionSpeeches() {
   const { speeches, pagination, session } = useLoaderData<LoaderData>()
-  const navigate = useNavigate()
-
-  const handlePageChange = (page: number) => {
-    navigate(`/session/${session}?page=${page}`)
-  }
 
   return (
     <PageLayout maxWidth="wide">
@@ -110,7 +105,7 @@ export default function SessionSpeeches() {
           <Pagination
             currentPage={pagination.page}
             totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
+            baseUrl={`/session/${session}`}
           />
         </>
       ) : (

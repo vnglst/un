@@ -1,10 +1,5 @@
 import { Link } from 'react-router'
-import {
-  AlertTriangle,
-  Home,
-  RefreshCw,
-  Search,
-} from 'lucide-react'
+import { AlertTriangle, Home, RefreshCw, Search } from 'lucide-react'
 import PageLayout from '~/components/page-layout'
 import { Button } from '~/components/ui/button'
 import { ServiceCard } from '~/components/ui/cards'

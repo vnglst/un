@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate, Link } from 'react-router'
+import { useLoaderData, Link } from 'react-router'
 import {
   getSpeechesByCountryCode,
   getCountries,
@@ -89,11 +89,6 @@ export async function loader({
 export default function CountrySpeeches() {
   const { speeches, pagination, countryName, countryCode } =
     useLoaderData<LoaderData>()
-  const navigate = useNavigate()
-
-  const handlePageChange = (page: number) => {
-    navigate(`/country/${countryCode}?page=${page}`)
-  }
 
   return (
     <>
@@ -142,7 +137,7 @@ export default function CountrySpeeches() {
             <Pagination
               currentPage={pagination.page}
               totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
+              baseUrl={`/country/${countryCode}`}
             />
           </>
         )}

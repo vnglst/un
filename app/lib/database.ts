@@ -80,11 +80,6 @@ function initializeDatabase(): Database.Database {
 
 const db = initializeDatabase()
 
-// Export the database instance for use by other modules (like CLI tools)
-export function getDatabase() {
-  return db
-}
-
 // =============================================================================
 // HEALTH CHECK & DIAGNOSTICS
 // =============================================================================
@@ -316,12 +311,6 @@ export interface PaginationInfo {
   totalPages: number
 }
 
-export interface CountrySpeechCount {
-  country_code: string
-  country_name: string | null
-  speech_count: number
-}
-
 export interface HighlightedSpeech extends Speech {
   highlighted_text?: string
   highlighted_speaker?: string
@@ -442,50 +431,6 @@ export function getAllSpeechIds(): number[] {
     const ids = results.map((r) => r.id)
     logger.debug('Speech IDs query result', { count: ids.length })
     return ids
-  })
-}
-
-export function getCountrySpeechCounts(): CountrySpeechCount[] {
-  logger.debug('Getting country speech counts')
-  const query = `
-    WITH country_latest AS (
-      SELECT 
-        country_code,
-        country_name,
-        ROW_NUMBER() OVER (
-          PARTITION BY country_code 
-          ORDER BY year DESC, session DESC
-        ) as rn
-      FROM speeches 
-      WHERE country_code IS NOT NULL 
-        AND country_name IS NOT NULL
-    ),
-    country_counts AS (
-      SELECT 
-        country_code,
-        COUNT(*) as speech_count
-      FROM speeches 
-      WHERE country_code IS NOT NULL
-      GROUP BY country_code
-    )
-    SELECT 
-      cc.country_code,
-      cl.country_name,
-      cc.speech_count
-    FROM country_counts cc
-    JOIN country_latest cl ON cc.country_code = cl.country_code
-    WHERE cl.rn = 1
-    ORDER BY cc.speech_count DESC
-  `
-
-  return timeOperation('getCountrySpeechCounts', () => {
-    const results = db.prepare(query).all() as CountrySpeechCount[]
-    logger.debug('Country speech counts result', {
-      count: results.length,
-      totalSpeeches: results.reduce((sum, c) => sum + c.speech_count, 0),
-      topCountry: results[0]?.country_name,
-    })
-    return results
   })
 }
 
@@ -734,57 +679,6 @@ function searchSpeechesWithFTS(
 // ADVANCED SEARCH FEATURES
 // =============================================================================
 
-export function getSearchSuggestions(
-  partialText: string,
-  limit: number = 10
-): string[] {
-  logger.debug('Getting search suggestions', { partialText, limit })
-
-  if (!partialText || partialText.trim().length < 2) {
-    logger.debug('Search suggestions: text too short')
-    return []
-  }
-
-  return timeOperation('getSearchSuggestions', () => {
-    const searchTerm = partialText.trim()
-    const searchPattern = `%${searchTerm}%`
-
-    // Get common words/phrases from speeches that match the partial text
-    const query = `
-      SELECT DISTINCT 
-        CASE 
-          WHEN speaker LIKE ? THEN speaker
-          WHEN country_name LIKE ? THEN country_name
-          ELSE NULL
-        END as suggestion
-      FROM speeches 
-      WHERE (speaker LIKE ? OR country_name LIKE ?) 
-        AND suggestion IS NOT NULL
-      ORDER BY suggestion
-      LIMIT ?
-    `
-
-    const results = db
-      .prepare(query)
-      .all(
-        searchPattern,
-        searchPattern,
-        searchPattern,
-        searchPattern,
-        limit
-      ) as Array<{ suggestion: string }>
-
-    const suggestions = results.map((r) => r.suggestion).filter(Boolean)
-    logger.debug('Search suggestions result', {
-      partialText,
-      suggestionsCount: suggestions.length,
-      suggestions: suggestions.slice(0, 3), // Log first 3 for debugging
-    })
-
-    return suggestions
-  })
-}
-
 export function searchSpeechesWithHighlights(
   filters: SearchFilters = {},
   page: number = 1,
@@ -865,7 +759,6 @@ export function searchSpeechesWithHighlights(
     }
   })
 }
-
 
 // =============================================================================
 // =============================================================================

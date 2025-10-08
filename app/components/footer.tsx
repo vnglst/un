@@ -84,8 +84,7 @@ export default function Footer() {
                 </a>
               </p>
             </div>
-            <div className="flex items-center space-x-6 text-sm">
-            </div>
+            <div className="flex items-center space-x-6 text-sm"></div>
           </div>
         </div>
       </div>

@@ -58,37 +58,3 @@ export function FeatureCard({
     </div>
   )
 }
-
-interface InfoBlockProps {
-  title: string
-  children: ReactNode
-  variant?: 'default' | 'blue'
-  className?: string
-}
-
-export function InfoBlock({
-  title,
-  children,
-  variant = 'default',
-  className,
-}: InfoBlockProps) {
-  const baseClasses = 'rounded-lg p-8 mb-12 shadow-sm border'
-  const variantClasses = {
-    default: 'bg-white border-gray-200',
-    blue: 'bg-gradient-to-r from-un-blue to-un-blue/90 text-white border-transparent',
-  }
-
-  return (
-    <div className={cn(baseClasses, variantClasses[variant], className)}>
-      <h2
-        className={cn(
-          'text-2xl font-bold mb-4',
-          variant === 'blue' ? 'text-white' : 'text-gray-900'
-        )}
-      >
-        {title}
-      </h2>
-      {children}
-    </div>
-  )
-}
