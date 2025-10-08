@@ -8,7 +8,9 @@ import {
 import {
   searchSpeeches,
   searchSpeechesWithHighlights,
+  searchSpeechesWithEmbeddings,
   type HighlightedSpeech,
+  type SpeechWithSimilarity,
   type PaginationInfo,
   type SearchFilters,
 } from '~/lib/database'
@@ -20,10 +22,11 @@ import { Search as SearchIcon, Filter, X } from 'lucide-react'
 import { useState } from 'react'
 
 type LoaderData = {
-  speeches: HighlightedSpeech[]
+  speeches: (HighlightedSpeech | SpeechWithSimilarity)[]
   pagination: PaginationInfo
   currentFilters: SearchFilters
   hasSearched: boolean
+  isSemanticSearch: boolean
 }
 
 export function meta() {
@@ -60,8 +63,11 @@ export async function loader({
         ? parseInt(url.searchParams.get('session')!, 10)
         : undefined,
       searchMode:
-        (url.searchParams.get('mode') as 'exact' | 'phrase' | 'fuzzy') ||
-        'phrase',
+        (url.searchParams.get('mode') as
+          | 'exact'
+          | 'phrase'
+          | 'fuzzy'
+          | 'semantic') || 'phrase',
     }
 
     const hasSearched = !!(
@@ -73,27 +79,40 @@ export async function loader({
 
     logger.info('Home loader filters', { filters, page })
 
-    const result =
-      filters.search && filters.search.trim()
-        ? searchSpeechesWithHighlights(filters, page, 20)
-        : {
-            ...searchSpeeches(filters, page, 20),
-            speeches: searchSpeeches(filters, page, 20)
-              .speeches as HighlightedSpeech[],
-          }
+    const isSemanticSearch = filters.searchMode === 'semantic'
+
+    // Use semantic search if mode is 'semantic' and there's a search term
+    let result
+    if (isSemanticSearch && filters.search && filters.search.trim()) {
+      result = await searchSpeechesWithEmbeddings(filters, page, 20)
+    } else if (filters.search && filters.search.trim()) {
+      result = searchSpeechesWithHighlights(filters, page, 20)
+    } else {
+      const regularResult = searchSpeeches(filters, page, 20)
+      result = {
+        ...regularResult,
+        speeches: regularResult.speeches as HighlightedSpeech[],
+      }
+    }
 
     return {
       speeches: result.speeches,
       pagination: result.pagination,
       currentFilters: filters,
       hasSearched,
+      isSemanticSearch,
     }
   })
 }
 
 export default function Home() {
-  const { speeches, pagination, currentFilters, hasSearched } =
-    useLoaderData<LoaderData>()
+  const {
+    speeches,
+    pagination,
+    currentFilters,
+    hasSearched,
+    isSemanticSearch,
+  } = useLoaderData<LoaderData>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [showFilters, setShowFilters] = useState(false)
@@ -221,6 +240,7 @@ export default function Home() {
                       <option value="phrase">Phrase Match</option>
                       <option value="exact">Exact Match</option>
                       <option value="fuzzy">Fuzzy Match</option>
+                      <option value="semantic">Semantic Search (AI)</option>
                     </select>
                   </div>
 
@@ -432,6 +452,7 @@ export default function Home() {
                       <option value="phrase">Phrase</option>
                       <option value="exact">Exact</option>
                       <option value="fuzzy">Fuzzy</option>
+                      <option value="semantic">Semantic (AI)</option>
                     </select>
                   </div>
 
@@ -484,6 +505,11 @@ export default function Home() {
           <p className="text-sm text-gray-600">
             About {pagination.total.toLocaleString()} results
             {currentFilters.search && ` for "${currentFilters.search}"`}
+            {isSemanticSearch && (
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                AI Semantic Search
+              </span>
+            )}
           </p>
         </div>
 

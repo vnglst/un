@@ -3,6 +3,7 @@ import { join, resolve } from 'path'
 import { existsSync, statSync, mkdirSync } from 'fs'
 import { load } from 'sqlite-vec'
 import { logger, timeOperation, type LogContext } from './logger'
+import { generateEmbedding } from './embeddings'
 
 // =============================================================================
 // DATABASE CONFIGURATION & INITIALIZATION
@@ -301,7 +302,7 @@ export interface SearchFilters {
   year?: number
   session?: number
   search?: string
-  searchMode?: 'exact' | 'phrase' | 'fuzzy' // Optional search mode for advanced queries
+  searchMode?: 'exact' | 'phrase' | 'fuzzy' | 'semantic' // Optional search mode for advanced queries
 }
 
 export interface PaginationInfo {
@@ -315,6 +316,10 @@ export interface HighlightedSpeech extends Speech {
   highlighted_text?: string
   highlighted_speaker?: string
   highlighted_country_name?: string
+}
+
+export interface SpeechWithSimilarity extends Speech {
+  similarity_score: number
 }
 
 interface SpeechesResult {
@@ -621,7 +626,10 @@ function searchSpeechesWithFTS(
       const searchTerm = filters.search.trim()
       logger.debug('FTS search term', { searchTerm, mode: filters.searchMode })
 
-      const ftsQuery = buildFTSQuery(searchTerm, filters.searchMode)
+      const ftsQuery = buildFTSQuery(
+        searchTerm,
+        filters.searchMode === 'semantic' ? 'phrase' : filters.searchMode
+      )
       logger.debug('FTS query generated', { ftsQuery })
 
       whereConditions.unshift('speeches_fts MATCH ?')
@@ -705,7 +713,10 @@ export function searchSpeechesWithHighlights(
       mode: filters.searchMode,
     })
 
-    const ftsQuery = buildFTSQuery(searchTerm, filters.searchMode)
+    const ftsQuery = buildFTSQuery(
+      searchTerm,
+      filters.searchMode === 'semantic' ? 'phrase' : filters.searchMode
+    )
     logger.debug('Highlighted FTS query generated', { ftsQuery })
 
     whereConditions.unshift('speeches_fts MATCH ?')
@@ -747,6 +758,104 @@ export function searchSpeechesWithHighlights(
       .all(...queryParams, limit, (page - 1) * limit) as HighlightedSpeech[]
 
     logger.searchQuery(filters as LogContext, speeches.length)
+
+    return {
+      speeches,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    }
+  })
+}
+
+// =============================================================================
+// SEMANTIC SEARCH WITH EMBEDDINGS
+// =============================================================================
+
+export async function searchSpeechesWithEmbeddings(
+  filters: SearchFilters = {},
+  page: number = 1,
+  limit: number = 20
+): Promise<{ speeches: SpeechWithSimilarity[]; pagination: PaginationInfo }> {
+  logger.debug('Searching speeches with embeddings', { filters, page, limit })
+
+  if (!filters.search || !filters.search.trim()) {
+    logger.debug('No search term for semantic search')
+    // If no search term, return regular results with default similarity
+    const result = searchSpeeches(filters, page, limit)
+    return {
+      speeches: result.speeches.map((s) => ({ ...s, similarity_score: 0 })),
+      pagination: result.pagination,
+    }
+  }
+
+  const searchTerm = filters.search.trim()
+  logger.info('Performing semantic search', { searchTerm })
+
+  // Generate embedding for the search query
+  const queryEmbedding = await generateEmbedding(searchTerm)
+  logger.debug('Query embedding generated', {
+    dimensions: queryEmbedding.length,
+    searchTerm: searchTerm.substring(0, 50),
+  })
+
+  // Convert embedding to BLOB format
+  const float32Array = new Float32Array(queryEmbedding)
+  const buffer = Buffer.from(float32Array.buffer)
+
+  return timeOperation('searchSpeechesWithEmbeddings', () => {
+    const { whereConditions, queryParams } = buildQueryConditions(filters)
+
+    // Build WHERE clause for filters (year, session, country)
+    const filterWhereClause =
+      whereConditions.length > 0 ? `AND ${whereConditions.join(' AND ')}` : ''
+
+    // Count query - count speeches that have embeddings and match filters
+    const countQuery = `
+      SELECT COUNT(DISTINCT s.id) as total
+      FROM speeches s
+      INNER JOIN speech_embeddings se ON s.id = se.speech_id
+      WHERE 1=1 ${filterWhereClause}
+    `
+    const totalResult = db.prepare(countQuery).get(...queryParams) as {
+      total: number
+    }
+    const total = totalResult.total
+    const totalPages = Math.ceil(total / limit)
+
+    logger.debug('Semantic search count result', { total, totalPages })
+
+    // Main query - find most similar speeches using cosine similarity
+    // We calculate similarity as 1 - (vec_distance_cosine / 2)
+    // This gives us a score from 0 (completely different) to 1 (identical)
+    const query = `
+      SELECT 
+        s.*,
+        (1 - (vec_distance_cosine(se.embedding, ?) / 2)) as similarity_score
+      FROM speeches s
+      INNER JOIN speech_embeddings se ON s.id = se.speech_id
+      WHERE 1=1 ${filterWhereClause}
+      ORDER BY similarity_score DESC, s.year DESC, s.session DESC
+      LIMIT ? OFFSET ?
+    `
+
+    const speeches = db
+      .prepare(query)
+      .all(
+        buffer,
+        ...queryParams,
+        limit,
+        (page - 1) * limit
+      ) as SpeechWithSimilarity[]
+
+    logger.searchQuery(filters as LogContext, speeches.length)
+    logger.info('Semantic search completed', {
+      resultsCount: speeches.length,
+      topScore: speeches[0]?.similarity_score ?? 0,
+    })
 
     return {
       speeches,
