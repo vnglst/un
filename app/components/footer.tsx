@@ -85,9 +85,6 @@ export default function Footer() {
               </p>
             </div>
             <div className="flex items-center space-x-6 text-sm">
-              <span className="text-gray-400">
-                Engineered for Diplomacy. Built for Research.
-              </span>
             </div>
           </div>
         </div>

@@ -5,12 +5,9 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
 } from 'react-router'
 import type { LinksFunction } from 'react-router'
 import { logger } from '~/lib/logger'
-import { isRagAvailable } from '~/lib/utils'
-import { AppProvider } from '~/lib/app-context'
 import ErrorPage from '~/components/error-page'
 
 import './app.css'
@@ -27,12 +24,6 @@ export const links: LinksFunction = () => [
     href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
   },
 ]
-
-export async function loader() {
-  return {
-    ragAvailable: isRagAvailable(),
-  }
-}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -58,13 +49,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { ragAvailable } = useLoaderData<{ ragAvailable: boolean }>()
-
-  return (
-    <AppProvider ragAvailable={ragAvailable}>
-      <Outlet />
-    </AppProvider>
-  )
+  return <Outlet />
 }
 
 export function ErrorBoundary({ error }: { error: unknown }) {

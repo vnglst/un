@@ -8,39 +8,27 @@ import {
 import {
   searchSpeeches,
   searchSpeechesWithHighlights,
-  getSearchSuggestions,
-  getCountries,
-  getYears,
-  getSessions,
   type HighlightedSpeech,
   type PaginationInfo,
   type SearchFilters,
 } from '~/lib/database'
 import { logger, timeAsyncOperation } from '~/lib/logger'
-import PageLayout from '~/components/page-layout'
 import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
-import { ServiceCard } from '~/components/ui/cards'
 import {
   Search as SearchIcon,
   Filter,
   X,
-  Calendar,
-  Globe,
-  MessageCircle,
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 type LoaderData = {
   speeches: HighlightedSpeech[]
   pagination: PaginationInfo
-  countries: Array<{ country_name: string; country_code: string }>
-  years: number[]
-  sessions: number[]
   currentFilters: SearchFilters
-  suggestions?: string[]
+  hasSearched: boolean
 }
 
 export function meta() {
@@ -48,7 +36,7 @@ export function meta() {
     { title: 'UN Speeches' },
     {
       name: 'description',
-      content: 'Browse UN General Assembly speeches.',
+      content: 'Search UN General Assembly speeches.',
     },
   ]
 }
@@ -67,7 +55,6 @@ export async function loader({
   })
 
   return timeAsyncOperation('home-loader', async () => {
-    // Extract search filters from URL parameters
     const filters: SearchFilters = {
       search: url.searchParams.get('q') || undefined,
       country: url.searchParams.get('country') || undefined,
@@ -82,9 +69,10 @@ export async function loader({
         'phrase',
     }
 
+    const hasSearched = !!(filters.search || filters.country || filters.year || filters.session)
+
     logger.info('Home loader filters', { filters, page })
 
-    // Use highlighted search if there's a search term, otherwise regular search
     const result =
       filters.search && filters.search.trim()
         ? searchSpeechesWithHighlights(filters, page, 20)
@@ -94,562 +82,330 @@ export async function loader({
               .speeches as HighlightedSpeech[],
           }
 
-    const countries = getCountries()
-    const years = getYears()
-    const sessions = getSessions()
-
-    // Get search suggestions if there's a partial search term
-    const suggestions =
-      filters.search && filters.search.trim().length >= 2
-        ? getSearchSuggestions(filters.search, 5)
-        : []
-
-    logger.info('Home loader completed', {
-      speechCount: result.speeches.length,
-      totalResults: result.pagination.total,
-      suggestionCount: suggestions.length,
-      hasSearchTerm: !!filters.search,
-    })
-
     return {
-      ...result,
-      countries,
-      years,
-      sessions,
+      speeches: result.speeches,
+      pagination: result.pagination,
       currentFilters: filters,
-      suggestions,
+      hasSearched,
     }
   })
 }
 
 export default function Home() {
-  const {
-    speeches,
-    pagination,
-    countries,
-    years,
-    sessions,
-    currentFilters,
-    suggestions,
-  } = useLoaderData<LoaderData>()
-  const navigate = useNavigate()
+  const { speeches, pagination, currentFilters, hasSearched } = useLoaderData<LoaderData>()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [showFilters, setShowFilters] = useState(false)
+  const [searchValue, setSearchValue] = useState(currentFilters.search || '')
 
-  // Local state for form inputs
-  const [searchQuery, setSearchQuery] = useState(currentFilters.search || '')
-  const [selectedCountry, setSelectedCountry] = useState(
-    currentFilters.country || ''
-  )
-  const [selectedYear, setSelectedYear] = useState(
-    currentFilters.year?.toString() || ''
-  )
-  const [selectedSession, setSelectedSession] = useState(
-    currentFilters.session?.toString() || ''
-  )
-  const [searchMode, setSearchMode] = useState(
-    currentFilters.searchMode || 'phrase'
-  )
-  const [showSuggestions, setShowSuggestions] = useState(false)
-
-  // Update local state when URL changes
-  useEffect(() => {
-    setSearchQuery(currentFilters.search || '')
-    setSelectedCountry(currentFilters.country || '')
-    setSelectedYear(currentFilters.year?.toString() || '')
-    setSelectedSession(currentFilters.session?.toString() || '')
-    setSearchMode(currentFilters.searchMode || 'phrase')
-  }, [currentFilters])
-
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-
+    const formData = new FormData(e.currentTarget)
     const params = new URLSearchParams()
-    if (searchQuery.trim()) {
-      params.set('q', searchQuery.trim())
-      if (searchMode !== 'phrase') {
-        params.set('mode', searchMode)
-      }
+
+    const query = formData.get('q') as string
+    if (query?.trim()) {
+      params.set('q', query.trim())
     }
-    if (selectedCountry) params.set('country', selectedCountry)
-    if (selectedYear) params.set('year', selectedYear)
-    if (selectedSession) params.set('session', selectedSession)
 
-    navigate(`/?${params.toString()}`)
-    setShowSuggestions(false)
-  }
+    const country = formData.get('country') as string
+    if (country && country !== 'all') {
+      params.set('country', country)
+    }
 
-  const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams)
-    params.set('page', page.toString())
+    const year = formData.get('year') as string
+    if (year && year !== 'all') {
+      params.set('year', year)
+    }
+
+    const session = formData.get('session') as string
+    if (session && session !== 'all') {
+      params.set('session', session)
+    }
+
+    const mode = formData.get('mode') as string
+    if (mode && mode !== 'phrase') {
+      params.set('mode', mode)
+    }
+
     navigate(`/?${params.toString()}`)
   }
 
   const clearFilters = () => {
-    setSearchQuery('')
-    setSelectedCountry('')
-    setSelectedYear('')
-    setSelectedSession('')
-    setSearchMode('phrase')
-    setShowSuggestions(false)
+    setSearchValue('')
     navigate('/')
   }
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setSearchQuery(suggestion)
-    setShowSuggestions(false)
-    // Trigger search with the suggestion
-    const params = new URLSearchParams()
-    params.set('q', suggestion)
-    if (searchMode !== 'phrase') {
-      params.set('mode', searchMode)
-    }
-    if (selectedCountry) params.set('country', selectedCountry)
-    if (selectedYear) params.set('year', selectedYear)
-    if (selectedSession) params.set('session', selectedSession)
-    navigate(`/?${params.toString()}`)
-  }
-
-  const hasActiveFilters =
+  const hasActiveFilters = !!(
     currentFilters.search ||
     currentFilters.country ||
     currentFilters.year ||
     currentFilters.session
+  )
 
-  // Get unique countries count
-  const uniqueCountries = new Set(countries.map((c) => c.country_code))
-  const memberStatesCount = uniqueCountries.size
-
-  return (
-    <PageLayout className="space-y-0 py-0">
-      {/* Breadcrumb Navigation */}
-      <div className="py-4">
-        <div className="flex items-center text-sm text-gray-600">
-          <span className="text-gray-900 font-medium">HOME</span>
-          <span className="mx-2">&gt;</span>
-          <span className="text-gray-900 font-medium">BROWSING</span>
-        </div>
-      </div>
-
-      {/* Hero Section */}
-      <div className="py-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          UN SPEECHES BROWSING
-        </h1>
-        <p className="text-lg text-gray-700 mb-6 max-w-4xl">
-          Browse speeches from {memberStatesCount} member states of the United
-          Nations General Assembly. Our comprehensive database provides access
-          to diplomatic discourse, policy positions, and international
-          perspectives on global challenges.
-        </p>
-      </div>
-
-      {/* Three-Column Service Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-        {/* By Year */}
-        <ServiceCard
-          title="Browse by Year"
-          description={`Explore speeches chronologically from ${Math.min(...years)} to ${Math.max(...years)}. Analyze how diplomatic discourse has evolved over decades of international relations.`}
-          icon={<Calendar className="h-4 w-4 text-gray-600" />}
-        >
-          <div className="space-y-2">
-            <div className="text-xs text-gray-500">Recent Years:</div>
-            <div className="flex flex-wrap gap-2">
-              {years.slice(-6).map((year) => (
-                <Link
-                  key={year}
-                  to={`/year/${year}`}
-                  className="px-3 py-1 text-xs bg-un-blue text-white rounded hover:bg-un-blue/90 transition-colors"
-                >
-                  {year}
-                </Link>
-              ))}
-            </div>
+  // Show Google-style landing page if no search has been performed
+  if (!hasSearched) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
+        <div className="w-full max-w-2xl">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-bold text-gray-900 mb-2">
+              UN Speeches
+            </h1>
+            <p className="text-gray-600">Search UN General Assembly speeches</p>
           </div>
-        </ServiceCard>
 
-        {/* By Country */}
-        <ServiceCard
-          title="Browse by Country"
-          description={`Access speeches from all ${memberStatesCount} member states. Understand diverse national perspectives on international issues and global governance.`}
-          icon={<Globe className="h-4 w-4 text-gray-600" />}
-        >
-          <div className="space-y-2">
-            <div className="text-xs text-gray-500">Featured Countries:</div>
-            <div className="flex flex-wrap gap-2">
-              {countries.slice(0, 4).map((country) => (
-                <Link
-                  key={country.country_code}
-                  to={`/country/${country.country_code}`}
-                  className="px-3 py-1 text-xs bg-un-blue text-white rounded hover:bg-un-blue/90 transition-colors"
-                  title={country.country_name}
-                >
-                  {country.country_code}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </ServiceCard>
-
-        {/* By Topic */}
-        <ServiceCard
-          title="Search by Topic"
-          description="Find speeches covering climate change, peacekeeping, development, human rights, and other critical global issues through our advanced search capabilities."
-          icon={<MessageCircle className="h-4 w-4 text-gray-600" />}
-        >
-          <div className="space-y-2">
-            <div className="text-xs text-gray-500">Popular Topics:</div>
-            <div className="flex flex-wrap gap-2">
-              {['Climate', 'Peace', 'Development', 'Human Rights'].map(
-                (topic) => (
+          {/* Search Form */}
+          <Form method="get" onSubmit={handleSearch}>
+            <div className="relative mb-8">
+              <div className="flex items-center w-full h-12 rounded-full border border-gray-300 hover:shadow-lg focus-within:shadow-lg transition-all bg-white">
+                <SearchIcon className="h-5 w-5 text-gray-400 ml-5 flex-shrink-0" />
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search speeches..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  className="flex-1 h-full border-0 focus:ring-0 focus:outline-none px-4 text-base bg-transparent rounded-full"
+                  autoFocus
+                />
+                {searchValue && (
                   <button
-                    key={topic}
-                    onClick={() => {
-                      setSearchQuery(topic)
-                      const params = new URLSearchParams()
-                      params.set('q', topic)
-                      navigate(`/?${params.toString()}`)
-                    }}
-                    className="px-3 py-1 text-xs bg-un-blue text-white rounded hover:bg-un-blue/90 transition-colors"
-                  >
-                    {topic}
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        </ServiceCard>
-      </div>
-
-      {/* Search Interface */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-16">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Search UN Speeches
-          </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className="text-un-blue hover:bg-un-blue/10"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showFilters ? 'Hide' : 'Show'} Advanced Filters
-          </Button>
-        </div>
-
-        <Form onSubmit={handleSearch} className="space-y-6">
-          {/* Main search input with suggestions */}
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Search speeches, speakers, countries, or topics..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setShowSuggestions(e.target.value.length >= 2)
-              }}
-              onFocus={() => setShowSuggestions(searchQuery.length >= 2)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              className="bg-white border-gray-300 text-gray-900 placeholder-gray-500 h-12 text-lg"
-            />
-
-            {/* Search suggestions dropdown */}
-            {showSuggestions && suggestions && suggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
                     type="button"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-4 py-3 text-gray-900 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg"
+                    onClick={() => setSearchValue('')}
+                    className="mr-5 text-gray-400 hover:text-gray-600 flex-shrink-0 transition-colors"
                   >
-                    {suggestion}
+                    <X className="h-5 w-5" />
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Search mode selector */}
-          {searchQuery.trim() && (
-            <div className="flex items-center space-x-4 text-sm bg-gray-50 p-4 rounded-lg">
-              <span className="text-gray-700 font-medium">Search mode:</span>
-              <div className="flex space-x-4">
-                {[
-                  {
-                    value: 'phrase',
-                    label: 'Phrase',
-                    description: 'Find phrases',
-                  },
-                  {
-                    value: 'exact',
-                    label: 'Exact',
-                    description: 'Exact matches only',
-                  },
-                  {
-                    value: 'fuzzy',
-                    label: 'Any words',
-                    description: 'Find any of these words',
-                  },
-                ].map((mode) => (
-                  <label
-                    key={mode.value}
-                    className="flex items-center space-x-2 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="searchMode"
-                      value={mode.value}
-                      checked={searchMode === mode.value}
-                      onChange={(e) =>
-                        setSearchMode(
-                          e.target.value as 'exact' | 'phrase' | 'fuzzy'
-                        )
-                      }
-                      className="text-un-blue focus:ring-un-blue"
-                    />
-                    <span className="text-gray-700" title={mode.description}>
-                      {mode.label}
-                    </span>
-                  </label>
-                ))}
+                )}
               </div>
             </div>
-          )}
 
-          {/* Advanced filters */}
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200 bg-gray-50 p-6 rounded-lg">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Country
-                </label>
-                <select
-                  value={selectedCountry}
-                  onChange={(e) => setSelectedCountry(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-un-blue focus:border-transparent"
-                >
-                  <option value="">All countries</option>
-                  {countries.map((country) => (
-                    <option
-                      key={country.country_code}
-                      value={country.country_code}
-                    >
-                      {country.country_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Year
-                </label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-un-blue focus:border-transparent"
-                >
-                  <option value="">All years</option>
-                  {years.map((year) => (
-                    <option key={year} value={year.toString()}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Session
-                </label>
-                <select
-                  value={selectedSession}
-                  onChange={(e) => setSelectedSession(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white text-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-un-blue focus:border-transparent"
-                >
-                  <option value="">All sessions</option>
-                  {sessions.map((session) => (
-                    <option key={session} value={session.toString()}>
-                      Session {session}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex items-center justify-between pt-4">
-            <div className="flex space-x-3">
-              <Button
-                type="submit"
-                className="bg-un-blue hover:bg-un-blue/90 text-white px-6 py-2"
-              >
-                <SearchIcon className="h-4 w-4 mr-2" />
+            <div className="flex justify-center gap-3 mb-8">
+              <Button type="submit" className="bg-un-blue hover:bg-un-blue/90 text-white px-8 py-2.5 text-sm font-medium">
                 Search Speeches
               </Button>
-              {hasActiveFilters && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={clearFilters}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Clear All
-                </Button>
-              )}
-            </div>
-          </div>
-        </Form>
-      </div>
-
-      {/* Results Section */}
-      {hasActiveFilters && (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Search Results
-              </h2>
-              <p className="text-gray-600">
-                {pagination.total}{' '}
-                {pagination.total === 1 ? 'result' : 'results'} found
-              </p>
-            </div>
-          </div>
-
-          {/* Active filters display */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {currentFilters.search && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
-                {currentFilters.searchMode === 'exact' && 'Exact: '}
-                {currentFilters.searchMode === 'fuzzy' && 'Any words: '}
-                {currentFilters.searchMode === 'phrase' && 'Text: '}"
-                {currentFilters.search}"
-              </span>
-            )}
-            {currentFilters.country && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
-                Country:{' '}
-                {countries.find(
-                  (c) => c.country_code === currentFilters.country
-                )?.country_name || currentFilters.country}
-              </span>
-            )}
-            {currentFilters.year && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
-                Year: {currentFilters.year}
-              </span>
-            )}
-            {currentFilters.session && (
-              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-un-blue text-white">
-                Session: {currentFilters.session}
-              </span>
-            )}
-          </div>
-
-          {speeches.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-              <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg mb-2">
-                No speeches match your search criteria
-              </p>
-              <p className="text-gray-500">
-                Try adjusting your filters or search terms
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                {speeches.map((speech: HighlightedSpeech) => (
-                  <SpeechCard
-                    key={speech.id}
-                    speech={speech}
-                    highlighted={!!currentFilters.search}
-                  />
-                ))}
-              </div>
-
-              <Pagination
-                currentPage={pagination.page}
-                totalPages={pagination.totalPages}
-                onPageChange={handlePageChange}
-              />
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Large Featured Content Block */}
-      <div className="bg-gradient-to-r from-un-blue to-un-blue/90 rounded-lg p-12 text-white mb-16">
-        <div className="max-w-4xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div>
-              <div className="flex items-center mb-4">
-                <span className="text-white/90 text-sm font-medium">01</span>
-                <span className="ml-4 text-white/90">
-                  Comprehensive Collection
-                </span>
-              </div>
-              <div className="flex items-center mb-4">
-                <span className="text-white/90 text-sm font-medium">02</span>
-                <span className="ml-4 text-white/90">Advanced Search</span>
-              </div>
-              <div className="flex items-center mb-6">
-                <span className="text-white/90 text-sm font-medium">03</span>
-                <span className="ml-4 text-white/90">Diplomatic Insights</span>
-              </div>
-
-              <p className="text-sm text-white/80 mb-6 italic">
-                Engineered for Diplomacy. Built for Research.
-              </p>
-
-              <h3 className="text-2xl font-bold mb-4">
-                ALL SPEECHES ARE SOURCED FROM OFFICIAL UN GENERAL ASSEMBLY
-                RECORDS
-              </h3>
-
-              <div className="flex items-center justify-between">
-                <span className="text-white/90 text-sm">
-                  UN Documentation Center
-                </span>
-                <span className="text-white/90 text-sm">2024</span>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className="border-gray-300 px-6 py-2.5 text-sm font-medium"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Advanced Filters
+              </Button>
             </div>
 
-            <div className="lg:pl-8">
-              <div className="bg-white/10 rounded-lg p-6 backdrop-blur-sm">
-                <h4 className="text-lg font-bold mb-4">Quick Statistics</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-white/90">Total Speeches:</span>
-                    <span className="font-bold">
-                      {pagination.total?.toLocaleString() || 'Loading...'}
-                    </span>
+            {/* Advanced Filters */}
+            {showFilters && (
+              <div className="bg-gray-50 rounded-lg p-6 mb-4">
+                <h3 className="font-semibold mb-4 text-gray-900">Advanced Filters</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Search Mode
+                    </label>
+                    <select
+                      name="mode"
+                      defaultValue="phrase"
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-un-blue focus:ring-un-blue"
+                    >
+                      <option value="phrase">Phrase Match</option>
+                      <option value="exact">Exact Match</option>
+                      <option value="fuzzy">Fuzzy Match</option>
+                    </select>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/90">Member States:</span>
-                    <span className="font-bold">{memberStatesCount}</span>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Year
+                    </label>
+                    <input
+                      type="number"
+                      name="year"
+                      placeholder="e.g., 2020"
+                      min="1946"
+                      max="2024"
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-un-blue focus:ring-un-blue"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/90">Years Covered:</span>
-                    <span className="font-bold">
-                      {Math.min(...years)} - {Math.max(...years)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/90">Sessions:</span>
-                    <span className="font-bold">{sessions.length}</span>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Session
+                    </label>
+                    <input
+                      type="number"
+                      name="session"
+                      placeholder="e.g., 75"
+                      min="1"
+                      max="100"
+                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-un-blue focus:ring-un-blue"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            )}
+          </Form>
+
         </div>
       </div>
-    </PageLayout>
+    )
+  }
+
+  // Show results page
+  return (
+    <div className="min-h-screen bg-stone-50">
+      {/* Search Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="text-lg font-bold text-gray-900 hover:text-un-blue whitespace-nowrap flex-shrink-0">
+              UN Speeches
+            </Link>
+
+            <Form method="get" onSubmit={handleSearch} className="flex-1 max-w-3xl">
+              <div className="flex items-center h-11 rounded-full border border-gray-300 hover:shadow-md focus-within:shadow-md transition-all bg-white">
+                <SearchIcon className="h-4 w-4 text-gray-400 ml-4 flex-shrink-0" />
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search speeches..."
+                  defaultValue={currentFilters.search}
+                  className="flex-1 h-full border-0 focus:ring-0 focus:outline-none px-3 text-sm bg-transparent rounded-full"
+                />
+                <input type="hidden" name="country" value={currentFilters.country || ''} />
+                <input type="hidden" name="year" value={currentFilters.year || ''} />
+                <input type="hidden" name="session" value={currentFilters.session || ''} />
+                <input type="hidden" name="mode" value={currentFilters.searchMode} />
+                <Button type="submit" size="sm" className="mr-1 bg-un-blue hover:bg-un-blue/90 text-white h-9 px-5 text-sm font-medium">
+                  Search
+                </Button>
+              </div>
+            </Form>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+              </button>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <Form method="get" onSubmit={handleSearch}>
+                <input type="hidden" name="q" value={currentFilters.search || ''} />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Search Mode
+                    </label>
+                    <select
+                      name="mode"
+                      defaultValue={currentFilters.searchMode}
+                      className="w-full text-sm rounded-md border-gray-300"
+                    >
+                      <option value="phrase">Phrase</option>
+                      <option value="exact">Exact</option>
+                      <option value="fuzzy">Fuzzy</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Year
+                    </label>
+                    <input
+                      type="number"
+                      name="year"
+                      defaultValue={currentFilters.year || ''}
+                      placeholder="e.g., 2020"
+                      className="w-full text-sm rounded-md border-gray-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Session
+                    </label>
+                    <input
+                      type="number"
+                      name="session"
+                      defaultValue={currentFilters.session || ''}
+                      placeholder="e.g., 75"
+                      className="w-full text-sm rounded-md border-gray-300"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button type="submit" size="sm" className="w-full bg-un-blue hover:bg-un-blue/90">
+                      Apply Filters
+                    </Button>
+                  </div>
+                </div>
+              </Form>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Results Summary */}
+        <div className="mb-4">
+          <p className="text-sm text-gray-600">
+            About {pagination.total.toLocaleString()} results
+            {currentFilters.search && ` for "${currentFilters.search}"`}
+          </p>
+        </div>
+
+        {/* Speech Cards */}
+        {speeches.length === 0 ? (
+          <div className="text-center py-12">
+            <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No speeches found</h3>
+            <p className="text-gray-600 mb-4">
+              Try adjusting your search terms or filters
+            </p>
+            <Button onClick={clearFilters}>Clear all filters</Button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+              {speeches.map((speech) => (
+                <SpeechCard key={speech.id} speech={speech} />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                baseUrl="/"
+                queryParams={Object.fromEntries(searchParams)}
+              />
+            )}
+          </>
+        )}
+      </div>
+    </div>
   )
 }

@@ -10,7 +10,7 @@ import PageLayout from '~/components/page-layout'
 import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { Button } from '~/components/ui/button'
-import { ArrowLeft, Globe } from 'lucide-react'
+import { ArrowLeft, MapPin } from 'lucide-react'
 
 type LoaderData = {
   speeches: Speech[]
@@ -100,10 +100,10 @@ export default function CountrySpeeches() {
       <PageLayout maxWidth="wide">
         {/* Back Navigation */}
         <div className="mb-6">
-          <Link to="/globe">
+          <Link to="/">
             <Button variant="outline" className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Globe
+              Back to Browse
             </Button>
           </Link>
         </div>
@@ -120,14 +120,14 @@ export default function CountrySpeeches() {
         {/* Results */}
         {speeches.length === 0 ? (
           <div className="text-center py-12">
-            <Globe className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">
               No speeches found for {countryName}.
             </p>
-            <Link to="/globe" className="mt-4 inline-block">
+            <Link to="/" className="mt-4 inline-block">
               <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Globe
+                Back to Browse
               </Button>
             </Link>
           </div>

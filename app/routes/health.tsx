@@ -404,12 +404,6 @@ export default function Health() {
           >
             ← Return to Homepage
           </Link>
-          <Link
-            to="/globe"
-            className="text-un-blue hover:text-un-blue/80 transition-colors font-medium"
-          >
-            View Globe →
-          </Link>
         </div>
       </div>
     </PageLayout>

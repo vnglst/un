@@ -1,4 +1,4 @@
-import { useLoaderData, Link } from 'react-router'
+import { useLoaderData, Link, useNavigate } from 'react-router'
 import { getSpeechById, type Speech } from '~/lib/database'
 import { logger, timeAsyncOperation } from '~/lib/logger'
 import PageLayout from '~/components/page-layout'
@@ -61,16 +61,24 @@ export async function loader({
 
 export default function SpeechDetail() {
   const { speech } = useLoaderData<LoaderData>()
+  const navigate = useNavigate()
+
+  const handleBack = () => {
+    // Go back if there's history, otherwise go to home
+    if (window.history.length > 1) {
+      navigate(-1)
+    } else {
+      navigate('/')
+    }
+  }
 
   return (
     <PageLayout maxWidth="narrow">
       <div className="mb-6">
-        <Link to="/">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Speeches
-          </Button>
-        </Link>
+        <Button variant="outline" size="sm" onClick={handleBack}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Search Results
+        </Button>
       </div>
 
       <div className="border border-gray-200 rounded">

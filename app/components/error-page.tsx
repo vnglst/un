@@ -4,7 +4,6 @@ import {
   Home,
   RefreshCw,
   Search,
-  MessageSquare,
 } from 'lucide-react'
 import PageLayout from '~/components/page-layout'
 import { Button } from '~/components/ui/button'
@@ -111,16 +110,6 @@ export default function ErrorPage({
             >
               <Home className="h-4 w-4 mr-2" />
               Go to Homepage
-            </Button>
-          </Link>
-
-          <Link to="/rag">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 px-8"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              AI Chat
             </Button>
           </Link>
         </div>

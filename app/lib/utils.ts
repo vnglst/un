@@ -6,14 +6,6 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Check if RAG (Retrieval-Augmented Generation) functionality is available
- * This requires an OpenAI API key to be configured
- */
-export function isRagAvailable(): boolean {
-  return !!process.env.OPENAI_API_KEY
-}
-
-/**
  * Highlights overlapping text between consecutive chunks by making overlapping parts light grey
  */
 export function highlightOverlappingText(

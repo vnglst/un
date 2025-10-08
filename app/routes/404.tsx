@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Search, Home, Globe, MessageSquare, AlertCircle } from 'lucide-react'
+import { Search, Home, AlertCircle } from 'lucide-react'
 import PageLayout from '~/components/page-layout'
 import { Button } from '~/components/ui/button'
 import { ServiceCard } from '~/components/ui/cards'
@@ -34,23 +34,11 @@ export default function NotFound() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mb-12">
         <ServiceCard
           title="Browse Speeches"
           description="Search through thousands of UN General Assembly speeches from member states."
           icon={<Search className="h-6 w-6 text-gray-600" />}
-        />
-
-        <ServiceCard
-          title="Explore Globe"
-          description="View speeches by country on our interactive 3D globe visualization."
-          icon={<Globe className="h-6 w-6 text-gray-600" />}
-        />
-
-        <ServiceCard
-          title="AI Chat"
-          description="Ask questions about UN speeches using our AI-powered semantic search."
-          icon={<MessageSquare className="h-6 w-6 text-gray-600" />}
         />
       </div>
 
@@ -65,26 +53,6 @@ export default function NotFound() {
             <Button className="w-full sm:w-auto bg-un-blue hover:bg-un-blue/90 text-white px-8">
               <Home className="h-4 w-4 mr-2" />
               Go to Homepage
-            </Button>
-          </Link>
-
-          <Link to="/globe">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 px-8"
-            >
-              <Globe className="h-4 w-4 mr-2" />
-              View Globe
-            </Button>
-          </Link>
-
-          <Link to="/rag">
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto border-gray-300 text-gray-700 hover:bg-gray-50 px-8"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              AI Chat
             </Button>
           </Link>
         </div>

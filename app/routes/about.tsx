@@ -1,5 +1,5 @@
 import PageLayout from '~/components/page-layout'
-import { Globe, Search, Database, Users } from 'lucide-react'
+import { Search, Database, Users } from 'lucide-react'
 import { Link } from 'react-router'
 import { FeatureCard } from '~/components/ui/cards'
 
@@ -41,13 +41,7 @@ export default function About() {
       </div>
 
       {/* Features Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-        <FeatureCard
-          title="Interactive Globe"
-          description="Explore an interactive 3D globe showing speech frequency by country"
-          icon={<Globe className="h-8 w-8 text-white" />}
-        />
-
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
         <FeatureCard
           title="Advanced Search"
           description="Full-text search with multiple modes (phrase, exact, fuzzy matching)"

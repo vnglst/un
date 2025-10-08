@@ -1,12 +1,10 @@
 import { Link, useLocation } from 'react-router'
 import { Globe, Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import { useAppContextSafe } from '~/lib/app-context'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const location = useLocation()
-  const { ragAvailable } = useAppContextSafe()
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -62,17 +60,6 @@ export default function Header() {
             <Link to="/" className={getNavLinkClass('/')}>
               Browse
             </Link>
-            <Link to="/globe" className={getNavLinkClass('/globe')}>
-              Globe
-            </Link>
-            <Link to="/letters" className={getNavLinkClass('/letters')}>
-              Letters
-            </Link>
-            {ragAvailable && (
-              <Link to="/rag" className={getNavLinkClass('/rag')}>
-                AI Chat
-              </Link>
-            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -100,29 +87,6 @@ export default function Header() {
               >
                 Browse
               </Link>
-              <Link
-                to="/globe"
-                className={getMobileNavLinkClass('/globe')}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Globe
-              </Link>
-              <Link
-                to="/letters"
-                className={getMobileNavLinkClass('/letters')}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Letters
-              </Link>
-              {ragAvailable && (
-                <Link
-                  to="/rag"
-                  className={getMobileNavLinkClass('/rag')}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  AI Chat
-                </Link>
-              )}
             </nav>
           </div>
         )}

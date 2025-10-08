@@ -72,7 +72,6 @@ function generateSitemap(baseUrl: string, data: SitemapData): string {
 
   // Add static pages
   urls.push(createUrlEntry(baseUrl, '/', 'daily', '1.0'))
-  urls.push(createUrlEntry(baseUrl, '/globe', 'weekly', '0.8'))
 
   // Add country pages
   data.countries.forEach((country) => {
