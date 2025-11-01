@@ -26,7 +26,7 @@ RUN npm run build
 # Set permissions for existing node user
 RUN chown -R node:node /app
 
-# Create startup script that handles volume permissions
+# Create startup script that handles volume permissions and database check
 RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "🔍 Checking /app/data permissions..."\n\
@@ -34,17 +34,22 @@ ls -la /app/data || echo "Volume not mounted yet"\n\
 \n\
 if [ -d /app/data ]; then\n\
   echo "📂 Found mounted volume, fixing permissions..."\n\
-  chown -R node:node /app/data 2>/dev/null || {\n\
-    echo "⚠️  Could not change ownership. Running as root for database setup..."\n\
-    test -f /app/data/un_speeches.db || npm run db:setup\n\
-    chown -R node:node /app/data 2>/dev/null || echo "Database created, but ownership unchanged"\n\
-  }\nelse\n\
+  chown -R node:node /app/data 2>/dev/null || echo "⚠️  Could not change ownership"\n\
+else\n\
+  echo "📂 Creating /app/data directory..."\n\
   mkdir -p /app/data\n\
   chown node:node /app/data\n\
 fi\n\
 \n\
+if [ ! -f /app/data/un_speeches.db ]; then\n\
+  echo "❌ Database not found at /app/data/un_speeches.db"\n\
+  echo "Please ensure the database is mounted to the /app/data volume"\n\
+  exit 1\n\
+fi\n\
+\n\
+echo "✅ Database found"\n\
 echo "🚀 Starting application as node user..."\n\
-exec su node -c "test -f /app/data/un_speeches.db || npm run db:setup && exec npm start"' > /start.sh && chmod +x /start.sh
+exec su node -c "exec npm start"' > /start.sh && chmod +x /start.sh
 
 # Expose port
 EXPOSE 3000
