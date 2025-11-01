@@ -23,13 +23,14 @@ COPY . .
 # Build the application (no database needed)
 RUN npm run build
 
-# Create startup script
+# Create startup script that checks for database in volume
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "🔍 Checking database..."\n\
+echo "🔍 Checking for database..."\n\
 \n\
 if [ ! -f /app/data/un_speeches.db ]; then\n\
   echo "❌ Database not found at /app/data/un_speeches.db"\n\
+  echo "Please ensure the database is uploaded to the mounted volume at /app/data"\n\
   exit 1\n\
 fi\n\
 \n\
