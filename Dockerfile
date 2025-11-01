@@ -37,7 +37,7 @@ fi\n\
 echo "✅ Database found ($(du -h /app/data/un_speeches.db | cut -f1))"\n\
 echo "🚀 Starting application..."\n\
 cd /app\n\
-exec node build/server/index.js' > /start.sh && chmod +x /start.sh
+exec npm start' > /start.sh && chmod +x /start.sh
 
 # Expose port
 EXPOSE 3000
@@ -47,9 +47,9 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+# Health check - give it more time and check connection
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://0.0.0.0:3000/health || curl -f http://localhost:3000/health || exit 1
 
 # Use startup script that handles permissions
 CMD ["/start.sh"]
