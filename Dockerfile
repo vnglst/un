@@ -23,31 +23,20 @@ COPY . .
 # Build the application (no database needed)
 RUN npm run build
 
-# Create startup script that handles volume permissions and database check
+# Create startup script
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "🔍 Checking /app/data permissions..."\n\
-ls -la /app/data || echo "Volume not mounted yet"\n\
-\n\
-if [ -d /app/data ]; then\n\
-  echo "📂 Found mounted volume, fixing permissions..."\n\
-  chown -R node:node /app/data 2>/dev/null || echo "⚠️  Could not change ownership"\n\
-else\n\
-  echo "📂 Creating /app/data directory..."\n\
-  mkdir -p /app/data\n\
-  chown node:node /app/data\n\
-fi\n\
+echo "🔍 Checking database..."\n\
 \n\
 if [ ! -f /app/data/un_speeches.db ]; then\n\
   echo "❌ Database not found at /app/data/un_speeches.db"\n\
-  echo "Please ensure the database is mounted to the /app/data volume"\n\
   exit 1\n\
 fi\n\
 \n\
-echo "✅ Database found"\n\
-echo "🚀 Starting application as node user..."\n\
+echo "✅ Database found ($(du -h /app/data/un_speeches.db | cut -f1))"\n\
+echo "🚀 Starting application..."\n\
 cd /app\n\
-exec su node -c "NODE_ENV=production exec node build/server/index.js"' > /start.sh && chmod +x /start.sh
+exec node build/server/index.js' > /start.sh && chmod +x /start.sh
 
 # Expose port
 EXPOSE 3000
