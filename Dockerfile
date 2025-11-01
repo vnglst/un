@@ -23,9 +23,6 @@ COPY . .
 # Build the application (no database needed)
 RUN npm run build
 
-# Set permissions for existing node user
-RUN chown -R node:node /app
-
 # Create startup script that handles volume permissions and database check
 RUN echo '#!/bin/bash\n\
 set -e\n\
@@ -49,7 +46,8 @@ fi\n\
 \n\
 echo "✅ Database found"\n\
 echo "🚀 Starting application as node user..."\n\
-exec su node -c "exec npm start"' > /start.sh && chmod +x /start.sh
+cd /app\n\
+exec su node -c "NODE_ENV=production exec node build/server/index.js"' > /start.sh && chmod +x /start.sh
 
 # Expose port
 EXPOSE 3000
