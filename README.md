@@ -106,25 +106,3 @@ docker build -t un-speeches .
 # Run the container
 docker run -p 3000:3000 un-speeches
 ```
-
-### Environment Variables
-
-```bash
-# Required for AI functionality
-OPENAI_API_KEY=your_openai_api_key
-
-# Optional for development
-NODE_ENV=development
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `npm run typecheck` and `npm run lint`
-5. Submit a pull request
-
-## 📄 License
-
-ISC
