@@ -16,5 +16,6 @@ export default [
   route('research/quotations/2000s', 'routes/research.quotations.2000s.tsx'),
   route('research/quotations/2010s', 'routes/research.quotations.2010s.tsx'),
   route('research/quotations/2020s', 'routes/research.quotations.2020s.tsx'),
+  route('research/greenland', 'routes/research.greenland.tsx'),
   route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig
