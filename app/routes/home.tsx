@@ -18,6 +18,7 @@ import { logger, timeAsyncOperation } from '~/lib/logger'
 import SpeechCard from '~/components/speech-card'
 import Pagination from '~/components/pagination'
 import { Button } from '~/components/ui/button'
+import { Badge } from '~/components/ui/badge'
 import { Search as SearchIcon, Filter, X } from 'lucide-react'
 import { useState } from 'react'
 
@@ -169,6 +170,15 @@ export default function Home() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
         <div className="w-full max-w-2xl">
           {/* Logo */}
+          <div className="absolute top-0 right-0 p-6 flex gap-6">
+            <Link
+              to="/research"
+              className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              Research
+            </Link>
+          </div>
+
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold text-gray-900 mb-2">
               UN Speeches
@@ -295,6 +305,13 @@ export default function Home() {
               UN Speeches
             </Link>
 
+            <Link
+              to="/research"
+              className="hidden md:block text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              Research
+            </Link>
+
             <Form
               method="get"
               onSubmit={handleSearch}
@@ -370,6 +387,12 @@ export default function Home() {
               >
                 UN Speeches
               </Link>
+              <Link
+                  to="/research"
+                  className="text-sm font-medium text-gray-500 hover:text-gray-900"
+                >
+                  Research
+                </Link>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -506,9 +529,9 @@ export default function Home() {
             About {pagination.total.toLocaleString()} results
             {currentFilters.search && ` for "${currentFilters.search}"`}
             {isSemanticSearch && (
-              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+              <Badge variant="purple" className="ml-2">
                 AI Semantic Search
-              </span>
+              </Badge>
             )}
           </p>
         </div>

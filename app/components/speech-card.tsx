@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { Calendar, User } from 'lucide-react'
 import type { Speech, HighlightedSpeech } from '~/lib/database'
+import { Badge } from '~/components/ui/badge'
 
 interface SpeechCardProps {
   speech: Speech | HighlightedSpeech
@@ -59,9 +60,9 @@ export default function SpeechCard({
                 speech.country_name || speech.country_code
               )}
             </h3>
-            <span className="text-xs bg-un-blue text-white px-2 py-1 rounded-full font-medium ml-2 flex-shrink-0">
+            <Badge className="ml-2 flex-shrink-0">
               {speech.country_code}
-            </span>
+            </Badge>
           </div>
 
           <div className="flex items-center text-sm text-gray-600 space-x-4">
@@ -70,9 +71,9 @@ export default function SpeechCard({
               {speech.year}
             </span>
             {speech.session && (
-              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+              <Badge variant="secondary">
                 Session {speech.session}
-              </span>
+              </Badge>
             )}
           </div>
         </div>

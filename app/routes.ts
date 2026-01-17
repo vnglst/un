@@ -11,5 +11,10 @@ export default [
   route('role/:role', 'routes/role.$role.tsx'),
   route('sitemap.xml', 'routes/sitemap[.]xml.tsx'),
   route('health', 'routes/health.tsx'),
+  route('research', 'routes/research.index.tsx'),
+  route('research/quotations', 'routes/research.quotations.tsx'),
+  route('research/quotations/2000s', 'routes/research.quotations.2000s.tsx'),
+  route('research/quotations/2010s', 'routes/research.quotations.2010s.tsx'),
+  route('research/quotations/2020s', 'routes/research.quotations.2020s.tsx'),
   route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig
