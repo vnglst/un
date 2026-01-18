@@ -13,9 +13,15 @@ export default [
   route('health', 'routes/health.tsx'),
   route('research', 'routes/research.index.tsx'),
   route('research/quotations', 'routes/research.quotations.tsx'),
+  route('research/quotations/1950s', 'routes/research.quotations.1950s.tsx'),
+  route('research/quotations/1960s', 'routes/research.quotations.1960s.tsx'),
+  route('research/quotations/1970s', 'routes/research.quotations.1970s.tsx'),
+  route('research/quotations/1980s', 'routes/research.quotations.1980s.tsx'),
+  route('research/quotations/1990s', 'routes/research.quotations.1990s.tsx'),
   route('research/quotations/2000s', 'routes/research.quotations.2000s.tsx'),
   route('research/quotations/2010s', 'routes/research.quotations.2010s.tsx'),
   route('research/quotations/2020s', 'routes/research.quotations.2020s.tsx'),
   route('research/greenland', 'routes/research.greenland.tsx'),
+  route('research/two-state-solution', 'routes/research.two-state-solution.tsx'),
   route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig

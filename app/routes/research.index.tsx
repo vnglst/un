@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Quote, TrendingUp, Globe } from 'lucide-react'
+import { Quote, TrendingUp, Globe, Scale } from 'lucide-react'
 import PageLayout from '~/components/page-layout'
 import { Badge } from '~/components/ui/badge'
 
@@ -71,6 +71,33 @@ export default function ResearchIndex() {
             </p>
             <div className="flex items-center text-cyan-700 font-medium text-sm group-hover:underline">
               View Evolution &rarr;
+            </div>
+          </div>
+        </Link>
+
+        {/* Card: Two-State Solution */}
+        <Link
+          to="/research/two-state-solution"
+          className="group block bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden"
+        >
+          <div className="h-48 bg-amber-50 flex items-center justify-center p-8">
+             <Scale className="h-16 w-16 text-amber-600/40 group-hover:text-amber-600/60 transition-colors" />
+          </div>
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="blue">
+                Data Analysis
+              </Badge>
+              <span className="text-xs text-gray-500">Jan 2026</span>
+            </div>
+            <h2 className="text-xl font-bold mb-2 group-hover:text-amber-700 transition-colors">
+              The Two-State Solution
+            </h2>
+            <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+              From 1947 partition to 2024 urgency. How a concept took 54 years to become the universal diplomatic framework for Israeli-Palestinian peace.
+            </p>
+            <div className="flex items-center text-amber-700 font-medium text-sm group-hover:underline">
+              View Analysis &rarr;
             </div>
           </div>
         </Link>
