@@ -4,6 +4,9 @@ set -e
 echo "🚀 UN Speeches Database Update Script"
 echo "======================================"
 
+# Coolify application data path
+REMOTE_PATH="/data/coolify/applications/l8k4wo84gs8k4k8os88kkg8g/data"
+
 # Check if database file exists locally
 if [ ! -f "data/un_speeches.db" ]; then
     echo "❌ Database file not found at data/un_speeches.db"
@@ -18,10 +21,10 @@ echo "📊 Local database size: $DB_SIZE"
 
 # Check available disk space on server
 echo "🔍 Checking available disk space on server..."
-ssh root@un.koenvangilst.nl "df -h /mnt/HC_Volume_102788309/un-sqlite"
+ssh root@un.koenvangilst.nl "df -h $REMOTE_PATH"
 
 REQUIRED_SPACE=$((DB_SIZE_KB * 120 / 100))
-AVAILABLE_SPACE=$(ssh root@un.koenvangilst.nl "df /mnt/HC_Volume_102788309/un-sqlite | tail -1 | awk '{print \$4}'")
+AVAILABLE_SPACE=$(ssh root@un.koenvangilst.nl "df $REMOTE_PATH | tail -1 | awk '{print \$4}'")
 if [ "$AVAILABLE_SPACE" -lt "$REQUIRED_SPACE" ]; then
     echo "❌ Insufficient disk space on server"
     echo "💾 Available: $(($AVAILABLE_SPACE / 1024))MB, Required: $(($REQUIRED_SPACE / 1024))MB (DB size + 20% buffer)"
@@ -33,13 +36,13 @@ echo "✅ Sufficient disk space available"
 echo "📤 Copying database to server..."
 
 # Use rsync with progress and resume capability instead of scp
-rsync -avz --progress --partial data/un_speeches.db root@un.koenvangilst.nl:/mnt/HC_Volume_102788309/un-sqlite/
+rsync -avz --progress --partial data/un_speeches.db root@un.koenvangilst.nl:$REMOTE_PATH/
 
 echo "🔧 Setting proper permissions on server..."
-ssh root@un.koenvangilst.nl "chown 1000:1000 /mnt/HC_Volume_102788309/un-sqlite/un_speeches.db"
+ssh root@un.koenvangilst.nl "chown 1000:1000 $REMOTE_PATH/un_speeches.db"
 
 echo "✅ Verifying database on server..."
-ssh root@un.koenvangilst.nl "ls -la /mnt/HC_Volume_102788309/un-sqlite/un_speeches.db"
+ssh root@un.koenvangilst.nl "ls -la $REMOTE_PATH/un_speeches.db"
 
 echo ""
 echo "🎉 Database successfully updated on server!"
