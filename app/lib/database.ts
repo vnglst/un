@@ -870,6 +870,243 @@ export async function searchSpeechesWithEmbeddings(
 }
 
 // =============================================================================
+// QUOTATIONS & NOTABLE FIGURES
+// =============================================================================
+
+export interface NotableFigure {
+  id: number
+  name: string
+  category: string
+  subcategory: string | null
+  birth_year: number | null
+  death_year: number | null
+  description: string | null
+}
+
+export interface Quotation {
+  id: number
+  figure_id: number
+  figure_name: string
+  figure_category: string
+  speech_id: number
+  chunk_id: number | null
+  quote_text: string
+  context_text: string | null
+  year: number
+  country_name: string
+  is_direct_quote: boolean
+  confidence_score: number
+}
+
+export interface QuotationStats {
+  total_mentions: number
+  direct_quotes: number
+  year_range: string
+  top_countries: Array<{ country: string; count: number }>
+}
+
+/**
+ * Get all notable figures with their mention counts
+ */
+export function getNotableFigures(): Array<NotableFigure & { mention_count: number }> {
+  logger.debug('Getting notable figures')
+  const query = `
+    SELECT
+      nf.*,
+      COUNT(q.id) as mention_count
+    FROM notable_figures nf
+    LEFT JOIN quotations q ON nf.id = q.figure_id
+    GROUP BY nf.id
+    HAVING mention_count > 0
+    ORDER BY mention_count DESC
+  `
+  return timeOperation('getNotableFigures', () => {
+    return db.prepare(query).all() as Array<NotableFigure & { mention_count: number }>
+  })
+}
+
+/**
+ * Get notable figures by category
+ */
+export function getNotableFiguresByCategory(category: string): Array<NotableFigure & { mention_count: number }> {
+  logger.debug('Getting notable figures by category', { category })
+  const query = `
+    SELECT
+      nf.*,
+      COUNT(q.id) as mention_count
+    FROM notable_figures nf
+    LEFT JOIN quotations q ON nf.id = q.figure_id
+    WHERE nf.category = ?
+    GROUP BY nf.id
+    HAVING mention_count > 0
+    ORDER BY mention_count DESC
+  `
+  return timeOperation('getNotableFiguresByCategory', () => {
+    return db.prepare(query).all(category) as Array<NotableFigure & { mention_count: number }>
+  })
+}
+
+/**
+ * Get a single notable figure by name (URL slug)
+ */
+export function getNotableFigureByName(name: string): NotableFigure | null {
+  logger.debug('Getting notable figure by name', { name })
+  const query = 'SELECT * FROM notable_figures WHERE name = ?'
+  return timeOperation('getNotableFigureByName', () => {
+    return db.prepare(query).get(name) as NotableFigure | null
+  })
+}
+
+/**
+ * Get quotations for a specific figure
+ */
+export function getQuotationsForFigure(
+  figureId: number,
+  options: {
+    directOnly?: boolean
+    minConfidence?: number
+    limit?: number
+    offset?: number
+  } = {}
+): Quotation[] {
+  logger.debug('Getting quotations for figure', { figureId, options })
+
+  const { directOnly = false, minConfidence = 0, limit = 100, offset = 0 } = options
+
+  let query = `
+    SELECT
+      q.*,
+      nf.name as figure_name,
+      nf.category as figure_category
+    FROM quotations q
+    JOIN notable_figures nf ON q.figure_id = nf.id
+    WHERE q.figure_id = ?
+  `
+
+  const params: (number | boolean)[] = [figureId]
+
+  if (directOnly) {
+    query += ' AND q.is_direct_quote = 1'
+  }
+
+  if (minConfidence > 0) {
+    query += ' AND q.confidence_score >= ?'
+    params.push(minConfidence)
+  }
+
+  query += ' ORDER BY q.confidence_score DESC, q.year DESC LIMIT ? OFFSET ?'
+  params.push(limit, offset)
+
+  return timeOperation('getQuotationsForFigure', () => {
+    return db.prepare(query).all(...params) as Quotation[]
+  })
+}
+
+/**
+ * Get quotation statistics for a figure
+ */
+export function getQuotationStatsForFigure(figureId: number): QuotationStats {
+  logger.debug('Getting quotation stats for figure', { figureId })
+
+  return timeOperation('getQuotationStatsForFigure', () => {
+    const statsQuery = `
+      SELECT
+        COUNT(*) as total_mentions,
+        SUM(CASE WHEN is_direct_quote = 1 THEN 1 ELSE 0 END) as direct_quotes,
+        MIN(year) || '-' || MAX(year) as year_range
+      FROM quotations
+      WHERE figure_id = ?
+    `
+    const stats = db.prepare(statsQuery).get(figureId) as {
+      total_mentions: number
+      direct_quotes: number
+      year_range: string
+    }
+
+    const countriesQuery = `
+      SELECT country_name as country, COUNT(*) as count
+      FROM quotations
+      WHERE figure_id = ?
+      GROUP BY country_name
+      ORDER BY count DESC
+      LIMIT 10
+    `
+    const topCountries = db.prepare(countriesQuery).all(figureId) as Array<{ country: string; count: number }>
+
+    return {
+      ...stats,
+      top_countries: topCountries
+    }
+  })
+}
+
+/**
+ * Get top figures for a specific decade
+ */
+export function getTopFiguresForDecade(
+  startYear: number,
+  endYear: number,
+  limit: number = 20
+): Array<{ name: string; category: string; mentions: number }> {
+  logger.debug('Getting top figures for decade', { startYear, endYear, limit })
+
+  const query = `
+    SELECT
+      nf.name,
+      nf.category,
+      COUNT(*) as mentions
+    FROM quotations q
+    JOIN notable_figures nf ON q.figure_id = nf.id
+    WHERE q.year >= ? AND q.year < ?
+    GROUP BY nf.id
+    ORDER BY mentions DESC
+    LIMIT ?
+  `
+
+  return timeOperation('getTopFiguresForDecade', () => {
+    return db.prepare(query).all(startYear, endYear, limit) as Array<{ name: string; category: string; mentions: number }>
+  })
+}
+
+/**
+ * Get best quotations for a decade (high confidence direct quotes)
+ */
+export function getBestQuotationsForDecade(
+  startYear: number,
+  endYear: number,
+  limit: number = 10
+): Quotation[] {
+  logger.debug('Getting best quotations for decade', { startYear, endYear, limit })
+
+  const query = `
+    SELECT
+      q.*,
+      nf.name as figure_name,
+      nf.category as figure_category
+    FROM quotations q
+    JOIN notable_figures nf ON q.figure_id = nf.id
+    WHERE q.year >= ? AND q.year < ?
+      AND q.is_direct_quote = 1
+      AND q.confidence_score >= 0.7
+    ORDER BY q.confidence_score DESC, q.year DESC
+    LIMIT ?
+  `
+
+  return timeOperation('getBestQuotationsForDecade', () => {
+    return db.prepare(query).all(startYear, endYear, limit) as Quotation[]
+  })
+}
+
+/**
+ * Count total quotations for a figure
+ */
+export function countQuotationsForFigure(figureId: number): number {
+  const query = 'SELECT COUNT(*) as count FROM quotations WHERE figure_id = ?'
+  const result = db.prepare(query).get(figureId) as { count: number }
+  return result.count
+}
+
+// =============================================================================
 // =============================================================================
 // EXPORT ALL FUNCTIONS
 // =============================================================================

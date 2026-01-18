@@ -22,20 +22,20 @@ type LoaderData = {
 }
 
 export async function loader(): Promise<LoaderData> {
-  const topFigures = getTopFiguresForDecade(2000, 2009, 20)
-  const bestQuotes = getBestQuotationsForDecade(2000, 2009, 5)
+  const topFigures = getTopFiguresForDecade(1960, 1969, 20)
+  const bestQuotes = getBestQuotationsForDecade(1960, 1969, 5)
 
   return { topFigures, bestQuotes }
 }
 
 export function meta() {
   return [
-    { title: 'The 2000s: Millennium & Hope - UN Speeches Research' },
-    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 2000s.' },
+    { title: 'The 1960s: Decolonization & Crisis - UN Speeches Research' },
+    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 1960s.' },
   ]
 }
 
-export default function Research2000s() {
+export default function Research1960s() {
   const { topFigures, bestQuotes } = useLoaderData<LoaderData>()
 
   return (
@@ -50,23 +50,24 @@ export default function Research2000s() {
       </div>
 
       <header className="mb-12">
-        <Badge variant="indigo" className="mb-4">
-          The 2000s
+        <Badge variant="amber" className="mb-4">
+          The 1960s
         </Badge>
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-          Millennium & Hope
+          Decolonization & Crisis
         </h1>
         <p className="text-xl text-gray-600 leading-relaxed">
-          The turn of the millennium brought a focus on new beginnings, the Millennium Development Goals, and a renewed commitment to peace.
-          <strong> Kofi Annan's</strong> influence was paramount, while historical figures like <strong>Gandhi</strong> and <strong>King</strong> remained constant touchstones.
+          The decade of African independence saw dozens of new nations join the UN.
+          The Cuban Missile Crisis brought the world to the brink, while <strong>Kennedy's</strong> assassination and <strong>Hammarskjold's</strong> death marked profound losses.
         </p>
       </header>
 
       <article className="prose prose-lg prose-stone max-w-none">
-        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (2000-2009)</h2>
+        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (1960-1969)</h2>
         <p>
-          The 2000s saw diverse citations, with <strong>Kofi Annan</strong> leading as the sitting Secretary-General.
-          The rhetoric often centered on development and resolving long-standing conflicts, invoking figures of liberation and peace.
+          <strong>U Thant</strong> took over as Secretary-General after <strong>Dag Hammarskjold's</strong> tragic death in a plane crash in 1961.
+          <strong> Kennedy</strong> and <strong>Khrushchev</strong> dominated Cold War discourse, especially during the Cuban Missile Crisis.
+          African leaders like <strong>Nkrumah</strong> and <strong>Nehru</strong> championed the Non-Aligned Movement.
         </p>
 
         <div className="not-prose my-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

@@ -22,20 +22,20 @@ type LoaderData = {
 }
 
 export async function loader(): Promise<LoaderData> {
-  const topFigures = getTopFiguresForDecade(2000, 2009, 20)
-  const bestQuotes = getBestQuotationsForDecade(2000, 2009, 5)
+  const topFigures = getTopFiguresForDecade(1980, 1989, 20)
+  const bestQuotes = getBestQuotationsForDecade(1980, 1989, 5)
 
   return { topFigures, bestQuotes }
 }
 
 export function meta() {
   return [
-    { title: 'The 2000s: Millennium & Hope - UN Speeches Research' },
-    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 2000s.' },
+    { title: 'The 1980s: Cold War Twilight - UN Speeches Research' },
+    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 1980s.' },
   ]
 }
 
-export default function Research2000s() {
+export default function Research1980s() {
   const { topFigures, bestQuotes } = useLoaderData<LoaderData>()
 
   return (
@@ -50,23 +50,24 @@ export default function Research2000s() {
       </div>
 
       <header className="mb-12">
-        <Badge variant="indigo" className="mb-4">
-          The 2000s
+        <Badge variant="purple" className="mb-4">
+          The 1980s
         </Badge>
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-          Millennium & Hope
+          Cold War Twilight
         </h1>
         <p className="text-xl text-gray-600 leading-relaxed">
-          The turn of the millennium brought a focus on new beginnings, the Millennium Development Goals, and a renewed commitment to peace.
-          <strong> Kofi Annan's</strong> influence was paramount, while historical figures like <strong>Gandhi</strong> and <strong>King</strong> remained constant touchstones.
+          The final decade of the Cold War saw superpower tensions and the rise of <strong>Gorbachev's</strong> reforms.
+          The anti-apartheid movement made <strong>Nelson Mandela</strong> a global symbol of resistance while still imprisoned.
         </p>
       </header>
 
       <article className="prose prose-lg prose-stone max-w-none">
-        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (2000-2009)</h2>
+        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (1980-1989)</h2>
         <p>
-          The 2000s saw diverse citations, with <strong>Kofi Annan</strong> leading as the sitting Secretary-General.
-          The rhetoric often centered on development and resolving long-standing conflicts, invoking figures of liberation and peace.
+          Cold War leaders <strong>Reagan</strong> and <strong>Gorbachev</strong> dominated mentions as superpower relations evolved.
+          <strong> Nelson Mandela</strong>, though imprisoned, became the most cited moral figure as the anti-apartheid movement intensified.
+          <strong> Olof Palme's</strong> assassination in 1986 led to tributes from across the globe.
         </p>
 
         <div className="not-prose my-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

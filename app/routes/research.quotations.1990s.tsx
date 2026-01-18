@@ -22,20 +22,20 @@ type LoaderData = {
 }
 
 export async function loader(): Promise<LoaderData> {
-  const topFigures = getTopFiguresForDecade(2000, 2009, 20)
-  const bestQuotes = getBestQuotationsForDecade(2000, 2009, 5)
+  const topFigures = getTopFiguresForDecade(1990, 1999, 20)
+  const bestQuotes = getBestQuotationsForDecade(1990, 1999, 5)
 
   return { topFigures, bestQuotes }
 }
 
 export function meta() {
   return [
-    { title: 'The 2000s: Millennium & Hope - UN Speeches Research' },
-    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 2000s.' },
+    { title: 'The 1990s: New World Order - UN Speeches Research' },
+    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 1990s.' },
   ]
 }
 
-export default function Research2000s() {
+export default function Research1990s() {
   const { topFigures, bestQuotes } = useLoaderData<LoaderData>()
 
   return (
@@ -50,23 +50,24 @@ export default function Research2000s() {
       </div>
 
       <header className="mb-12">
-        <Badge variant="indigo" className="mb-4">
-          The 2000s
+        <Badge variant="secondary" className="mb-4">
+          The 1990s
         </Badge>
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-          Millennium & Hope
+          New World Order
         </h1>
         <p className="text-xl text-gray-600 leading-relaxed">
-          The turn of the millennium brought a focus on new beginnings, the Millennium Development Goals, and a renewed commitment to peace.
-          <strong> Kofi Annan's</strong> influence was paramount, while historical figures like <strong>Gandhi</strong> and <strong>King</strong> remained constant touchstones.
+          The fall of the Berlin Wall and the end of the Cold War ushered in unprecedented optimism.
+          <strong> Nelson Mandela's</strong> release and the Oslo Accords defined a decade of hope for peace and reconciliation.
         </p>
       </header>
 
       <article className="prose prose-lg prose-stone max-w-none">
-        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (2000-2009)</h2>
+        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (1990-1999)</h2>
         <p>
-          The 2000s saw diverse citations, with <strong>Kofi Annan</strong> leading as the sitting Secretary-General.
-          The rhetoric often centered on development and resolving long-standing conflicts, invoking figures of liberation and peace.
+          The 1990s saw two Secretary-Generals dominate citations: <strong>Boutros Boutros-Ghali</strong> and <strong>Kofi Annan</strong>.
+          <strong> Nelson Mandela's</strong> release from prison and subsequent presidency made him an iconic figure of reconciliation.
+          The Middle East peace process brought <strong>Rabin</strong> and <strong>Arafat</strong> into focus.
         </p>
 
         <div className="not-prose my-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

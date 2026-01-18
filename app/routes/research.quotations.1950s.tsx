@@ -22,20 +22,20 @@ type LoaderData = {
 }
 
 export async function loader(): Promise<LoaderData> {
-  const topFigures = getTopFiguresForDecade(2000, 2009, 20)
-  const bestQuotes = getBestQuotationsForDecade(2000, 2009, 5)
+  const topFigures = getTopFiguresForDecade(1950, 1959, 20)
+  const bestQuotes = getBestQuotationsForDecade(1950, 1959, 5)
 
   return { topFigures, bestQuotes }
 }
 
 export function meta() {
   return [
-    { title: 'The 2000s: Millennium & Hope - UN Speeches Research' },
-    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 2000s.' },
+    { title: 'The 1950s: Early Cold War - UN Speeches Research' },
+    { name: 'description', content: 'Analysis of most quoted people in UN speeches during the 1950s.' },
   ]
 }
 
-export default function Research2000s() {
+export default function Research1950s() {
   const { topFigures, bestQuotes } = useLoaderData<LoaderData>()
 
   return (
@@ -50,23 +50,24 @@ export default function Research2000s() {
       </div>
 
       <header className="mb-12">
-        <Badge variant="indigo" className="mb-4">
-          The 2000s
+        <Badge variant="default" className="mb-4">
+          The 1950s
         </Badge>
         <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-          Millennium & Hope
+          Early Cold War
         </h1>
         <p className="text-xl text-gray-600 leading-relaxed">
-          The turn of the millennium brought a focus on new beginnings, the Millennium Development Goals, and a renewed commitment to peace.
-          <strong> Kofi Annan's</strong> influence was paramount, while historical figures like <strong>Gandhi</strong> and <strong>King</strong> remained constant touchstones.
+          The formative decade of the United Nations, shaped by the Korean War and the dawn of the atomic age.
+          <strong> Dag Hammarskjold</strong> became the iconic Secretary-General, while Cold War rhetoric dominated the Assembly.
         </p>
       </header>
 
       <article className="prose prose-lg prose-stone max-w-none">
-        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (2000-2009)</h2>
+        <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Most Cited Figures (1950-1959)</h2>
         <p>
-          The 2000s saw diverse citations, with <strong>Kofi Annan</strong> leading as the sitting Secretary-General.
-          The rhetoric often centered on development and resolving long-standing conflicts, invoking figures of liberation and peace.
+          <strong>Dag Hammarskjold</strong> emerged as a towering figure of international diplomacy.
+          <strong> Stalin's</strong> shadow loomed large over Cold War debates, while post-war statesmen like <strong>Churchill</strong> and <strong>Roosevelt</strong> were invoked as architects of peace.
+          The death of <strong>Gandhi</strong> in 1948 made him a martyr for non-violence.
         </p>
 
         <div className="not-prose my-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">

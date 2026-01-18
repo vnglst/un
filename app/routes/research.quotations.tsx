@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useLoaderData } from 'react-router'
 import { Badge } from '~/components/ui/badge'
 import PageLayout from '~/components/page-layout'
 import {
@@ -9,29 +9,26 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
+import { getNotableFigures, type NotableFigure } from '~/lib/database'
+import { Users } from 'lucide-react'
 
-const topOverall = [
-  { rank: 1, person: 'Ban Ki-moon', mentions: 60, context: 'Secretary-General (2007-2016)' },
-  { rank: 2, person: 'Kofi Annan', mentions: 40, context: 'Secretary-General (1997-2006)' },
-  { rank: 3, person: 'Antonio Guterres', mentions: 38, context: 'Secretary-General (2017-Present)' },
-  { rank: 4, person: 'Pope Francis', mentions: 36, context: 'Religious Leader' },
-  { rank: 5, person: 'Nelson Mandela', mentions: 36, context: 'Peace Icon' },
-  { rank: 6, person: 'Martin Luther King', mentions: 22, context: 'Civil Rights Leader' },
-  { rank: 7, person: 'Dag Hammarskjöld', mentions: 14, context: 'Secretary-General (1953-1961)' },
-  { rank: 8, person: 'Winston Churchill', mentions: 13, context: 'UK Prime Minister' },
-  { rank: 9, person: 'Mahatma Gandhi', mentions: 7, context: 'Independence Leader' },
-  { rank: 10, person: 'John F. Kennedy', mentions: 7, context: 'US President' },
-  { rank: 11, person: 'Albert Einstein', mentions: 7, context: 'Physicist' },
-  { rank: 12, person: 'Jesus', mentions: 6, context: 'Religious Figure' },
-  { rank: 13, person: 'Prophet Muhammad', mentions: 5, context: 'Religious Figure' },
-  { rank: 14, person: 'Buddha', mentions: 5, context: 'Religious Figure' },
-  { rank: 15, person: 'Aristotle', mentions: 5, context: 'Philosopher' },
-  { rank: 16, person: 'Abraham Lincoln', mentions: 5, context: 'US President' },
-  { rank: 17, person: 'Malala Yousafzai', mentions: 3, context: 'Activist' },
-  { rank: 18, person: 'Fidel Castro', mentions: 3, context: 'Cuban Leader' },
-  { rank: 19, person: 'Eleanor Roosevelt', mentions: 3, context: 'Human Rights Diplomat' },
-  { rank: 20, person: 'Olof Palme', mentions: 2, context: 'Swedish PM' },
-]
+type LoaderData = {
+  topFigures: Array<NotableFigure & { mention_count: number }>
+  totalFigures: number
+  totalQuotations: number
+}
+
+export async function loader(): Promise<LoaderData> {
+  const allFigures = getNotableFigures()
+  const topFigures = allFigures.slice(0, 20)
+  const totalQuotations = allFigures.reduce((sum, f) => sum + f.mention_count, 0)
+
+  return {
+    topFigures,
+    totalFigures: allFigures.length,
+    totalQuotations,
+  }
+}
 
 export function meta() {
   return [
@@ -41,6 +38,8 @@ export function meta() {
 }
 
 export default function ResearchQuotations() {
+  const { topFigures, totalFigures, totalQuotations } = useLoaderData<LoaderData>()
+
   return (
     <PageLayout maxWidth="narrow">
       <div className="mb-6">
@@ -61,15 +60,27 @@ export default function ResearchQuotations() {
           Who are the most quoted people in UN history?
         </h1>
         <p className="text-xl text-gray-600 leading-relaxed">
-          An analysis of thousands of General Assembly speeches from 2010 to 2024 reveals the enduring influence of peace icons and the rhetorical habits of world leaders.
+          An analysis of thousands of General Assembly speeches from 1946 to 2024 reveals the enduring influence of peace icons and the rhetorical habits of world leaders.
         </p>
       </header>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 gap-4 mb-12">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <div className="text-3xl font-bold text-gray-900">{totalFigures}</div>
+          <div className="text-sm text-gray-500">Notable Figures</div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+          <div className="text-3xl font-bold text-gray-900">{totalQuotations.toLocaleString()}</div>
+          <div className="text-sm text-gray-500">Total Mentions</div>
+        </div>
+      </div>
 
       {/* Content */}
       <article className="prose prose-lg prose-stone max-w-none">
         <p>
-          Speeches at the United Nations General Assembly often reach for moral authority by citing historical figures. 
-          We analyzed speech "chunks" (text segments) from 2010 to 2024 to identify who is most often quoted.
+          Speeches at the United Nations General Assembly often reach for moral authority by citing historical figures.
+          We analyzed speech "chunks" (text segments) from 1950 to 2024 to identify who is most often quoted.
         </p>
 
         {/* Overview Section */}
@@ -77,8 +88,15 @@ export default function ResearchQuotations() {
           
           {/* Top 20 Overall Table */}
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-              <h3 className="font-bold text-gray-900">Top 20 Overall (2010-2024)</h3>
+            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">Top 20 Overall (1946-2024)</h3>
+              <Link
+                to="/research/quotations/figures"
+                className="flex items-center gap-1 text-sm text-un-blue hover:underline"
+              >
+                <Users className="h-4 w-4" />
+                View all {totalFigures} figures
+              </Link>
             </div>
             <Table>
               <TableHeader>
@@ -86,23 +104,23 @@ export default function ResearchQuotations() {
                   <TableHead className="w-[100px]">Rank</TableHead>
                   <TableHead>Person</TableHead>
                   <TableHead>Mentions</TableHead>
-                  <TableHead>Context</TableHead>
+                  <TableHead>Category</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {topOverall.map((item) => (
-                  <TableRow key={item.person}>
-                    <TableCell className="font-medium">#{item.rank}</TableCell>
+                {topFigures.map((figure, index) => (
+                  <TableRow key={figure.id}>
+                    <TableCell className="font-medium">#{index + 1}</TableCell>
                     <TableCell>
                       <Link
-                        to={`/?q="${item.person}"&mode=phrase`}
+                        to={`/research/quotations/figure/${encodeURIComponent(figure.name)}`}
                         className="text-un-blue hover:underline font-medium"
                       >
-                        {item.person}
+                        {figure.name}
                       </Link>
                     </TableCell>
-                    <TableCell>{item.mentions}</TableCell>
-                    <TableCell className="text-gray-500">{item.context}</TableCell>
+                    <TableCell>{figure.mention_count}</TableCell>
+                    <TableCell className="text-gray-500">{figure.category}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -159,17 +177,119 @@ export default function ResearchQuotations() {
                  <Badge variant="blue">Peace</Badge>
               </div>
             </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+               <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">The 1990s: New World Order</h3>
+                <Link to="1990s" className="text-xs font-medium text-un-blue hover:text-blue-800 uppercase tracking-wide whitespace-nowrap shrink-0 ml-4">
+                  View Analysis &rarr;
+                </Link>
+              </div>
+              <p className="text-gray-600 mb-4">
+                The fall of the Berlin Wall and the end of the Cold War ushered in unprecedented optimism. <strong>Nelson Mandela's</strong> release and the Oslo Accords defined a decade of hope.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                 <Badge variant="blue">End of Cold War</Badge>
+                 <Badge variant="blue">Apartheid's End</Badge>
+                 <Badge variant="blue">Peace Process</Badge>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+               <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">The 1980s: Cold War Twilight</h3>
+                <Link to="1980s" className="text-xs font-medium text-un-blue hover:text-blue-800 uppercase tracking-wide whitespace-nowrap shrink-0 ml-4">
+                  View Analysis &rarr;
+                </Link>
+              </div>
+              <p className="text-gray-600 mb-4">
+                The final decade of the Cold War saw superpower tensions and the rise of <strong>Gorbachev's</strong> reforms. <strong>Nelson Mandela</strong> became a global symbol of resistance.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                 <Badge variant="blue">Anti-Apartheid</Badge>
+                 <Badge variant="blue">Glasnost</Badge>
+                 <Badge variant="blue">Disarmament</Badge>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+               <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">The 1970s: Detente & Upheaval</h3>
+                <Link to="1970s" className="text-xs font-medium text-un-blue hover:text-blue-800 uppercase tracking-wide whitespace-nowrap shrink-0 ml-4">
+                  View Analysis &rarr;
+                </Link>
+              </div>
+              <p className="text-gray-600 mb-4">
+                A decade marked by superpower detente, the oil crisis, and the end of the Vietnam War. <strong>China's</strong> entry into the UN in 1971 reshaped global diplomacy.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                 <Badge variant="blue">Detente</Badge>
+                 <Badge variant="blue">Oil Crisis</Badge>
+                 <Badge variant="blue">China's Entry</Badge>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+               <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">The 1960s: Decolonization & Crisis</h3>
+                <Link to="1960s" className="text-xs font-medium text-un-blue hover:text-blue-800 uppercase tracking-wide whitespace-nowrap shrink-0 ml-4">
+                  View Analysis &rarr;
+                </Link>
+              </div>
+              <p className="text-gray-600 mb-4">
+                The decade of African independence saw dozens of new nations join the UN. The Cuban Missile Crisis brought the world to the brink.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                 <Badge variant="blue">Decolonization</Badge>
+                 <Badge variant="blue">Cuban Crisis</Badge>
+                 <Badge variant="blue">Non-Aligned</Badge>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+               <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">The 1950s: Early Cold War</h3>
+                <Link to="1950s" className="text-xs font-medium text-un-blue hover:text-blue-800 uppercase tracking-wide whitespace-nowrap shrink-0 ml-4">
+                  View Analysis &rarr;
+                </Link>
+              </div>
+              <p className="text-gray-600 mb-4">
+                The formative decade of the United Nations, shaped by the Korean War and the dawn of the atomic age. <strong>Dag Hammarskjöld</strong> became the iconic Secretary-General.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                 <Badge variant="blue">Korean War</Badge>
+                 <Badge variant="blue">Atomic Age</Badge>
+                 <Badge variant="blue">UN Formation</Badge>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Methodology Section */}
         <div className="border-t border-gray-200 pt-12 mt-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Research Methodology</h2>
+
+          <h3 className="text-lg font-semibold text-gray-900 mt-8 mb-4">1. Building the Figure Database</h3>
           <p className="mb-6">
-            This data was compiled by analyzing over 1 million text segments ("chunks") from the United Nations General Assembly speech database. 
-            We used pattern matching to identify moments where speakers explicitly attributed words to others using phrases like <em>'he said'</em>, <em>'she said'</em>, or <em>'quoted'</em>.
+            We curated a database of {totalFigures} notable figures across 10 categories: philosophers, political thinkers,
+            economists, scientists, writers, historical figures, civil rights leaders, religious figures, UN leaders,
+            and world leaders. For each figure, we store name variations to catch different spellings and references
+            (e.g., "Mahatma Gandhi", "Mohandas Gandhi", "M.K. Gandhi").
           </p>
-          
+
+          <h3 className="text-lg font-semibold text-gray-900 mt-8 mb-4">2. Extracting Mentions</h3>
+          <p className="mb-6">
+            We analyzed over 120,000 text segments ("chunks") from UN General Assembly speeches spanning 1946-2024.
+            Each chunk was searched for mentions of our notable figures using pattern matching against their name variations.
+          </p>
+
+          <h3 className="text-lg font-semibold text-gray-900 mt-8 mb-4">3. Identifying Direct Quotations</h3>
+          <p className="mb-6">
+            Not every mention is a quote. To distinguish actual quotations from mere references, we look for
+            <strong> attribution patterns</strong> where the quoted text is explicitly attributed to the figure.
+            This prevents false positives like marking random quoted text near a name mention as a "quote by" that person.
+          </p>
+
           <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg my-8">
             <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
               <div className="flex gap-1.5">
@@ -177,30 +297,95 @@ export default function ResearchQuotations() {
                 <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
               </div>
-              <span className="text-xs font-mono text-gray-400 ml-2">analysis.sql</span>
+              <span className="text-xs font-mono text-gray-400 ml-2">attribution_patterns.py</span>
             </div>
             <div className="p-6 overflow-x-auto">
               <pre className="text-sm font-mono leading-relaxed text-gray-300">
-                <code>{`-- Identify potential quotations using text pattern matching
-SELECT 
-  s.year,
-  c.speech_id,
-  c.content as quote_context
-FROM chunks c
-JOIN speeches s ON c.speech_id = s.id
-WHERE 
-  (c.content LIKE '%said "%"%' 
-   OR c.content LIKE '%quoted "%"%')
-  AND s.year >= 2010
-ORDER BY s.year DESC;`}</code>
+                <code>{`# Patterns that identify quotes ATTRIBUTED to a figure
+# Supports both ASCII and Unicode quotation marks
+
+# Forward attribution: "Gandhi said '...'"
+r'{name}\\s+(once\\s+)?said[,:.;]?\\s*["\\'""''](.+)["\\'""'']'
+
+# Reverse attribution: "'...' - Gandhi"
+r'["\\'""''](.+)["\\'""'']\\s*[-–—]\\s*{name}'
+
+# Formal attribution: "As Gandhi wrote, '...'"
+r'as\\s+{name}\\s+(said|wrote|put it)[,:.;]?\\s*["\\'""''](.+)["\\'""'']'
+
+# Quoted attribution: "To quote Gandhi, '...'"
+r'to quote\\s+{name}[,:.;]?\\s*["\\'""''](.+)["\\'""'']'
+
+# In the words of: "In the words of Gandhi, '...'"
+r'in the words of\\s+{name}[,:.;]?\\s*["\\'""''](.+)["\\'""'']'`}</code>
               </pre>
             </div>
           </div>
 
-          <p>
-            The results were then aggregated by person to determine the most frequently cited figures. 
-            For identifying specific individuals (e.g., "Ban Ki-moon"), we performed secondary passes to count mentions within these quotation contexts.
+          <h3 className="text-lg font-semibold text-gray-900 mt-8 mb-4">4. Confidence Scoring</h3>
+          <p className="mb-6">
+            Each mention receives a confidence score from 0.3 to 1.0:
           </p>
+          <ul className="list-disc list-inside mb-6 space-y-2 text-gray-700">
+            <li><strong>0.95</strong> — Clear attribution with quoted text (e.g., <em>"Gandhi said, 'Be the change...'"</em>)</li>
+            <li><strong>0.5</strong> — Weaker indicators (e.g., <em>"according to Gandhi"</em>, <em>"Gandhi believed"</em>)</li>
+            <li><strong>0.3</strong> — Simple mention without attribution context</li>
+          </ul>
+          <p className="mb-6">
+            Only mentions with clear attribution patterns (confidence ≥ 0.9) are marked as "direct quotes" and displayed
+            in the quotation sections. All other mentions are tracked but shown separately.
+          </p>
+
+          <h3 className="text-lg font-semibold text-gray-900 mt-8 mb-4">5. Full Transparency</h3>
+          <p className="mb-6">
+            Every quotation links directly to its source speech. Click on any figure's name to see all their
+            quotations with the exact speech, year, and country where each quote was cited. This allows you to
+            verify any data point against the original source material.
+          </p>
+
+          <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg my-8">
+            <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+              </div>
+              <span className="text-xs font-mono text-gray-400 ml-2">database schema</span>
+            </div>
+            <div className="p-6 overflow-x-auto">
+              <pre className="text-sm font-mono leading-relaxed text-gray-300">
+                <code>{`-- Notable figures table
+CREATE TABLE notable_figures (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,  -- Philosopher, Scientist, etc.
+  description TEXT,
+  search_patterns TEXT     -- JSON array of name variations
+);
+
+-- Quotations linked to speeches
+CREATE TABLE quotations (
+  id INTEGER PRIMARY KEY,
+  figure_id INTEGER REFERENCES notable_figures(id),
+  speech_id INTEGER REFERENCES speeches(id),
+  quote_text TEXT NOT NULL,
+  is_direct_quote BOOLEAN,
+  confidence_score REAL    -- 0.3 to 1.0
+);`}</code>
+              </pre>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-900 mt-8 mb-4">Limitations</h3>
+          <p className="mb-6">
+            This methodology has some inherent limitations:
+          </p>
+          <ul className="list-disc list-inside mb-6 space-y-2 text-gray-700">
+            <li>Paraphrased quotes without quotation marks are not captured as direct quotes</li>
+            <li>Misattributed quotes (where a speaker incorrectly attributes a quote) are included as-is</li>
+            <li>Some figures with common names may have fewer results due to stricter matching to avoid false positives</li>
+            <li>Translations of speeches may vary in how they render quotations</li>
+          </ul>
         </div>
       </article>
     </PageLayout>
