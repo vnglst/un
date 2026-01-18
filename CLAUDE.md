@@ -51,10 +51,62 @@ WHERE c.text LIKE '%Name%'
   AND (c.text LIKE '%said%' OR c.text LIKE '%words%' OR c.text LIKE '%wrote%');
 ```
 
+### Tracking terminology evolution
+
+```sql
+-- Count term mentions by year (for charting)
+SELECT year, COUNT(*) as mentions
+FROM speeches
+WHERE text LIKE '%two-state solution%'
+GROUP BY year ORDER BY year;
+
+-- Decade grouping with flexible ranges
+SELECT
+  CASE
+    WHEN year < 1960 THEN '1950s'
+    WHEN year < 1970 THEN '1960s'
+    WHEN year < 1980 THEN '1970s'
+    -- etc.
+  END as decade,
+  COUNT(*) as mentions
+FROM speeches
+WHERE text LIKE '%Palestinian people%'
+GROUP BY 1 ORDER BY 1;
+
+-- Count distinct countries mentioning a term by decade
+SELECT decade, COUNT(DISTINCT country_name) as countries
+FROM (
+  SELECT country_name,
+    CASE WHEN year < 2010 THEN '2000s' ELSE '2010s' END as decade
+  FROM speeches WHERE text LIKE '%two-state solution%'
+) GROUP BY 1;
+```
+
+### Finding speech IDs for linking
+
+```sql
+-- Get speech ID with quote context for research pages
+SELECT id, year, country_name, speaker,
+  SUBSTR(text, INSTR(LOWER(text), 'search term'), 600) as context
+FROM speeches
+WHERE year = 2001 AND country_name = 'Palestine'
+  AND text LIKE '%two-state solution%'
+LIMIT 1;
+
+-- Use INSTR to extract text around a specific phrase
+SELECT country_name, speaker,
+  SUBSTR(text, INSTR(LOWER(text), 'partition'), 800)
+FROM speeches
+WHERE text LIKE '%partition%' AND text LIKE '%Palestine%';
+```
+
 ### Tips
 
 - Use name variations: `'%Mahatma Gandhi%' OR '%Mohandas Gandhi%'`
 - JOIN chunks to speeches for year/country context
 - SUBSTR truncates long text to avoid output overflow
 - Quotation patterns: "said", "wrote", "words of", "quote", "once said"
-- Chunks only exist for 2018-2024 currently
+- Chunks exist for all years (1946-2024), covering 79 distinct years
+- Use `INSTR(LOWER(text), 'term')` to find position of a term for extracting context
+- For historical research, query `speeches` table directly (faster for full-text LIKE searches)
+- Pipe query results through `head -N` to limit output when exploring
