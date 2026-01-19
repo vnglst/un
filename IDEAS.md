@@ -1,0 +1,1 @@
+- Research how the thinking about the United Nations itself has evolved in the speeches.
