@@ -97,11 +97,11 @@ export default function FiguresIndex() {
       </header>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 mb-12">
         {sortedCategories.slice(0, 5).map((cat) => (
-          <div key={cat} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{byCategory[cat].length}</div>
-            <div className="text-xs text-gray-500">{cat}s</div>
+          <div key={cat} className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 text-center">
+            <div className="text-xl md:text-2xl font-bold text-gray-900">{byCategory[cat].length}</div>
+            <div className="text-xs text-gray-500 truncate">{cat}s</div>
           </div>
         ))}
       </div>

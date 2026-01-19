@@ -65,14 +65,14 @@ export default function ResearchQuotations() {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 gap-4 mb-12">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-3xl font-bold text-gray-900">{totalFigures}</div>
-          <div className="text-sm text-gray-500">Notable Figures</div>
+      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-12">
+        <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 text-center">
+          <div className="text-2xl md:text-3xl font-bold text-gray-900">{totalFigures}</div>
+          <div className="text-xs md:text-sm text-gray-500">Notable Figures</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-3xl font-bold text-gray-900">{totalQuotations.toLocaleString()}</div>
-          <div className="text-sm text-gray-500">Total Mentions</div>
+        <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 text-center">
+          <div className="text-2xl md:text-3xl font-bold text-gray-900">{totalQuotations.toLocaleString()}</div>
+          <div className="text-xs md:text-sm text-gray-500">Total Mentions</div>
         </div>
       </div>
 

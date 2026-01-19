@@ -233,22 +233,22 @@ export default function ResearchTwoStateSolution() {
       {/* Key Statistics */}
       <section className="mb-16">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Statistics</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-un-blue/5 rounded-xl p-5 text-center">
-            <div className="text-3xl font-bold text-un-blue">1947</div>
-            <div className="text-sm text-gray-600">Partition concept introduced</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="bg-un-blue/5 rounded-xl p-3 md:p-5 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-un-blue">1947</div>
+            <div className="text-xs md:text-sm text-gray-600">Partition concept introduced</div>
           </div>
-          <div className="bg-green-50 rounded-xl p-5 text-center">
-            <div className="text-3xl font-bold text-green-600">2001</div>
-            <div className="text-sm text-gray-600">First "two-state solution" use</div>
+          <div className="bg-green-50 rounded-xl p-3 md:p-5 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-green-600">2001</div>
+            <div className="text-xs md:text-sm text-gray-600">First "two-state solution" use</div>
           </div>
-          <div className="bg-purple-50 rounded-xl p-5 text-center">
-            <div className="text-3xl font-bold text-purple-600">125</div>
-            <div className="text-sm text-gray-600">Countries using term (2020s)</div>
+          <div className="bg-purple-50 rounded-xl p-3 md:p-5 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-purple-600">125</div>
+            <div className="text-xs md:text-sm text-gray-600">Countries using term (2020s)</div>
           </div>
-          <div className="bg-orange-50 rounded-xl p-5 text-center">
-            <div className="text-3xl font-bold text-orange-600">62</div>
-            <div className="text-sm text-gray-600">Speeches in 2024 (record)</div>
+          <div className="bg-orange-50 rounded-xl p-3 md:p-5 text-center">
+            <div className="text-2xl md:text-3xl font-bold text-orange-600">62</div>
+            <div className="text-xs md:text-sm text-gray-600">Speeches in 2024 (record)</div>
           </div>
         </div>
       </section>
