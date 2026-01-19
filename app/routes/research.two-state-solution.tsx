@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { Badge } from '~/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table'
 import PageLayout from '~/components/page-layout'
 import { Scale, Users, Flag, Handshake, FileText, Globe2 } from 'lucide-react'
 
@@ -180,29 +181,32 @@ function BarChart({ data, maxValue, color = "blue" }: { data: { year: number; co
   const chartHeight = 128 // pixels (h-32)
 
   return (
-    <div className="overflow-x-auto -mx-2 px-2">
-      <div className="min-w-[400px]">
-        <div className="flex items-end gap-0.5 md:gap-1" style={{ height: chartHeight }}>
-          {data.map((d) => {
-            const barHeight = Math.max((d.count / maxValue) * chartHeight, d.count > 0 ? 4 : 0)
-            return (
-              <div key={d.year} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full">
-                <div
-                  className={`w-full ${colorClasses[color] || colorClasses.blue} rounded-t opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
-                  style={{ height: barHeight }}
-                  title={`${d.year}: ${d.count} speeches`}
-                />
-              </div>
-            )
-          })}
-        </div>
-        <div className="flex gap-0.5 md:gap-1 mt-2">
-          {data.map((d) => (
-            <div key={d.year} className="flex-1 min-w-0 text-center">
-              <span className="text-[9px] md:text-[10px] text-gray-400">{d.year.toString().slice(2)}</span>
+    <div>
+      <div className="flex items-end gap-px sm:gap-0.5 md:gap-1" style={{ height: chartHeight }}>
+        {data.map((d) => {
+          const barHeight = Math.max((d.count / maxValue) * chartHeight, d.count > 0 ? 4 : 0)
+          return (
+            <div key={d.year} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full">
+              <div
+                className={`w-full ${colorClasses[color] || colorClasses.blue} rounded-t opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
+                style={{ height: barHeight }}
+                title={`${d.year}: ${d.count} speeches`}
+              />
             </div>
-          ))}
-        </div>
+          )
+        })}
+      </div>
+      <div className="flex gap-px sm:gap-0.5 md:gap-1 mt-2">
+        {data.map((d, i) => (
+          <div key={d.year} className="flex-1 min-w-0 text-center">
+            {/* Show every year on md+, every other year on sm, every 4th on mobile */}
+            <span className={`text-[8px] sm:text-[9px] md:text-[10px] text-gray-400 ${
+              i % 4 === 0 ? '' : i % 2 === 0 ? 'hidden sm:inline' : 'hidden md:inline'
+            }`}>
+              {d.year.toString().slice(2)}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -234,7 +238,7 @@ export default function ResearchTwoStateSolution() {
 
       {/* Key Statistics */}
       <section className="mb-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Statistics</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Key Statistics</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div className="bg-un-blue/5 rounded-xl p-3 md:p-5 text-center">
             <div className="text-2xl md:text-3xl font-bold text-un-blue">1947</div>
@@ -257,15 +261,15 @@ export default function ResearchTwoStateSolution() {
 
       {/* Chart: Two-State Solution Mentions */}
       <section className="mb-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Rise of the "Two-State Solution" Phrase</h2>
-        <p className="text-gray-600 mb-6">Number of UN speeches explicitly mentioning "two-state solution" per year (2001-2024)</p>
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Rise of the "Two-State Solution" Phrase</h2>
+        <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">Number of UN speeches explicitly mentioning "two-state solution" per year (2001-2024)</p>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
           <BarChart
             data={terminologyData.twoStateSolution}
             maxValue={65}
             color="blue"
           />
-          <div className="flex justify-between text-xs text-gray-500 mt-4 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row justify-between gap-1 text-xs text-gray-500 mt-4 pt-4 border-t">
             <span>First use: 2001 (Arafat)</span>
             <span>Peak: 2024 (62 speeches)</span>
           </div>
@@ -274,36 +278,34 @@ export default function ResearchTwoStateSolution() {
 
       {/* Decade Evolution Table */}
       <section className="mb-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Evolution by Decade</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Era</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Framework</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Key Term</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-900">Countries</th>
-              </tr>
-            </thead>
-            <tbody>
-              {decadeStats.map((row, i) => (
-                <tr key={row.decade} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
-                  <td className="py-3 px-4 font-medium">{row.decade}</td>
-                  <td className="py-3 px-4 text-gray-600">{row.framework}</td>
-                  <td className="py-3 px-4">
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded">{row.keyTerm}</code>
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono">{row.countries}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Evolution by Decade</h2>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-gray-200">
+              <TableHead className="font-semibold text-gray-900">Era</TableHead>
+              <TableHead className="font-semibold text-gray-900 hidden sm:table-cell">Framework</TableHead>
+              <TableHead className="font-semibold text-gray-900">Key Term</TableHead>
+              <TableHead className="text-right font-semibold text-gray-900">Countries</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {decadeStats.map((row, i) => (
+              <TableRow key={row.decade} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
+                <TableCell className="font-medium whitespace-nowrap">{row.decade}</TableCell>
+                <TableCell className="text-gray-600 hidden sm:table-cell">{row.framework}</TableCell>
+                <TableCell>
+                  <code className="text-[10px] md:text-xs bg-gray-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded break-all">{row.keyTerm}</code>
+                </TableCell>
+                <TableCell className="text-right font-mono">{row.countries}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </section>
 
       {/* Timeline */}
       <section className="mb-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Historical Timeline</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 md:mb-8">Historical Timeline</h2>
         <div className="space-y-8 md:space-y-12">
           {timeline.map((item, index) => {
             const colorMap: Record<string, { bg: string; border: string; text: string }> = {
@@ -341,17 +343,17 @@ export default function ResearchTwoStateSolution() {
                   {item.stats && (
                     <div className="bg-white/60 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-2 md:gap-4">
                       <div className="text-center">
-                        <div className="text-xl md:text-2xl font-bold text-gray-400">{item.stats.before}</div>
-                        <div className="text-xs text-gray-500">before</div>
+                        <div className="text-lg md:text-2xl font-bold text-gray-400">{item.stats.before}</div>
+                        <div className="text-[10px] md:text-xs text-gray-500">before</div>
                       </div>
-                      <div className="text-xl md:text-2xl text-gray-300">&rarr;</div>
+                      <div className="text-lg md:text-2xl text-gray-300">&rarr;</div>
                       <div className="text-center">
-                        <div className={`text-xl md:text-2xl font-bold ${colors.text}`}>{item.stats.after}</div>
-                        <div className="text-xs text-gray-500">after</div>
+                        <div className={`text-lg md:text-2xl font-bold ${colors.text}`}>{item.stats.after}</div>
+                        <div className="text-[10px] md:text-xs text-gray-500">after</div>
                       </div>
-                      <div className="flex-1 min-w-[120px] text-xs md:text-sm text-gray-600">
+                      <div className="flex-1 basis-full sm:basis-auto text-xs md:text-sm text-gray-600 mt-2 sm:mt-0">
                         {item.stats.metric}<br/>
-                        <span className="text-xs text-gray-400">{item.stats.yearRange}</span>
+                        <span className="text-[10px] md:text-xs text-gray-400">{item.stats.yearRange}</span>
                       </div>
                     </div>
                   )}
@@ -402,21 +404,21 @@ export default function ResearchTwoStateSolution() {
 
       {/* Key Insight */}
       <section className="mb-16">
-        <div className="bg-gradient-to-br from-un-blue/5 to-un-blue/10 rounded-2xl p-8 border border-un-blue/20">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">The 54-Year Gap</h2>
-          <p className="text-lg text-gray-700 leading-relaxed mb-4">
+        <div className="bg-gradient-to-br from-un-blue/5 to-un-blue/10 rounded-2xl p-5 md:p-8 border border-un-blue/20">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">The 54-Year Gap</h2>
+          <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-4">
             The concept of two states in Palestine dates to <strong>1947</strong>, but the specific phrase "two-state solution" only entered UN diplomatic vocabulary in <strong>2001</strong> — a 54-year gap between concept and standardized terminology.
           </p>
-          <p className="text-gray-600">
+          <p className="text-sm md:text-base text-gray-600">
             As <strong>Uruguay noted in 2011</strong>: "two-State solution, which Uruguay has supported since 1947" — acknowledging that the framework predates the phrase by more than half a century.
           </p>
         </div>
       </section>
 
       {/* Methodology */}
-      <section className="border-t border-gray-200 pt-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Research Methodology</h2>
-        <p className="text-gray-600 mb-6 leading-relaxed">
+      <section className="border-t border-gray-200 pt-8 md:pt-12">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Research Methodology</h2>
+        <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 leading-relaxed">
           This analysis draws from <strong>10,952 UN General Assembly speeches</strong> (1946-2024). We tracked the evolution of key terminology through exact-phrase matching and contextual analysis.
         </p>
 

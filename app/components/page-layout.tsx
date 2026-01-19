@@ -26,11 +26,11 @@ export default function PageLayout({
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-stone-50">
+    <div className="min-h-screen flex flex-col bg-stone-50 overflow-x-hidden">
       <Header />
 
       <main
-        className={`flex-1 ${getMaxWidthClass()} mx-auto px-4 sm:px-6 lg:px-8 py-12 ${className}`}
+        className={`flex-1 ${getMaxWidthClass()} w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 ${className}`}
       >
         {children}
       </main>
