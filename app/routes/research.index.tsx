@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Quote, TrendingUp, Globe, Scale } from 'lucide-react'
+import { Quote, TrendingUp, Globe, Scale, Swords } from 'lucide-react'
 import PageLayout from '~/components/page-layout'
 import { Badge } from '~/components/ui/badge'
 
@@ -102,18 +102,32 @@ export default function ResearchIndex() {
           </div>
         </Link>
 
-        {/* Placeholder Card: Topics */}
-        <div className="group block bg-white/50 rounded-xl border border-gray-200 border-dashed p-4 md:p-6 opacity-75">
-          <div className="h-32 md:h-48 flex items-center justify-center mb-4 md:mb-6">
-             <TrendingUp className="h-10 w-10 md:h-12 md:w-12 text-gray-300" />
+        {/* Card: Rearmament */}
+        <Link
+          to="/research/rearmament"
+          className="group block bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden"
+        >
+          <div className="h-32 md:h-48 bg-red-50 flex items-center justify-center p-6 md:p-8">
+             <Swords className="h-12 w-12 md:h-16 md:w-16 text-red-600/40 group-hover:text-red-600/60 transition-colors" />
           </div>
-          <h2 className="text-base md:text-lg font-semibold mb-2 text-gray-400">
-            Coming Soon
-          </h2>
-          <p className="text-gray-500 text-sm">
-            More analysis on topic trends, sentiment shifts, and linguistic patterns is coming soon.
-          </p>
-        </div>
+          <div className="p-4 md:p-6">
+            <div className="flex items-center gap-2 mb-2 md:mb-3">
+              <Badge variant="blue">
+                Discourse Analysis
+              </Badge>
+              <span className="text-xs text-gray-500">Jan 2026</span>
+            </div>
+            <h2 className="text-lg md:text-xl font-bold mb-2 group-hover:text-red-700 transition-colors">
+              Rearmament Discourse
+            </h2>
+            <p className="text-gray-600 text-sm mb-3 md:mb-4 line-clamp-3">
+              From Cold War confrontation to moral critique. How UN speeches about military buildup changed from superpower accusations to small-nation advocacy.
+            </p>
+            <div className="flex items-center text-red-700 font-medium text-sm group-hover:underline">
+              View Analysis &rarr;
+            </div>
+          </div>
+        </Link>
       </div>
     </PageLayout>
   )

@@ -25,5 +25,6 @@ export default [
   route('research/quotations/figure/:name', 'routes/research.quotations.figure.$name.tsx'),
   route('research/greenland', 'routes/research.greenland.tsx'),
   route('research/two-state-solution', 'routes/research.two-state-solution.tsx'),
+  route('research/rearmament', 'routes/research.rearmament.tsx'),
   route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLoaderData, Link } from 'react-router'
 import {
   getNotableFigureByName,
@@ -9,8 +10,37 @@ import {
 } from '~/lib/database'
 import PageLayout from '~/components/page-layout'
 import { Badge } from '~/components/ui/badge'
-import { QuotationCard } from '~/components/ui/quotation-card'
-import { Calendar, MapPin, Quote, ExternalLink } from 'lucide-react'
+import { Calendar, MapPin, Quote, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+
+// Highlight the figure's name in the text
+function highlightName(text: string, figureName: string): React.ReactNode {
+  // Create variations of the name to match (full name, last name, etc.)
+  const nameParts = figureName.split(' ')
+  const lastName = nameParts[nameParts.length - 1]
+  const patterns = [figureName]
+
+  // Add common variations
+  if (nameParts.length > 1) {
+    patterns.push(lastName)
+  }
+
+  // Build regex to match any variation (case-insensitive)
+  const escapedPatterns = patterns.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const regex = new RegExp(`(${escapedPatterns.join('|')})`, 'gi')
+
+  const parts = text.split(regex)
+
+  return parts.map((part, i) => {
+    if (regex.test(part)) {
+      return (
+        <mark key={i} className="bg-yellow-200 px-0.5 rounded">
+          {part}
+        </mark>
+      )
+    }
+    return part
+  })
+}
 
 type LoaderData = {
   figure: NotableFigure
@@ -72,6 +102,145 @@ function getCategoryBadgeVariant(category: string): 'blue' | 'purple' | 'amber' 
     default:
       return 'default'
   }
+}
+
+// Expandable quote component
+function ExpandableQuote({
+  text,
+  figureName,
+  maxLength = 300,
+}: {
+  text: string
+  figureName: string
+  maxLength?: number
+}) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const needsTruncation = text.length > maxLength
+
+  const displayText = needsTruncation && !isExpanded
+    ? text.substring(0, maxLength) + '...'
+    : text
+
+  return (
+    <div>
+      <p className="text-sm md:text-lg text-gray-800 italic">
+        "{highlightName(displayText, figureName)}"
+      </p>
+      {needsTruncation && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-2 text-xs md:text-sm text-un-blue hover:underline flex items-center gap-1"
+        >
+          {isExpanded ? (
+            <>
+              Show less <ChevronUp className="h-3 w-3" />
+            </>
+          ) : (
+            <>
+              Show more <ChevronDown className="h-3 w-3" />
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Expandable mention card for mobile
+function ExpandableMentionCard({
+  quotation,
+  figureName,
+}: {
+  quotation: Quotation
+  figureName: string
+}) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const needsTruncation = quotation.quote_text.length > 150
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="font-medium text-gray-900">{quotation.year}</span>
+          <span>·</span>
+          <span>{quotation.country_name}</span>
+        </div>
+        <Link
+          to={`/speech/${quotation.speech_id}`}
+          className="text-un-blue hover:underline text-xs"
+        >
+          View
+        </Link>
+      </div>
+      <div className={`text-xs text-gray-600 ${isExpanded ? '' : 'line-clamp-2'}`}>
+        {highlightName(quotation.quote_text, figureName)}
+      </div>
+      {needsTruncation && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-1 text-xs text-un-blue hover:underline flex items-center gap-1"
+        >
+          {isExpanded ? (
+            <>
+              Less <ChevronUp className="h-3 w-3" />
+            </>
+          ) : (
+            <>
+              More <ChevronDown className="h-3 w-3" />
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// Expandable mention row for the table
+function ExpandableMention({
+  quotation,
+  figureName,
+}: {
+  quotation: Quotation
+  figureName: string
+}) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const needsTruncation = quotation.quote_text.length > 150
+
+  return (
+    <tr className="hover:bg-gray-50 border-b border-gray-100">
+      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 align-top">{quotation.year}</td>
+      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 align-top">{quotation.country_name}</td>
+      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 hidden md:table-cell align-top">
+        <div className={isExpanded ? '' : 'line-clamp-2'}>
+          {highlightName(quotation.quote_text, figureName)}
+        </div>
+        {needsTruncation && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="mt-1 text-xs text-un-blue hover:underline flex items-center gap-1"
+          >
+            {isExpanded ? (
+              <>
+                Less <ChevronUp className="h-3 w-3" />
+              </>
+            ) : (
+              <>
+                More <ChevronDown className="h-3 w-3" />
+              </>
+            )}
+          </button>
+        )}
+      </td>
+      <td className="px-3 md:px-4 py-2 md:py-3 text-right align-top">
+        <Link
+          to={`/speech/${quotation.speech_id}`}
+          className="text-un-blue hover:underline text-xs md:text-sm"
+        >
+          View
+        </Link>
+      </td>
+    </tr>
+  )
 }
 
 export default function FigureDetail() {
@@ -168,8 +337,8 @@ export default function FigureDetail() {
                 key={q.id}
                 className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm"
               >
-                <blockquote className="text-sm md:text-lg text-gray-800 italic mb-3 md:mb-4 border-l-4 border-un-blue pl-3 md:pl-4">
-                  "{q.quote_text.length > 300 ? q.quote_text.substring(0, 300) + '...' : q.quote_text}"
+                <blockquote className="mb-3 md:mb-4 border-l-4 border-un-blue pl-3 md:pl-4">
+                  <ExpandableQuote text={q.quote_text} figureName={figure.name} maxLength={400} />
                 </blockquote>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs md:text-sm text-gray-500">
                   <div className="flex items-center gap-3 md:gap-4">
@@ -206,24 +375,7 @@ export default function FigureDetail() {
           {/* Mobile: Card layout */}
           <div className="sm:hidden space-y-3">
             {mentions.slice(0, 50).map((q) => (
-              <div key={q.id} className="bg-white rounded-lg border border-gray-200 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span className="font-medium text-gray-900">{q.year}</span>
-                    <span>·</span>
-                    <span>{q.country_name}</span>
-                  </div>
-                  <Link
-                    to={`/speech/${q.speech_id}`}
-                    className="text-un-blue hover:underline text-xs"
-                  >
-                    View
-                  </Link>
-                </div>
-                <p className="text-xs text-gray-600 line-clamp-2">
-                  {q.quote_text.substring(0, 100)}...
-                </p>
-              </div>
+              <ExpandableMentionCard key={q.id} quotation={q} figureName={figure.name} />
             ))}
             {mentions.length > 50 && (
               <div className="text-center text-xs text-gray-500 py-2">
@@ -244,23 +396,9 @@ export default function FigureDetail() {
                     <th className="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-medium text-gray-600">Speech</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody>
                   {mentions.slice(0, 50).map((q) => (
-                    <tr key={q.id} className="hover:bg-gray-50">
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900">{q.year}</td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600">{q.country_name}</td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 max-w-xs truncate hidden md:table-cell">
-                        {q.quote_text.substring(0, 80)}...
-                      </td>
-                      <td className="px-3 md:px-4 py-2 md:py-3 text-right">
-                        <Link
-                          to={`/speech/${q.speech_id}`}
-                          className="text-un-blue hover:underline text-xs md:text-sm"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
+                    <ExpandableMention key={q.id} quotation={q} figureName={figure.name} />
                   ))}
                 </tbody>
               </table>
