@@ -973,6 +973,8 @@ export function getQuotationsForFigure(
 
   const { directOnly = false, minConfidence = 0, limit = 100, offset = 0 } = options
 
+  // Deduplicate by speech_id: keep only the best quotation per speech
+  // (prefer direct quotes, then highest confidence)
   let query = `
     SELECT
       q.*,
@@ -981,6 +983,13 @@ export function getQuotationsForFigure(
     FROM quotations q
     JOIN notable_figures nf ON q.figure_id = nf.id
     WHERE q.figure_id = ?
+      AND q.id = (
+        SELECT q2.id FROM quotations q2
+        WHERE q2.figure_id = q.figure_id
+          AND q2.speech_id = q.speech_id
+        ORDER BY q2.is_direct_quote DESC, q2.confidence_score DESC
+        LIMIT 1
+      )
   `
 
   const params: (number | boolean)[] = [figureId]
