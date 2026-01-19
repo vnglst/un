@@ -92,7 +92,7 @@ Respond with ONLY the JSON object, no markdown code blocks.`
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://github.com/vnglst/un-speeches',
+      'HTTP-Referer': 'https://github.com/vnglst/un',
       'X-Title': 'UN Speeches Research',
     },
     body: JSON.stringify({
@@ -182,13 +182,23 @@ async function main() {
   if (!OPENROUTER_API_KEY) {
     console.error('Error: OPENROUTER_API_KEY environment variable is required')
     console.error('')
-    console.error('Usage: OPENROUTER_API_KEY=xxx npm run db:enrich -- [limit] [model]')
+    console.error(
+      'Usage: OPENROUTER_API_KEY=xxx npm run db:enrich -- [limit] [model]'
+    )
     console.error('')
     console.error('Cost-effective models (2025):')
-    console.error('  deepseek/deepseek-chat-v3-0324  - best value ($0.25/$0.38 per 1M) [DEFAULT]')
-    console.error('  google/gemini-2.0-flash-001     - fast ($0.10/$0.40 per 1M)')
-    console.error('  google/gemini-3-flash-preview   - thinking mode ($0.50/$3.00 per 1M)')
-    console.error('  anthropic/claude-3.5-haiku      - highest quality ($0.80/$4.00 per 1M)')
+    console.error(
+      '  deepseek/deepseek-chat-v3-0324  - best value ($0.25/$0.38 per 1M) [DEFAULT]'
+    )
+    console.error(
+      '  google/gemini-2.0-flash-001     - fast ($0.10/$0.40 per 1M)'
+    )
+    console.error(
+      '  google/gemini-3-flash-preview   - thinking mode ($0.50/$3.00 per 1M)'
+    )
+    console.error(
+      '  anthropic/claude-3.5-haiku      - highest quality ($0.80/$4.00 per 1M)'
+    )
     process.exit(1)
   }
 
