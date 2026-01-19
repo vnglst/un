@@ -25,6 +25,19 @@ Speeches split into ~1500 char segments at sentence boundaries for semantic sear
 
 Legacy whole-speech embeddings (less useful than chunk embeddings).
 
+### notable_figures
+
+Historical figures quoted in UN speeches.
+
+- `id`, `name`, `category`, `subcategory`, `description`, `search_patterns` (JSON)
+
+### quotations
+
+Extracted quotes and mentions of notable figures.
+
+- `id`, `figure_id`, `speech_id`, `chunk_id`, `quote_text`, `context_text`
+- `year`, `country_name`, `is_direct_quote`, `confidence_score`
+
 ### Effective query patterns
 
 ```sql

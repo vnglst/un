@@ -1,23 +1,19 @@
 # UN General Assembly Speeches Browser
 
-A modern web application for browsing and searching UN General Assembly speeches (1946-2024). Built with React Router v7, TypeScript, and D3.js, featuring advanced AI-powered search and analysis capabilities.
+A modern web application for browsing and searching UN General Assembly speeches (1946-2024). Built with React Router v7, TypeScript, and Tailwind CSS v4.
 
 ## Features
 
-- 🌍 **Interactive Globe**: Explore an interactive 3D globe showing speech frequency by country
 - 🔍 **Advanced Search**: Full-text search with multiple modes (phrase, exact, fuzzy matching)
 - 📊 **Rich Filtering**: Filter by country, year, session, and speaker
-- 🤖 **RAG Search**: Ask questions about speeches using advanced AI and vector search
-- 🧠 **AI Research Agent**: Command-line AI agent for deep research and analysis
+- 📖 **Research Section**: Data analysis and visualizations on topics like quotations, Greenland, the two-state solution, and rearmament discourse
 - 📱 **Responsive Design**: Works seamlessly on desktop and mobile devices
 - ⚡ **Fast Performance**: SQLite database with full-text search and vector embeddings
 
 ## 🚀 Tech Stack
 
 - **Frontend**: React Router v7, TypeScript, Tailwind CSS v4
-- **Visualization**: D3.js for interactive globe visualization
 - **Database**: SQLite with FTS (Full-Text Search) and sqlite-vec for embeddings
-- **AI/ML**: Vector embeddings for RAG search functionality, OpenAI GPT models
 - **Backend**: Node.js with Better SQLite3
 - **Deployment**: Docker with multi-stage builds
 
@@ -38,49 +34,20 @@ npm run dev
 
 Visit `http://localhost:5173` to view the application.
 
-### 🤖 AI Research Agent
-
-For advanced research and analysis, use the command-line AI agent:
-
-```bash
-# Interactive chat session
-npm run agent chat
-
-# Ask a single question
-npm run agent ask "What are the main themes in recent African speeches?"
-
-# View example queries
-npm run agent examples
-
-# Test setup
-npm run agent:test
-```
-
-**Requirements**: Set `OPENAI_API_KEY` in your `.env` file for AI functionality.
-
-See [scripts/README.md](scripts/README.md) for detailed agent documentation.
-
 ## 📁 Project Structure
 
 ```
 app/
 ├── routes/           # React Router v7 pages
 │   ├── home.tsx     # Main search interface
-│   ├── globe.tsx    # Interactive globe visualization
-│   ├── rag.tsx      # AI-powered RAG search interface
 │   ├── country.$code.tsx  # Country-specific speeches
-│   └── speech.$id.tsx     # Individual speech details
+│   ├── speech.$id.tsx     # Individual speech details
+│   └── research.*.tsx     # Research pages (quotations, greenland, etc.)
 ├── components/      # Reusable UI components
 ├── lib/            # Database utilities and helpers
 └── app.css         # Global styles
 
-scripts/
-├── lib/            # AI agent framework
-│   ├── agent.ts    # Core AI agent implementation
-│   └── database-tools.ts  # Database utilities for agent
-├── agents/         # Agent configurations
-│   └── un-researcher.yaml # UN research agent config
-└── un-research-agent.ts   # CLI interface
+scripts/               # Database and data processing utilities
 
 data/
 └── un_speeches.db  # SQLite database with UN speeches
@@ -92,8 +59,9 @@ The application uses a SQLite database with the following structure:
 
 - **speeches**: Main table containing speech data (country, year, session, speaker, text)
 - **speeches_fts**: Full-text search index for efficient text searching
-- **speech_embeddings**: Vector embeddings for RAG search functionality
-- **speech_chunks**: Text chunks for efficient vector search
+- **chunks**: Speeches split into ~1500 char segments for semantic search
+- **chunk_embeddings**: 384-dim vectors (bge-small-en-v1.5) for RAG search
+- **quotations**: Extracted quotes from notable figures (used in research pages)
 
 ## 🚢 Deployment
 
