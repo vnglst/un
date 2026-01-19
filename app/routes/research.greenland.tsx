@@ -135,22 +135,22 @@ export default function ResearchGreenland() {
         </p>
       </header>
 
-      <div className="space-y-16">
+      <div className="space-y-12 md:space-y-16">
         {timeline.map((item, index) => (
-          <section key={item.decade} className="relative pl-8 md:pl-0">
+          <section key={item.decade} className="relative pl-12 md:pl-0">
             {/* Timeline Line */}
             {index !== timeline.length - 1 && (
-              <div className="absolute left-0 md:left-1/2 top-10 bottom-0 w-px bg-gray-200 -ml-px" />
+              <div className="absolute left-4 md:left-1/2 top-10 bottom-0 w-px bg-gray-200 md:-ml-px" />
             )}
-            
-            <div className={`flex flex-col md:flex-row items-start gap-8 ${index % 2 === 0 ? '' : 'md:flex-row-reverse'}`}>
+
+            <div className={`flex flex-col md:flex-row items-start gap-6 md:gap-8 ${index % 2 === 0 ? '' : 'md:flex-row-reverse'}`}>
               {/* Point */}
-              <div className="absolute left-[-4px] md:left-1/2 md:-ml-5 top-0 w-10 h-10 rounded-full bg-white border-2 border-un-blue flex items-center justify-center z-10 shadow-sm">
-                <item.icon className="h-5 w-5 text-un-blue" />
+              <div className="absolute left-0 md:left-1/2 md:-ml-5 top-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-white border-2 border-un-blue flex items-center justify-center z-10 shadow-sm">
+                <item.icon className="h-4 w-4 md:h-5 md:w-5 text-un-blue" />
               </div>
 
               {/* Content Card */}
-              <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex-1 bg-white rounded-2xl border border-gray-100 p-5 md:p-8 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl font-bold text-un-blue">{item.decade}</span>
                   <Badge variant="secondary">{item.title}</Badge>
@@ -159,12 +159,12 @@ export default function ResearchGreenland() {
                   {item.narrative}
                 </p>
                 
-                <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="bg-gray-50 rounded-xl p-4 md:p-5 border border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3">
                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Primary Source Insight</span>
                     <span className="text-xs text-gray-400">{item.keySpeech.year} · {item.keySpeech.country}</span>
                   </div>
-                  <blockquote className="text-lg italic text-gray-800 mb-4 bg-white p-4 rounded-lg border-l-4 border-un-blue/20">
+                  <blockquote className="text-base md:text-lg italic text-gray-800 mb-4 bg-white p-3 md:p-4 rounded-lg border-l-4 border-un-blue/20">
                     "{item.keySpeech.quote}"
                   </blockquote>
 
@@ -204,21 +204,18 @@ export default function ResearchGreenland() {
             <p className="text-sm text-gray-600 mb-4">
               To distinguish Greenland-specific mentions from related concepts (and false positives like "continuity"), we used SQLite's FTS5 virtual tables.
             </p>
-            <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg">
-              <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
-                <span className="text-xs font-mono text-gray-400">precision_search.sql</span>
+            <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg max-w-full">
+              <div className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 bg-gray-800 border-b border-gray-700">
+                <span className="text-[10px] md:text-xs font-mono text-gray-400">precision_search.sql</span>
               </div>
-              <div className="p-5 overflow-x-auto">
-                <pre className="text-sm font-mono leading-relaxed text-gray-300">
-                  <code>{`-- Exact match with context snippet
-SELECT 
-  s.year, 
-  s.country_name, 
-  snippet(speeches_fts, 0, '<b>', '</b>', '...', 30) 
-FROM speeches_fts 
-JOIN speeches s ON s.id = rowid 
-WHERE speeches_fts MATCH 'Greenland' 
-ORDER BY s.year ASC;`}</code>
+              <div className="p-3 md:p-5 overflow-x-auto max-w-full">
+                <pre className="text-xs md:text-sm font-mono leading-relaxed text-gray-300 whitespace-pre-wrap break-words">
+                  <code>{`-- Exact match with context
+SELECT s.year, s.country_name,
+  snippet(speeches_fts, 0, '<b>', '</b>', '...', 30)
+FROM speeches_fts
+JOIN speeches s ON s.id = rowid
+WHERE speeches_fts MATCH 'Greenland';`}</code>
                 </pre>
               </div>
             </div>
@@ -230,17 +227,18 @@ ORDER BY s.year ASC;`}</code>
             <p className="text-sm text-gray-600 mb-4">
               We identified the 'Strategic Triangle' by targeting co-occurrence of geographic and geopolitical terms.
             </p>
-            <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg">
-              <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
-                <span className="text-xs font-mono text-gray-400">strategic_triangle.sql</span>
+            <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg max-w-full">
+              <div className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 bg-gray-800 border-b border-gray-700">
+                <span className="text-[10px] md:text-xs font-mono text-gray-400">strategic_triangle.sql</span>
               </div>
-              <div className="p-5 overflow-x-auto">
-                <pre className="text-sm font-mono leading-relaxed text-gray-300">
-                  <code>{`-- Finding the Alaska-Greenland Cold War link
-SELECT s.year, s.country_name 
-FROM speeches_fts 
-JOIN speeches s ON s.id = rowid 
-WHERE speeches_fts MATCH 'Greenland AND (Alaska OR Atlantic OR "Cold War")';`}</code>
+              <div className="p-3 md:p-5 overflow-x-auto max-w-full">
+                <pre className="text-xs md:text-sm font-mono leading-relaxed text-gray-300 whitespace-pre-wrap break-words">
+                  <code>{`-- Alaska-Greenland Cold War link
+SELECT s.year, s.country_name
+FROM speeches_fts
+JOIN speeches s ON s.id = rowid
+WHERE speeches_fts MATCH
+  'Greenland AND (Alaska OR Atlantic)';`}</code>
                 </pre>
               </div>
             </div>

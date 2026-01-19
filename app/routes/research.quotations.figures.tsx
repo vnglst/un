@@ -83,16 +83,16 @@ export default function FiguresIndex() {
         </Link>
       </div>
 
-      <header className="mb-12">
-        <Badge variant="blue" className="mb-4">
+      <header className="mb-8 md:mb-12">
+        <Badge variant="blue" className="mb-3 md:mb-4">
           Archive
         </Badge>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 tracking-tight">
           All Quoted Figures
         </h1>
-        <p className="text-xl text-gray-600 leading-relaxed">
+        <p className="text-base md:text-xl text-gray-600 leading-relaxed">
           Browse {figures.length} notable figures mentioned in UN General Assembly speeches.
-          Click on any name to see their quotes and the speeches where they appear.
+          Click on any name to see their quotes.
         </p>
       </header>
 
@@ -122,7 +122,7 @@ export default function FiguresIndex() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead className="hidden sm:table-cell">Description</TableHead>
                     <TableHead className="text-right">Mentions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -137,7 +137,7 @@ export default function FiguresIndex() {
                           {figure.name}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-gray-500 text-sm">
+                      <TableCell className="text-gray-500 text-sm hidden sm:table-cell">
                         {figure.description || figure.subcategory || '—'}
                       </TableCell>
                       <TableCell className="text-right font-medium">

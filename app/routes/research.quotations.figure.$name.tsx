@@ -93,20 +93,20 @@ export default function FigureDetail() {
       </div>
 
       {/* Header */}
-      <header className="mb-12">
-        <Badge variant={getCategoryBadgeVariant(figure.category)} className="mb-4">
+      <header className="mb-8 md:mb-12">
+        <Badge variant={getCategoryBadgeVariant(figure.category)} className="mb-3 md:mb-4">
           {figure.category}
         </Badge>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 tracking-tight">
           {figure.name}
         </h1>
         {figure.description && (
-          <p className="text-xl text-gray-600 leading-relaxed mb-4">
+          <p className="text-base md:text-xl text-gray-600 leading-relaxed mb-3 md:mb-4">
             {figure.description}
           </p>
         )}
         {(figure.birth_year || figure.death_year) && (
-          <p className="text-gray-500">
+          <p className="text-sm md:text-base text-gray-500">
             {figure.birth_year && figure.birth_year < 0 ? `${Math.abs(figure.birth_year)} BCE` : figure.birth_year}
             {figure.birth_year && figure.death_year && ' – '}
             {figure.death_year && figure.death_year < 0 ? `${Math.abs(figure.death_year)} BCE` : figure.death_year}
@@ -115,37 +115,37 @@ export default function FigureDetail() {
       </header>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-3xl font-bold text-gray-900">{stats.total_mentions}</div>
-          <div className="text-sm text-gray-500">Total Mentions</div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12">
+        <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 text-center">
+          <div className="text-2xl md:text-3xl font-bold text-gray-900">{stats.total_mentions}</div>
+          <div className="text-xs md:text-sm text-gray-500">Total Mentions</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-3xl font-bold text-gray-900">{stats.direct_quotes}</div>
-          <div className="text-sm text-gray-500">Direct Quotes</div>
+        <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 text-center">
+          <div className="text-2xl md:text-3xl font-bold text-gray-900">{stats.direct_quotes}</div>
+          <div className="text-xs md:text-sm text-gray-500">Direct Quotes</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-3xl font-bold text-gray-900">{stats.year_range.split('-')[0]}</div>
-          <div className="text-sm text-gray-500">First Mention</div>
+        <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 text-center">
+          <div className="text-2xl md:text-3xl font-bold text-gray-900">{stats.year_range.split('-')[0]}</div>
+          <div className="text-xs md:text-sm text-gray-500">First Mention</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-3xl font-bold text-gray-900">{stats.year_range.split('-')[1]}</div>
-          <div className="text-sm text-gray-500">Latest Mention</div>
+        <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 text-center">
+          <div className="text-2xl md:text-3xl font-bold text-gray-900">{stats.year_range.split('-')[1]}</div>
+          <div className="text-xs md:text-sm text-gray-500">Latest Mention</div>
         </div>
       </div>
 
       {/* Top Countries */}
       {stats.top_countries.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
+        <div className="mb-8 md:mb-12">
+          <h2 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4 flex items-center gap-2">
+            <MapPin className="h-4 w-4 md:h-5 md:w-5" />
             Most Frequent Citing Countries
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 md:gap-2">
             {stats.top_countries.slice(0, 8).map((c) => (
               <span
                 key={c.country}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full text-sm"
+                className="inline-flex items-center gap-1 px-2 md:px-3 py-1 bg-gray-100 rounded-full text-xs md:text-sm"
               >
                 {c.country}
                 <span className="text-gray-500">({c.count})</span>
@@ -157,34 +157,34 @@ export default function FigureDetail() {
 
       {/* Direct Quotes Section */}
       {directQuotes.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Quote className="h-6 w-6" />
+        <section className="mb-8 md:mb-12">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
+            <Quote className="h-5 w-5 md:h-6 md:w-6" />
             Direct Quotations ({directQuotes.length})
           </h2>
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {directQuotes.map((q) => (
               <div
                 key={q.id}
-                className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm"
+                className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm"
               >
-                <blockquote className="text-lg text-gray-800 italic mb-4 border-l-4 border-un-blue pl-4">
-                  "{q.quote_text.length > 500 ? q.quote_text.substring(0, 500) + '...' : q.quote_text}"
+                <blockquote className="text-sm md:text-lg text-gray-800 italic mb-3 md:mb-4 border-l-4 border-un-blue pl-3 md:pl-4">
+                  "{q.quote_text.length > 300 ? q.quote_text.substring(0, 300) + '...' : q.quote_text}"
                 </blockquote>
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs md:text-sm text-gray-500">
+                  <div className="flex items-center gap-3 md:gap-4">
                     <span className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
+                      <Calendar className="h-3 w-3 md:h-4 md:w-4" />
                       {q.year}
                     </span>
                     <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
+                      <MapPin className="h-3 w-3 md:h-4 md:w-4" />
                       {q.country_name}
                     </span>
                   </div>
                   <Link
                     to={`/speech/${q.speech_id}`}
-                    className="flex items-center gap-1 text-un-blue hover:underline"
+                    className="flex items-center gap-1 text-un-blue hover:underline whitespace-nowrap"
                   >
                     View Speech
                     <ExternalLink className="h-3 w-3" />
@@ -199,41 +199,74 @@ export default function FigureDetail() {
       {/* All Mentions Section */}
       {mentions.length > 0 && (
         <section>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
             All Mentions ({mentions.length})
           </h2>
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Year</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Country</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Context</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">Speech</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {mentions.slice(0, 50).map((q) => (
-                  <tr key={q.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">{q.year}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{q.country_name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 max-w-md truncate">
-                      {q.quote_text.substring(0, 100)}...
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        to={`/speech/${q.speech_id}`}
-                        className="text-un-blue hover:underline text-sm"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          {/* Mobile: Card layout */}
+          <div className="sm:hidden space-y-3">
+            {mentions.slice(0, 50).map((q) => (
+              <div key={q.id} className="bg-white rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="font-medium text-gray-900">{q.year}</span>
+                    <span>·</span>
+                    <span>{q.country_name}</span>
+                  </div>
+                  <Link
+                    to={`/speech/${q.speech_id}`}
+                    className="text-un-blue hover:underline text-xs"
+                  >
+                    View
+                  </Link>
+                </div>
+                <p className="text-xs text-gray-600 line-clamp-2">
+                  {q.quote_text.substring(0, 100)}...
+                </p>
+              </div>
+            ))}
             {mentions.length > 50 && (
-              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-500">
+              <div className="text-center text-xs text-gray-500 py-2">
+                Showing 50 of {mentions.length} mentions
+              </div>
+            )}
+          </div>
+
+          {/* Desktop: Table layout */}
+          <div className="hidden sm:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-600">Year</th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-600">Country</th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-600 hidden md:table-cell">Context</th>
+                    <th className="px-3 md:px-4 py-2 md:py-3 text-right text-xs md:text-sm font-medium text-gray-600">Speech</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {mentions.slice(0, 50).map((q) => (
+                    <tr key={q.id} className="hover:bg-gray-50">
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900">{q.year}</td>
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600">{q.country_name}</td>
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-600 max-w-xs truncate hidden md:table-cell">
+                        {q.quote_text.substring(0, 80)}...
+                      </td>
+                      <td className="px-3 md:px-4 py-2 md:py-3 text-right">
+                        <Link
+                          to={`/speech/${q.speech_id}`}
+                          className="text-un-blue hover:underline text-xs md:text-sm"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {mentions.length > 50 && (
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-center text-xs md:text-sm text-gray-500">
                 Showing 50 of {mentions.length} mentions
               </div>
             )}

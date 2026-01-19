@@ -49,15 +49,15 @@ export default function Research2020s() {
         </Link>
       </div>
 
-      <header className="mb-12">
-        <Badge variant="amber" className="mb-4">
+      <header className="mb-8 md:mb-12">
+        <Badge variant="amber" className="mb-3 md:mb-4">
           The 2020s
         </Badge>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 tracking-tight">
           Crisis & Urgency
         </h1>
-        <p className="text-xl text-gray-600 leading-relaxed">
-          Facing a pandemic and global instability, speakers shifted to voices of urgency and crisis leadership. The rhetoric evolved to meet the challenges of a volatile world.
+        <p className="text-base md:text-xl text-gray-600 leading-relaxed">
+          Facing a pandemic and global instability, speakers shifted to voices of urgency and crisis leadership.
         </p>
       </header>
 
@@ -68,14 +68,14 @@ export default function Research2020s() {
           Legacy figures like Mandela and King remain relevant, while Winston Churchill saw a spike in citations during the COVID-19 crisis.
         </p>
 
-        <div className="not-prose my-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="not-prose my-6 md:my-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Rank</TableHead>
+                <TableHead className="w-12 md:w-[100px]">Rank</TableHead>
                 <TableHead>Person</TableHead>
-                <TableHead>Mentions</TableHead>
-                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Mentions</TableHead>
+                <TableHead className="hidden sm:table-cell">Category</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,8 +90,8 @@ export default function Research2020s() {
                       {figure.name}
                     </Link>
                   </TableCell>
-                  <TableCell>{figure.mentions}</TableCell>
-                  <TableCell className="text-gray-500">{figure.category}</TableCell>
+                  <TableCell className="text-right">{figure.mentions}</TableCell>
+                  <TableCell className="text-gray-500 hidden sm:table-cell">{figure.category}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

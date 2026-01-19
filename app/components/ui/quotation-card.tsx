@@ -19,14 +19,14 @@ export function QuotationCard({
   return (
     <div
       className={cn(
-        'bg-white p-6 rounded-lg border border-gray-200 shadow-sm',
+        'bg-white p-4 md:p-6 rounded-lg border border-gray-200 shadow-sm',
         className
       )}
     >
-      <blockquote className="text-xl italic text-gray-900 mb-4 border-l-4 border-un-blue pl-4">
+      <blockquote className="text-base md:text-xl italic text-gray-900 mb-4 border-l-4 border-un-blue pl-3 md:pl-4">
         "{quote}"
       </blockquote>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm text-gray-600 gap-2">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs md:text-sm text-gray-600 gap-2">
         <div>
           <span className="font-semibold text-gray-900">{author}</span>
           <span className="mx-2">•</span>
@@ -34,7 +34,7 @@ export function QuotationCard({
         </div>
         <Link
           to={speechLink}
-          className="text-un-blue hover:underline font-medium"
+          className="text-un-blue hover:underline font-medium whitespace-nowrap"
         >
           View Speech &rarr;
         </Link>

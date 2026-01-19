@@ -180,27 +180,29 @@ function BarChart({ data, maxValue, color = "blue" }: { data: { year: number; co
   const chartHeight = 128 // pixels (h-32)
 
   return (
-    <div>
-      <div className="flex items-end gap-1" style={{ height: chartHeight }}>
-        {data.map((d) => {
-          const barHeight = Math.max((d.count / maxValue) * chartHeight, d.count > 0 ? 4 : 0)
-          return (
-            <div key={d.year} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full">
-              <div
-                className={`w-full ${colorClasses[color] || colorClasses.blue} rounded-t opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
-                style={{ height: barHeight }}
-                title={`${d.year}: ${d.count} speeches`}
-              />
+    <div className="overflow-x-auto -mx-2 px-2">
+      <div className="min-w-[400px]">
+        <div className="flex items-end gap-0.5 md:gap-1" style={{ height: chartHeight }}>
+          {data.map((d) => {
+            const barHeight = Math.max((d.count / maxValue) * chartHeight, d.count > 0 ? 4 : 0)
+            return (
+              <div key={d.year} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full">
+                <div
+                  className={`w-full ${colorClasses[color] || colorClasses.blue} rounded-t opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
+                  style={{ height: barHeight }}
+                  title={`${d.year}: ${d.count} speeches`}
+                />
+              </div>
+            )
+          })}
+        </div>
+        <div className="flex gap-0.5 md:gap-1 mt-2">
+          {data.map((d) => (
+            <div key={d.year} className="flex-1 min-w-0 text-center">
+              <span className="text-[9px] md:text-[10px] text-gray-400">{d.year.toString().slice(2)}</span>
             </div>
-          )
-        })}
-      </div>
-      <div className="flex gap-1 mt-2">
-        {data.map((d) => (
-          <div key={d.year} className="flex-1 min-w-0 text-center">
-            <span className="text-[10px] text-gray-400">{d.year.toString().slice(2)}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -302,7 +304,7 @@ export default function ResearchTwoStateSolution() {
       {/* Timeline */}
       <section className="mb-16">
         <h2 className="text-2xl font-bold text-gray-900 mb-8">Historical Timeline</h2>
-        <div className="space-y-12">
+        <div className="space-y-8 md:space-y-12">
           {timeline.map((item, index) => {
             const colorMap: Record<string, { bg: string; border: string; text: string }> = {
               amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
@@ -316,10 +318,10 @@ export default function ResearchTwoStateSolution() {
             const colors = colorMap[item.color] || colorMap.blue
 
             return (
-              <div key={item.year} className="relative pl-8 md:pl-12">
+              <div key={item.year} className="relative pl-10 md:pl-12">
                 {/* Timeline line */}
                 {index !== timeline.length - 1 && (
-                  <div className="absolute left-3 md:left-5 top-10 bottom-0 w-px bg-gray-200" />
+                  <div className="absolute left-3 md:left-5 top-8 md:top-10 bottom-0 w-px bg-gray-200" />
                 )}
 
                 {/* Timeline dot */}
@@ -328,7 +330,7 @@ export default function ResearchTwoStateSolution() {
                 </div>
 
                 {/* Content */}
-                <div className={`${colors.bg} rounded-xl p-6 border ${colors.border}`}>
+                <div className={`${colors.bg} rounded-xl p-4 md:p-6 border ${colors.border}`}>
                   <div className="flex items-center gap-3 mb-3">
                     <span className={`text-xl font-bold ${colors.text}`}>{item.year}</span>
                     <Badge variant="secondary">{item.era}</Badge>
@@ -337,17 +339,17 @@ export default function ResearchTwoStateSolution() {
                   <p className="text-gray-700 mb-4 leading-relaxed">{item.narrative}</p>
 
                   {item.stats && (
-                    <div className="bg-white/60 rounded-lg p-3 mb-4 flex items-center gap-4">
+                    <div className="bg-white/60 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-2 md:gap-4">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-400">{item.stats.before}</div>
+                        <div className="text-xl md:text-2xl font-bold text-gray-400">{item.stats.before}</div>
                         <div className="text-xs text-gray-500">before</div>
                       </div>
-                      <div className="text-2xl text-gray-300">&rarr;</div>
+                      <div className="text-xl md:text-2xl text-gray-300">&rarr;</div>
                       <div className="text-center">
-                        <div className={`text-2xl font-bold ${colors.text}`}>{item.stats.after}</div>
+                        <div className={`text-xl md:text-2xl font-bold ${colors.text}`}>{item.stats.after}</div>
                         <div className="text-xs text-gray-500">after</div>
                       </div>
-                      <div className="flex-1 text-sm text-gray-600">
+                      <div className="flex-1 min-w-[120px] text-xs md:text-sm text-gray-600">
                         {item.stats.metric}<br/>
                         <span className="text-xs text-gray-400">{item.stats.yearRange}</span>
                       </div>
@@ -355,15 +357,15 @@ export default function ResearchTwoStateSolution() {
                   )}
 
                   {/* Primary Quote */}
-                  <div className="bg-white rounded-lg p-4 border border-gray-100">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Primary Source</span>
                       <span className="text-xs text-gray-400">{item.keySpeech.country}</span>
                     </div>
-                    <blockquote className="text-gray-800 italic mb-3 border-l-4 border-gray-200 pl-4">
+                    <blockquote className="text-sm md:text-base text-gray-800 italic mb-3 border-l-4 border-gray-200 pl-3 md:pl-4">
                       "{item.keySpeech.quote}"
                     </blockquote>
-                    <p className="text-sm text-gray-500 mb-3">{item.keySpeech.context}</p>
+                    <p className="text-xs md:text-sm text-gray-500 mb-3">{item.keySpeech.context}</p>
                     <Link
                       to={`/speech/${item.keySpeech.id}`}
                       className="text-un-blue text-sm font-medium hover:underline inline-flex items-center gap-1"
@@ -374,15 +376,15 @@ export default function ResearchTwoStateSolution() {
 
                   {/* Secondary Quote (if exists) */}
                   {item.keySpeech2 && (
-                    <div className="bg-white rounded-lg p-4 border border-gray-100 mt-3">
-                      <div className="flex items-center justify-between mb-2">
+                    <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-100 mt-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
                         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Additional Source</span>
                         <span className="text-xs text-gray-400">{item.keySpeech2.country}</span>
                       </div>
-                      <blockquote className="text-gray-800 italic mb-3 border-l-4 border-gray-200 pl-4">
+                      <blockquote className="text-sm md:text-base text-gray-800 italic mb-3 border-l-4 border-gray-200 pl-3 md:pl-4">
                         "{item.keySpeech2.quote}"
                       </blockquote>
-                      <p className="text-sm text-gray-500 mb-3">{item.keySpeech2.context}</p>
+                      <p className="text-xs md:text-sm text-gray-500 mb-3">{item.keySpeech2.context}</p>
                       <Link
                         to={`/speech/${item.keySpeech2.id}`}
                         className="text-un-blue text-sm font-medium hover:underline inline-flex items-center gap-1"
@@ -418,24 +420,22 @@ export default function ResearchTwoStateSolution() {
           This analysis draws from <strong>10,952 UN General Assembly speeches</strong> (1946-2024). We tracked the evolution of key terminology through exact-phrase matching and contextual analysis.
         </p>
 
-        <div className="bg-gray-900 rounded-xl overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
-            <span className="text-xs font-mono text-gray-400">terminology_tracking.sql</span>
+        <div className="bg-gray-900 rounded-xl overflow-hidden max-w-full">
+          <div className="flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 bg-gray-800 border-b border-gray-700">
+            <span className="text-[10px] md:text-xs font-mono text-gray-400">terminology_tracking.sql</span>
           </div>
-          <div className="p-5 overflow-x-auto">
-            <pre className="text-sm font-mono leading-relaxed text-gray-300">
-              <code>{`-- Track "two-state solution" emergence
+          <div className="p-3 md:p-5 overflow-x-auto max-w-full">
+            <pre className="text-xs md:text-sm font-mono leading-relaxed text-gray-300 whitespace-pre-wrap break-words">
+              <code>{`-- Track "two-state solution"
 SELECT year, COUNT(*) as mentions
 FROM speeches
 WHERE text LIKE '%two-state solution%'
-   OR text LIKE '%two state solution%'
 GROUP BY year ORDER BY year;
 
--- Compare with earlier "Palestinian state" usage
+-- Compare with "Palestinian state"
 SELECT year, COUNT(*) as mentions
 FROM speeches
 WHERE text LIKE '%Palestinian state%'
-   OR text LIKE '%State of Palestine%'
 GROUP BY year ORDER BY year;`}</code>
             </pre>
           </div>
