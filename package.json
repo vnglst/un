@@ -26,6 +26,7 @@
     "clean": "rm -rf build",
     "clean:all": "npm run clean && rm -rf node_modules",
     "db:cleanup": "node --experimental-strip-types scripts/cleanup-database.ts",
+    "db:push": "./update-db.sh",
     "agent": "node --experimental-strip-types scripts/cli.ts"
   },
   "keywords": [],

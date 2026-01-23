@@ -530,27 +530,42 @@ export default function ResearchEvolution() {
 
       {/* Regional Groups Legend */}
       <div className="mb-12 p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm">
-        <p className="font-medium text-gray-700 mb-2">UN Regional Groups:</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 text-gray-600">
-          <div>
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#16a34a] mr-2"></span>
-            <strong>Africa</strong> — Nigeria, Egypt, South Africa, Kenya
+        <p className="font-medium text-gray-700 mb-3">UN Regional Groups:</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-gray-600">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-[#16a34a] shrink-0"></span>
+            <span>
+              <strong>Africa</strong>
+              <span className="hidden sm:inline"> — Nigeria, Egypt, Kenya</span>
+            </span>
           </div>
-          <div>
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#9333ea] mr-2"></span>
-            <strong>Asia</strong> — China, India, Japan, Saudi Arabia
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-[#9333ea] shrink-0"></span>
+            <span>
+              <strong>Asia</strong>
+              <span className="hidden sm:inline"> — China, India, Japan</span>
+            </span>
           </div>
-          <div>
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#ea580c] mr-2"></span>
-            <strong>LatAm</strong> — Brazil, Mexico, Argentina, Cuba
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-[#ea580c] shrink-0"></span>
+            <span>
+              <strong>LatAm</strong>
+              <span className="hidden sm:inline"> — Brazil, Mexico, Argentina</span>
+            </span>
           </div>
-          <div>
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#dc2626] mr-2"></span>
-            <strong>E. Europe</strong> — Russia, Poland, Ukraine, Hungary
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-[#dc2626] shrink-0"></span>
+            <span>
+              <strong>E. Europe</strong>
+              <span className="hidden sm:inline"> — Russia, Poland, Ukraine</span>
+            </span>
           </div>
-          <div>
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#2563eb] mr-2"></span>
-            <strong>West</strong> — USA, UK, France, Germany, Australia
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-[#2563eb] shrink-0"></span>
+            <span>
+              <strong>West</strong>
+              <span className="hidden sm:inline"> — USA, UK, France, Germany</span>
+            </span>
           </div>
         </div>
       </div>

@@ -1,5 +1,17 @@
 # UN Speeches Database
 
+## Deployment
+
+### Push database to production
+
+```bash
+npm run db:push
+# or directly:
+./update-db.sh
+```
+
+This script copies the local database (`data/un_speeches.db`) to the production server via rsync. It checks disk space before copying and sets proper permissions.
+
 ## Tables
 
 ### speeches
