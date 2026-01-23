@@ -41,6 +41,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
       const output = await model(text, {
         pooling: 'mean',
         normalize: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return Array.from((output as any).data) as number[]

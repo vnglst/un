@@ -21,10 +21,20 @@ export default [
   route('research/quotations/2000s', 'routes/research.quotations.2000s.tsx'),
   route('research/quotations/2010s', 'routes/research.quotations.2010s.tsx'),
   route('research/quotations/2020s', 'routes/research.quotations.2020s.tsx'),
-  route('research/quotations/figures', 'routes/research.quotations.figures.tsx'),
-  route('research/quotations/figure/:name', 'routes/research.quotations.figure.$name.tsx'),
+  route(
+    'research/quotations/figures',
+    'routes/research.quotations.figures.tsx'
+  ),
+  route(
+    'research/quotations/figure/:name',
+    'routes/research.quotations.figure.$name.tsx'
+  ),
   route('research/greenland', 'routes/research.greenland.tsx'),
-  route('research/two-state-solution', 'routes/research.two-state-solution.tsx'),
+  route(
+    'research/two-state-solution',
+    'routes/research.two-state-solution.tsx'
+  ),
   route('research/rearmament', 'routes/research.rearmament.tsx'),
+  route('research/un-evolution', 'routes/research.un-evolution.tsx'),
   route('*', 'routes/404.tsx'), // Catch-all route for 404s
 ] satisfies RouteConfig

@@ -37,6 +37,33 @@ export default function ResearchIndex() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Card: Evolution of UN Discourse */}
+        <Link
+          to="/research/un-evolution"
+          className="group block bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden"
+        >
+          <div className="h-32 md:h-48 bg-indigo-50 flex items-center justify-center p-6 md:p-8">
+            <Globe className="h-12 w-12 md:h-16 md:w-16 text-indigo-600/40 group-hover:text-indigo-600/60 transition-colors" />
+          </div>
+          <div className="p-4 md:p-6">
+            <div className="flex items-center gap-2 mb-2 md:mb-3">
+              <Badge variant="blue">Deep Dive</Badge>
+              <span className="text-xs text-gray-500">Jan 2026</span>
+            </div>
+            <h2 className="text-lg md:text-xl font-bold mb-2 group-hover:text-indigo-700 transition-colors">
+              Evolution of Thinking
+            </h2>
+            <p className="text-gray-600 text-sm mb-3 md:mb-4 line-clamp-3">
+              From the sovereignty era of the 1960s to the structural crisis of
+              today. How 75 years of speeches reveal the changing soul of the
+              UN.
+            </p>
+            <div className="flex items-center text-indigo-700 font-medium text-sm group-hover:underline">
+              Analyze Trends &rarr;
+            </div>
+          </div>
+        </Link>
+
         {/* Card: Quotations */}
         <Link
           to="/research/quotations"
