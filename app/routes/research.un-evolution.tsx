@@ -414,7 +414,20 @@ export default function ResearchEvolution() {
   const [mapMetric, setMapMetric] = useState('sc_reform')
   const [selectedYear, setSelectedYear] = useState(2024)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [hiddenRegions, setHiddenRegions] = useState<Set<string>>(new Set())
   const { timeline, map_data } = evolutionData
+
+  const handleLegendClick = (dataKey: string) => {
+    setHiddenRegions((prev) => {
+      const next = new Set(prev)
+      if (next.has(dataKey)) {
+        next.delete(dataKey)
+      } else {
+        next.add(dataKey)
+      }
+      return next
+    })
+  }
 
   // Animation loop
   useEffect(() => {
@@ -426,6 +439,37 @@ export default function ResearchEvolution() {
     }
     return () => clearInterval(interval)
   }, [isPlaying])
+
+  // Aggregate timeline data by decade
+  const decadeData = useMemo(() => {
+    const decades: Record<string, { count: number; sums: Record<string, number> }> = {}
+
+    timeline.forEach((row) => {
+      const decade = `${Math.floor(row.year / 10) * 10}s`
+      if (!decades[decade]) {
+        decades[decade] = { count: 0, sums: {} }
+      }
+      decades[decade].count++
+
+      // Sum all numeric fields
+      Object.entries(row).forEach(([key, value]) => {
+        if (key !== 'year' && typeof value === 'number') {
+          decades[decade].sums[key] = (decades[decade].sums[key] || 0) + value
+        }
+      })
+    })
+
+    // Convert to array with averages
+    return Object.entries(decades)
+      .map(([decade, data]) => {
+        const avg: Record<string, string | number> = { decade }
+        Object.entries(data.sums).forEach(([key, sum]) => {
+          avg[key] = Math.round((sum / data.count) * 10) / 10 // 1 decimal place
+        })
+        return avg
+      })
+      .sort((a, b) => String(a.decade).localeCompare(String(b.decade)))
+  }, [timeline])
 
   // 1. Create a map of Country ID -> Region
   const countryRegionMap = useMemo(() => {
@@ -484,6 +528,33 @@ export default function ResearchEvolution() {
         </p>
       </header>
 
+      {/* Regional Groups Legend */}
+      <div className="mb-12 p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+        <p className="font-medium text-gray-700 mb-2">UN Regional Groups:</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 text-gray-600">
+          <div>
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#16a34a] mr-2"></span>
+            <strong>Africa</strong> — Nigeria, Egypt, South Africa, Kenya
+          </div>
+          <div>
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#9333ea] mr-2"></span>
+            <strong>Asia</strong> — China, India, Japan, Saudi Arabia
+          </div>
+          <div>
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#ea580c] mr-2"></span>
+            <strong>LatAm</strong> — Brazil, Mexico, Argentina, Cuba
+          </div>
+          <div>
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#dc2626] mr-2"></span>
+            <strong>E. Europe</strong> — Russia, Poland, Ukraine, Hungary
+          </div>
+          <div>
+            <span className="inline-block w-3 h-3 rounded-sm bg-[#2563eb] mr-2"></span>
+            <strong>West</strong> — USA, UK, France, Germany, Australia
+          </div>
+        </div>
+      </div>
+
       {/* 1. Security Council Reform */}
       <section className="mb-20 grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-1 prose prose-stone">
@@ -507,11 +578,11 @@ export default function ResearchEvolution() {
 
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-[400px]">
           <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
-            Total Mentions of "Security Council Reform" (Count)
+            % of Speeches Mentioning "Security Council Reform"
           </h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={timeline}
+              data={decadeData}
               margin={{ top: 5, right: 30, left: 0, bottom: 40 }}
             >
               <CartesianGrid
@@ -520,51 +591,70 @@ export default function ResearchEvolution() {
                 stroke="#f0f0f0"
               />
               <XAxis
-                dataKey="year"
+                dataKey="decade"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}%`}
+              />
               <Tooltip
                 contentStyle={{
                   borderRadius: '8px',
                   border: 'none',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 }}
-                cursor={{ fill: '#f3f4f6' }}
+                formatter={(value) => [`${Number(value ?? 0).toFixed(1)}%`, '']}
               />
-              <Legend />
-              {/* Using _count suffix for absolute volume */}
+              <Legend
+                onClick={(e) => e.value && handleLegendClick(e.value)}
+                wrapperStyle={{ cursor: 'pointer' }}
+                formatter={(value) => (
+                  <span
+                    style={{
+                      color: hiddenRegions.has(value) ? '#ccc' : '#333',
+                      textDecoration: hiddenRegions.has(value)
+                        ? 'line-through'
+                        : 'none',
+                    }}
+                  >
+                    {value}
+                  </span>
+                )}
+              />
               <Bar
-                dataKey="Africa_sc_reform_count"
+                dataKey="Africa_sc_reform"
                 name="Africa"
-                stackId="a"
                 fill="#16a34a"
+                hide={hiddenRegions.has('Africa')}
               />
               <Bar
-                dataKey="Asia_sc_reform_count"
+                dataKey="Asia_sc_reform"
                 name="Asia"
-                stackId="a"
                 fill="#9333ea"
+                hide={hiddenRegions.has('Asia')}
               />
               <Bar
-                dataKey="LatAm_sc_reform_count"
+                dataKey="LatAm_sc_reform"
                 name="LatAm"
-                stackId="a"
                 fill="#ea580c"
+                hide={hiddenRegions.has('LatAm')}
               />
               <Bar
-                dataKey="EasternEu_sc_reform_count"
+                dataKey="EasternEu_sc_reform"
                 name="E. Europe"
-                stackId="a"
                 fill="#dc2626"
+                hide={hiddenRegions.has('E. Europe')}
               />
               <Bar
-                dataKey="West_sc_reform_count"
+                dataKey="West_sc_reform"
                 name="West (WEOG)"
-                stackId="a"
                 fill="#2563eb"
+                hide={hiddenRegions.has('West (WEOG)')}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -590,11 +680,11 @@ export default function ResearchEvolution() {
 
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-[400px]">
           <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
-            Mentions of "Human Rights" (Count)
+            % of Speeches Mentioning "Human Rights"
           </h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={timeline}
+              data={decadeData}
               margin={{ top: 5, right: 30, left: 0, bottom: 40 }}
             >
               <CartesianGrid
@@ -603,49 +693,70 @@ export default function ResearchEvolution() {
                 stroke="#f0f0f0"
               />
               <XAxis
-                dataKey="year"
+                dataKey="decade"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}%`}
+              />
               <Tooltip
                 contentStyle={{
                   borderRadius: '8px',
                   border: 'none',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 }}
+                formatter={(value) => [`${Number(value ?? 0).toFixed(1)}%`, '']}
               />
-              <Legend />
+              <Legend
+                onClick={(e) => e.value && handleLegendClick(e.value)}
+                wrapperStyle={{ cursor: 'pointer' }}
+                formatter={(value) => (
+                  <span
+                    style={{
+                      color: hiddenRegions.has(value) ? '#ccc' : '#333',
+                      textDecoration: hiddenRegions.has(value)
+                        ? 'line-through'
+                        : 'none',
+                    }}
+                  >
+                    {value}
+                  </span>
+                )}
+              />
               <Bar
-                dataKey="Africa_human_rights_count"
+                dataKey="Africa_human_rights"
                 name="Africa"
-                stackId="a"
                 fill="#16a34a"
+                hide={hiddenRegions.has('Africa')}
               />
               <Bar
-                dataKey="Asia_human_rights_count"
+                dataKey="Asia_human_rights"
                 name="Asia"
-                stackId="a"
                 fill="#9333ea"
+                hide={hiddenRegions.has('Asia')}
               />
               <Bar
-                dataKey="LatAm_human_rights_count"
+                dataKey="LatAm_human_rights"
                 name="LatAm"
-                stackId="a"
                 fill="#ea580c"
+                hide={hiddenRegions.has('LatAm')}
               />
               <Bar
-                dataKey="EasternEu_human_rights_count"
+                dataKey="EasternEu_human_rights"
                 name="E. Europe"
-                stackId="a"
                 fill="#dc2626"
+                hide={hiddenRegions.has('E. Europe')}
               />
               <Bar
-                dataKey="West_human_rights_count"
+                dataKey="West_human_rights"
                 name="West"
-                stackId="a"
                 fill="#2563eb"
+                hide={hiddenRegions.has('West')}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -671,11 +782,11 @@ export default function ResearchEvolution() {
 
         <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-[400px]">
           <h3 className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
-            Mentions of "Sovereignty" (Count)
+            % of Speeches Mentioning "Sovereignty"
           </h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={timeline}
+              data={decadeData}
               margin={{ top: 5, right: 30, left: 0, bottom: 40 }}
             >
               <CartesianGrid
@@ -684,49 +795,70 @@ export default function ResearchEvolution() {
                 stroke="#f0f0f0"
               />
               <XAxis
-                dataKey="year"
+                dataKey="decade"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}%`}
+              />
               <Tooltip
                 contentStyle={{
                   borderRadius: '8px',
                   border: 'none',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 }}
+                formatter={(value) => [`${Number(value ?? 0).toFixed(1)}%`, '']}
               />
-              <Legend />
+              <Legend
+                onClick={(e) => e.value && handleLegendClick(e.value)}
+                wrapperStyle={{ cursor: 'pointer' }}
+                formatter={(value) => (
+                  <span
+                    style={{
+                      color: hiddenRegions.has(value) ? '#ccc' : '#333',
+                      textDecoration: hiddenRegions.has(value)
+                        ? 'line-through'
+                        : 'none',
+                    }}
+                  >
+                    {value}
+                  </span>
+                )}
+              />
               <Bar
-                dataKey="Africa_sovereignty_count"
+                dataKey="Africa_sovereignty"
                 name="Africa"
-                stackId="a"
                 fill="#16a34a"
+                hide={hiddenRegions.has('Africa')}
               />
               <Bar
-                dataKey="Asia_sovereignty_count"
+                dataKey="Asia_sovereignty"
                 name="Asia"
-                stackId="a"
                 fill="#9333ea"
+                hide={hiddenRegions.has('Asia')}
               />
               <Bar
-                dataKey="LatAm_sovereignty_count"
+                dataKey="LatAm_sovereignty"
                 name="LatAm"
-                stackId="a"
                 fill="#ea580c"
+                hide={hiddenRegions.has('LatAm')}
               />
               <Bar
-                dataKey="EasternEu_sovereignty_count"
+                dataKey="EasternEu_sovereignty"
                 name="E. Europe"
-                stackId="a"
                 fill="#dc2626"
+                hide={hiddenRegions.has('E. Europe')}
               />
               <Bar
-                dataKey="West_sovereignty_count"
+                dataKey="West_sovereignty"
                 name="West"
-                stackId="a"
                 fill="#2563eb"
+                hide={hiddenRegions.has('West')}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -802,30 +934,6 @@ export default function ResearchEvolution() {
         </div>
       </section>
 
-      <section className="bg-indigo-50 rounded-xl p-8 border border-indigo-100 mb-12">
-        <h3 className="text-xl font-bold text-indigo-900 mb-4">
-          Summary of Findings
-        </h3>
-        <ul className="space-y-3 text-indigo-800">
-          <li className="flex gap-2">
-            <span className="font-bold">•</span>
-            <span>
-              <strong>The Volume of Reform:</strong> As shown in the stacked
-              charts, the absolute number of speeches demanding Security Council
-              reform has nearly tripled since the 1990s.
-            </span>
-          </li>
-          <li className="flex gap-2">
-            <span className="font-bold">•</span>
-            <span>
-              <strong>Sovereignty's Comeback:</strong> While Human Rights
-              rhetoric dominated the 2000s, Sovereignty mentions have surged in
-              the 2020s, driven by conflicts in Eastern Europe and the Middle
-              East.
-            </span>
-          </li>
-        </ul>
-      </section>
     </PageLayout>
   )
 }
