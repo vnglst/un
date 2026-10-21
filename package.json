@@ -33,7 +33,7 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=23.6.0"
+    "node": "^24.22.1"
   },
   "dependencies": {
     "@react-router/dev": "^7.9.4",

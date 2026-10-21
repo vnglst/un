@@ -1,5 +1,5 @@
-# Use Node.js 23 Debian for better compatibility
-FROM node:23-slim
+# Use the patched Node.js 24 LTS release
+FROM node:24.22.1-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -53,4 +53,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Use startup script that handles permissions
 CMD ["/start.sh"]
-

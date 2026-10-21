@@ -25,7 +25,7 @@ Use the following commands to ensure code quality and consistency:
    - Follow the project's coding style (indentation, naming conventions, etc.)
    - Don't use comments to clarify code.
    - Don't use barrel files (index.ts) to re-export components or utilities
-   - Don't use tsx, we're using Node > 23.6 which supports TypeScript natively
+   - Don't use tsx, we're using Node 24.22.1 or later in the Node 24 line, which supports TypeScript natively
 
 3. **Documentation**
 
