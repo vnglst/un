@@ -27,7 +27,8 @@
     "clean:all": "npm run clean && rm -rf node_modules",
     "db:cleanup": "node --experimental-strip-types scripts/cleanup-database.ts",
     "db:push": "./update-db.sh",
-    "agent": "node --experimental-strip-types scripts/cli.ts"
+    "agent": "node --experimental-strip-types scripts/cli.ts",
+    "verify:dependencies": "npm run typecheck && npm run build && node scripts/dependency-smoke.cjs"
   },
   "keywords": [],
   "author": "",

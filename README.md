@@ -74,3 +74,14 @@ docker build -t un-speeches .
 # Run the container
 docker run -p 3000:3000 un-speeches
 ```
+
+## Automated critical dependency fixes
+
+The existing self-hosted Renovate GitHub App handles only CRITICAL npm
+vulnerability alerts. Ordinary updates and Renovate's own automerge are disabled.
+The trusted infrastructure runner verifies dependency-only changes, runs
+`npm ci` and `npm run verify:dependencies` without credentials, then publishes
+`un/dependencies` and merges the exact verified commit. Failed or unsupported
+updates remain open for manual review. Native checks use only an in-memory
+database; no production database, embeddings or paid API jobs are used.
+Docker image updates are outside this policy.
