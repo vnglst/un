@@ -1,27 +1,25 @@
-# Use the patched Node.js 24 LTS release
-FROM node:24.22.1-slim
+# Keep native modules on the same Node/Debian base in every stage.
+FROM node:24.22.1-slim AS base
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-  python3 \
-  make \
-  g++ \
-  sqlite3 \
-  curl \
+FROM base AS build
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
 WORKDIR /app
-
-# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci
-
-# Copy source code
 COPY . .
+RUN npm run typecheck && npm run build && node scripts/dependency-smoke.cjs
+# Remove build/development dependencies before copying to the runtime image.
+RUN npm prune --omit=dev --offline --ignore-scripts --no-audit --no-fund && npm cache clean --force \
+  && node scripts/dependency-smoke.cjs
 
-# Build the application (no database needed)
-RUN npm run build
+FROM base AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends curl libgomp1 \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/build ./build
 
 # Create startup script that checks for database in volume
 RUN echo '#!/bin/bash\n\
