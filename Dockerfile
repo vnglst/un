@@ -1,5 +1,5 @@
 # Keep native modules on the same Node/Debian base in every stage.
-FROM node:24.22.1-slim AS base
+FROM node:24.22.1-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c AS base
 
 FROM base AS build
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
